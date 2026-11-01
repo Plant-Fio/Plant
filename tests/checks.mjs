@@ -152,7 +152,9 @@ export async function verifierConnexion(base, dossier, { version }) {
             },
             body: JSON.stringify(table === 'photos' ? { chemin: 'verification-ci' }
               : table === 'arrosages' ? { jour: '2000-01-01' }
-                : table === 'taches' ? { texte: 'verification-ci' } : { nom: 'verification-ci' }),
+                : table === 'taches' ? { texte: 'verification-ci' }
+                  : table === 'appareils_push' ? { endpoint: 'verification-ci', p256dh: 'x', auth: 'x' }
+                    : table === 'reglages_notifs' ? { heure_matin: 10 } : { nom: 'verification-ci' }),
           });
           const corps = await reponse.json().catch(() => ({}));
           if (corps.code === '42501') ok(`table ${table} : presente, RLS active (un visiteur sans compte est refuse)`);
