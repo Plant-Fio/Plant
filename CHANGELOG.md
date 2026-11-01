@@ -3,6 +3,22 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [0.4.0] - 2026-11-01
+
+Les rappels.
+
+### Ajoute
+- Frequence d'arrosage par plante (tous les N jours, 1 a 365), a regler dans le formulaire
+- Ecran « Aujourd'hui » : plantes a arroser (les plus en retard d'abord) avec un gros bouton « Arrosee »,
+  plantes deja arrosees (avec annulation) et apercu des 3 prochains jours
+- Pastille sur l'onglet « Aujourd'hui » avec le nombre d'arrosages a faire
+- Fiche : section « Soins » (frequence, prochain arrosage, dernier arrosage, historique des 8 derniers
+  avec suppression), dernier engrais et dernier rempotage (date, bouton « fait aujourd'hui »)
+- Les rappels se mettent a jour quand on rouvre l'appli le lendemain
+- Base de donnees : table `arrosages` (RLS) et colonnes `arrosage_jours`, `dernier_engrais`,
+  `dernier_rempotage` (script dans `supabase/03-rappels.sql`)
+- CI : controle de la table `arrosages` et des nouvelles colonnes sur le vrai projet
+
 ## [0.3.0] - 2026-11-01
 
 Les photos.

@@ -1,9 +1,11 @@
 // Mes plantes - chef d'orchestre : connexion, navigation par onglets, choix de l'ecran a afficher.
 import { supabase } from './client.js';
-import { echapper, icone, dateDuJour } from './outils.js';
+import { echapper, icone, dateIsoLocale } from './outils.js';
 import { charger, viderEtat, lireEtat } from './donnees.js';
 import { vueListe, vueFiche, vueFormulaire } from './vues-plantes.js';
 import { vueReglages, vuePieces } from './vues-reglages.js';
+import { vueAujourdhui } from './vue-aujourdhui.js';
+import { compterAFaire } from './rappels.js';
 
 const VERSION = globalThis.APP_VERSION || '?';
 
@@ -97,15 +99,16 @@ function lireAdresse() {
   return { onglet, reste: morceaux[0] === onglet ? morceaux.slice(1) : [] };
 }
 
-function vueAujourdhui(conteneur) {
-  conteneur.innerHTML = `
-    <p class="vue__legende">${echapper(dateDuJour())}</p>
-    <h1 class="vue__titre">À faire aujourd'hui</h1>
-    <section class="carte vide">
-      <div class="vide__bulle">${icone('goutte')}</div>
-      <h2 class="vide__titre">Rien à signaler</h2>
-      <p class="vide__texte">Les arrosages du jour s'afficheront ici.</p>
-    </section>`;
+// Pastille sur l'onglet "Aujourd'hui" : nombre d'arrosages a faire
+function majPastille() {
+  const pastille = document.querySelector('.tabbar__badge');
+  if (!pastille) return;
+  const { plantes, arrosages, charge } = lireEtat();
+  const nombre = charge ? compterAFaire(plantes, arrosages) : 0;
+  pastille.textContent = nombre > 99 ? '99+' : String(nombre);
+  pastille.hidden = nombre === 0;
+  const lien = pastille.closest('.tabbar__onglet');
+  lien.setAttribute('aria-label', nombre ? `Aujourd'hui, ${nombre} à faire` : "Aujourd'hui");
 }
 
 // Un numero par affichage : si l'utilisatrice change d'ecran pendant un chargement, l'ancien est ignore.
@@ -119,7 +122,7 @@ async function afficherAppli() {
       <nav class="tabbar" id="tabbar" aria-label="Navigation principale">
         ${ONGLETS.map((o) => `
           <a class="tabbar__onglet" href="#/${o.id}" data-tab="${o.id}">
-            <span class="tabbar__pastille">${icone(o.icone)}</span>
+            <span class="tabbar__pastille">${icone(o.icone)}${o.id === 'aujourdhui' ? '<span class="tabbar__badge" hidden></span>' : ''}</span>
             <span>${o.libelle}</span>
           </a>`).join('')}
       </nav>`;
@@ -146,6 +149,8 @@ async function afficherAppli() {
   afficherVue();
 }
 
+let jourAffiche = dateIsoLocale();
+
 function afficherVue() {
   if (!session || !lireEtat().charge) return;
   const { onglet, reste } = lireAdresse();
@@ -169,6 +174,8 @@ function afficherVue() {
   } else {
     vueReglages(conteneur, { email: session.user?.email || '', version: VERSION, deconnecter });
   }
+  majPastille();
+  jourAffiche = dateIsoLocale();
   window.scrollTo(0, 0);
 }
 
@@ -200,6 +207,11 @@ function enregistrerServiceWorker() {
 async function demarrer() {
   enregistrerServiceWorker();
   window.addEventListener('hashchange', afficherVue);
+  window.addEventListener('donnees-modifiees', majPastille);
+  // Quand on rouvre l'appli le lendemain, les rappels du nouveau jour s'affichent
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && jourAffiche !== dateIsoLocale()) afficherVue();
+  });
 
   try {
     const { data } = await supabase.auth.getSession();
