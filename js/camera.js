@@ -51,7 +51,7 @@ export function ouvrirCamera({ idPlante, urlFantome = null }) {
         </div>
       </div>
       <div class="camera__bas">
-        <div class="recadrage__formats" role="group" aria-label="Repère">
+        <div class="recadrage__formats camera__aides" role="group" aria-label="Repère">
           ${AIDES.filter((a) => a.id !== 'fantome' || urlFantome).map((a) => `<button class="recadrage__format" type="button" data-aide="${a.id}" aria-pressed="false">${a.libelle}</button>`).join('')}
           <button class="recadrage__format" type="button" data-ligne aria-pressed="false">Ligne</button>
         </div>

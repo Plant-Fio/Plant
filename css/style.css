@@ -968,6 +968,7 @@ a.btn { text-decoration: none; }
 .camera__formes .recadrage__format { flex: none; }
 .camera .recadrage__format { padding: 0 12px; font-size: 14px; }
 .camera .recadrage__formats { flex-wrap: nowrap; gap: 6px; }
+.camera__aides .recadrage__format { padding: 0 9px; font-size: 13px; white-space: nowrap; }
 .recadrage__format--petit { padding: 0 12px; font-size: 14px; }
 .camera__opacite { display: flex; align-items: center; gap: 12px; width: 100%; max-width: 360px; font-size: 14px; }
 .camera__opacite input { flex: 1; min-height: 44px; accent-color: #fff; }
