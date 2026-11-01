@@ -3,6 +3,13 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [0.5.2] - 2026-11-01
+
+### Corrige
+- Les grandes photos (fiche d'une plante, d'un souhait, apercu du formulaire) sont montrees en entier au lieu
+  d'etre rognees au format 4/3 : plus besoin de recadrer une capture d'ecran avant de l'ajouter.
+  Les vignettes des listes restent carrees (recadrees au centre).
+
 ## [0.5.1] - 2026-11-01
 
 ### Corrige

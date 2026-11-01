@@ -317,6 +317,14 @@ export async function verifierAppli(base, dossier, { version }) {
       return i && i.complete && i.naturalWidth > 0;
     });
     ok('photos : la premiere photo s\'affiche en grand sur la fiche');
+    // La photo n'est pas rognee : le cadre a la forme de l'image (ici un carre)
+    const forme = await page.evaluate(() => {
+      const i = document.querySelector('#hero img');
+      const r = i.getBoundingClientRect();
+      return { cadre: r.width / r.height, image: i.naturalWidth / i.naturalHeight };
+    });
+    verifier(Math.abs(forme.cadre - forme.image) < 0.03, titre, 'photos : la grande photo est affichee en entier (non rognee)',
+      `Le cadre (${forme.cadre.toFixed(2)}) n'a pas la forme de la photo (${forme.image.toFixed(2)}) : elle est rognee.`);
 
     // Une grande photo (3000 x 2000) fabriquee dans la page, comme un vrai cliche d'iPhone
     const grandeBase64 = await page.evaluate(async () => {
