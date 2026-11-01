@@ -464,6 +464,7 @@ a.btn { text-decoration: none; }
 
 /* ---------- Fiche d'une plante ---------- */
 .fiche__photo {
+  position: relative; /* le champ fichier invisible reste dans la zone de la photo */
   display: grid;
   place-items: center;
   aspect-ratio: 4 / 3;
