@@ -319,6 +319,15 @@ export async function verifierAppli(base, dossier, { version }) {
     await page.fill('[name="date_acquisition"]', '2024-03-12');
     verifier(await page.locator('[data-vider="date_acquisition"]').isVisible(), titre,
       'dates : la corbeille reapparait quand une date est choisie', 'La corbeille ne reapparait pas.');
+    // Quarantaine automatique : l'info apparait des que la date d'acquisition est recente
+    verifier(await page.locator('#quarantaine-info').isHidden(), titre,
+      'quarantaine : pas de message pour une plante acquise en 2024', 'Le message de quarantaine apparait a tort.');
+    await page.fill('[name="date_acquisition"]', await jourRelatif(page, 0));
+    verifier(await page.locator('#quarantaine-info').isVisible()
+      && (await page.textContent('#quarantaine-info')).includes('Quarantaine'), titre,
+    'quarantaine : le formulaire annonce la quarantaine pour une plante acquise aujourd\'hui', 'Pas de message de quarantaine.');
+    await capturer(page, dossier, '11-formulaire-quarantaine.png');
+    await page.fill('[name="date_acquisition"]', '2024-03-12');
     await capturer(page, dossier, '11-formulaire.png');
     await verifierDebordement(page, 'Formulaire');
     await verifierZonesTactiles(page, 'Formulaire');
@@ -512,7 +521,17 @@ export async function verifierAppli(base, dossier, { version }) {
     });
     verifier(await nombre('.vignette:has-text("Monstera") .vignette__photo img') === 1, titre,
       'liste : la photo de couverture s\'affiche sur la vignette', 'La vignette de la Monstera n\'affiche pas sa photo.');
+    // Quarantaine : Pothos (acquis hier) et Ficus (il y a 5 jours) sont mis a part, pas la Monstera (2024)
+    verifier(await nombre('[data-liste="quarantaine"] .vignette') === 2
+      && await nombre('[data-liste="quarantaine"] .vignette:has-text("Monstera")') === 0, titre,
+    'quarantaine : 2 plantes recentes mises a part en haut de la liste', 'La section En quarantaine ne contient pas les 2 plantes recentes.');
+    verifier((await page.textContent('[data-liste="quarantaine"] .pastille-quarantaine')).includes('Quarantaine'), titre,
+      'quarantaine : etiquette sur la vignette', "Pas d'etiquette Quarantaine.");
     await capturer(page, dossier, '13-liste.png');
+    await page.click('.puce:has-text("Quarantaine")');
+    verifier(await nombre('.vignette') === 2 && await nombre('.section__titre') === 0, titre,
+      'quarantaine : le filtre ne montre que les 2 plantes en quarantaine', `Vignettes : ${await nombre('.vignette')}.`);
+    await page.click('.puce:has-text("Toutes")');
     await verifierDebordement(page, 'Liste');
     await verifierZonesTactiles(page, 'Liste');
 

@@ -104,3 +104,11 @@ export function dateRelative(iso, aujourdhui = dateIsoLocale()) {
   if (ecart === -1) return 'Hier';
   return formaterDate(iso);
 }
+
+// "2026-01-31" + 1 mois -> "2026-02-28" (si le jour n'existe pas le mois suivant, on prend le dernier jour du mois)
+export function ajouterUnMois(iso) {
+  const [annee, mois, jour] = String(iso).split('-').map(Number);
+  const date = new Date(annee, mois, jour, 12); // "mois" est deja le mois suivant (0-11 en JavaScript)
+  if (date.getMonth() !== mois % 12) date.setDate(0);
+  return dateIsoLocale(date);
+}

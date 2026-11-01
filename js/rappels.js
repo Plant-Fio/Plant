@@ -1,8 +1,20 @@
 // Calcul des rappels d'arrosage. Fonctions simples, sans acces reseau :
 // on leur donne les plantes et les arrosages, elles disent ce qu'il y a a faire.
-import { dateIsoLocale, ajouterJours, joursEntre, formaterDate } from './outils.js';
+import { dateIsoLocale, ajouterJours, ajouterUnMois, joursEntre, formaterDate } from './outils.js';
 
 const plurielJours = (n) => (n > 1 ? 'jours' : 'jour');
+
+// Quarantaine : un mois a partir de la date d'acquisition. Automatique, rien a cocher.
+// Renvoie { fin, restant } tant qu'elle dure (restant = jours avant la fin), sinon null.
+export function quarantaine(dateAcquisition, aujourdhui = dateIsoLocale()) {
+  if (!dateAcquisition || joursEntre(dateAcquisition, aujourdhui) < 0) return null;
+  const fin = ajouterUnMois(dateAcquisition);
+  const restant = joursEntre(aujourdhui, fin);
+  return restant > 0 ? { fin, restant } : null;
+}
+
+// "Quarantaine · 12 j"
+export const libelleQuarantaine = ({ restant }) => `Quarantaine · ${restant} j`;
 
 // Dernier jour d'arrosage d'une plante ("2026-11-01") ou null
 export function dernierArrosage(idPlante, arrosages) {
