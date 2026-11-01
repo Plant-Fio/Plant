@@ -142,7 +142,7 @@ export async function verifierConnexion(base, dossier, { version }) {
     // On tente d'inserer une ligne : si la RLS est active, Postgres refuse (code 42501) AVANT
     // toute verification des champs, donc rien n'est jamais ajoute.
     if (urlSupabase && cle) {
-      for (const table of ['pieces', 'plantes', 'photos', 'arrosages', 'souhaits']) {
+      for (const table of ['pieces', 'plantes', 'photos', 'arrosages', 'souhaits', 'taches']) {
         try {
           const reponse = await fetch(`${urlSupabase}/rest/v1/${table}`, {
             method: 'POST',
@@ -151,7 +151,8 @@ export async function verifierConnexion(base, dossier, { version }) {
               'Content-Type': 'application/json', Prefer: 'return=minimal',
             },
             body: JSON.stringify(table === 'photos' ? { chemin: 'verification-ci' }
-              : table === 'arrosages' ? { jour: '2000-01-01' } : { nom: 'verification-ci' }),
+              : table === 'arrosages' ? { jour: '2000-01-01' }
+                : table === 'taches' ? { texte: 'verification-ci' } : { nom: 'verification-ci' }),
           });
           const corps = await reponse.json().catch(() => ({}));
           if (corps.code === '42501') ok(`table ${table} : presente, RLS active (un visiteur sans compte est refuse)`);
@@ -927,6 +928,27 @@ export async function verifierAppli(base, dossier, { version }) {
       "aujourd'hui : plus rien a arroser, message \"Tout est a jour\", pastille cachee",
       'Apres suppression de la Monstera, l\'ecran Aujourd\'hui devrait afficher "Tout est à jour".');
     await capturer(page, dossier, '19-aujourdhui-a-jour.png');
+
+    // --- Taches libres ---
+    await page.fill('#form-tache [name="texte"]', 'Vaporiser les plantes du salon');
+    await page.click('#form-tache button[type="submit"]');
+    await page.waitForSelector('[data-liste="mes-taches"] .tache');
+    verifier(await nombre('[data-liste="mes-taches"] .tache:has-text("Vaporiser les plantes du salon")') === 1
+      && (await page.textContent('.tabbar__badge')).trim() === '1', titre,
+    'taches : la tache est ajoutee et comptee dans la pastille', 'La tache libre ne s\'affiche pas ou n\'est pas comptee.');
+    await page.fill('#form-tache [name="texte"]', 'Nettoyer les feuilles du Ficus');
+    await capturer(page, dossier, '19-aujourdhui-taches.png');
+    await page.click('[data-tache-fait]');
+    await page.waitForSelector('.tache--faite');
+    verifier(await nombre('.tache--faite') === 1 && await page.inputValue('#form-tache [name="texte"]') === 'Nettoyer les feuilles du Ficus'
+      && await nombre('.tabbar__badge:not([hidden])') === 0, titre,
+    'taches : cocher la tache la barre (sans perdre le texte en cours de saisie)', 'Cocher la tache ne marche pas ou efface le champ.');
+    await page.click('[data-tache-annuler]');
+    await page.waitForSelector('[data-tache-fait]');
+    ok('taches : on peut annuler le « fait »');
+    await page.click('[data-tache-suppr]');
+    await page.waitForFunction(() => !document.querySelector('[data-tache]'));
+    ok('taches : la tache peut etre supprimee');
     await page.click('[data-tab="reglages"]');
     await page.click('#logout');
     await page.waitForSelector('#login-form', { timeout: 10000 });
