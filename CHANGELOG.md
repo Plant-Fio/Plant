@@ -3,6 +3,10 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [1.4.1] - 2026-11-01
+### Modifié
+- « Dernier engrais » devient « Dernière dose d'engrais » (fiche et formulaire), pour aller avec « Prochaine dose d'engrais ».
+
 ## [1.4.0] - 2026-11-01
 ### Ajouté
 - Tâches prévues à l'avance : en ajoutant une tâche, on choisit « Aujourd'hui », « Demain » (présélectionné après 18 h) ou une autre date. Les tâches à venir sont rangées dans une section « À venir » et passent dans « Mes tâches » le jour venu.
