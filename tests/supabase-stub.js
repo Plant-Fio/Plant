@@ -3,7 +3,7 @@
 // Il imite juste ce que l'appli utilise : auth + from(table).select/insert/update/delete/eq/order/single.
 let session = { user: { id: 'demo', email: 'demo@example.com', user_metadata: {} } };
 const ecouteurs = new Set();
-const tables = { pieces: [], plantes: [], photos: [], arrosages: [] };
+const tables = { pieces: [], plantes: [], photos: [], arrosages: [], souhaits: [] };
 const valeursParDefaut = {
   pieces: () => ({ position: 0 }),
   plantes: () => ({
@@ -12,6 +12,7 @@ const valeursParDefaut = {
   }),
   photos: () => ({}),
   arrosages: () => ({}),
+  souhaits: () => ({ espece: null, note: null, photo_chemin: null }),
 };
 const copie = (x) => JSON.parse(JSON.stringify(x));
 

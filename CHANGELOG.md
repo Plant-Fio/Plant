@@ -3,6 +3,18 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [0.5.0] - 2026-11-01
+
+La liste de souhaits.
+
+### Ajoute
+- Nouvel onglet « Souhaits » : les plantes qu'on aimerait avoir (nom, espece, note : ou la trouver, prix, lien)
+- Photo d'inspiration pour chaque souhait (appareil photo ou phototheque, compressee comme les autres photos)
+- Bouton « Je l'ai ! » : le souhait devient une vraie plante (photo comprise) et quitte la liste
+- Modification et suppression d'un souhait (avec confirmation, fichiers photo supprimes aussi)
+- Base de donnees : table `souhaits` avec RLS (script dans `supabase/04-souhaits.sql`)
+- CI : controle de la table `souhaits` sur le vrai projet
+
 ## [0.4.0] - 2026-11-01
 
 Les rappels.

@@ -21,6 +21,7 @@ const SQUELETTE = [
   './js/rappels.js',
   './js/vues-plantes.js',
   './js/vue-aujourdhui.js',
+  './js/vues-souhaits.js',
   './js/vues-reglages.js',
   './js/app.js',
   './vendor/supabase.js',

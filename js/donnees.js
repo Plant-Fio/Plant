@@ -12,6 +12,7 @@ const etat = {
   plantes: [],
   photos: [],
   arrosages: [], // historique des 180 derniers jours
+  souhaits: [], // liste de souhaits
   charge: false,
   horsLigne: false, // true = on affiche la copie locale, la modification est impossible
   userId: null,
@@ -24,6 +25,7 @@ export const photosDe = (idPlante) => etat.photos.filter((p) => p.plante_id === 
 export const photoCouverture = (plante) => (plante
   ? photosDe(plante.id).find((p) => p.id === plante.photo_principale_id) || photosDe(plante.id)[0] || null
   : null);
+export const trouverSouhait = (id) => etat.souhaits.find((s) => s.id === id) || null;
 export const arrosagesDe = (idPlante) => etat.arrosages
   .filter((a) => a.plante_id === idPlante)
   .sort((a, b) => b.jour.localeCompare(a.jour));
@@ -37,7 +39,7 @@ function sauvegarderCache() {
   try {
     localStorage.setItem(CLE_CACHE, JSON.stringify({
       userId: etat.userId, pieces: etat.pieces, plantes: etat.plantes, photos: etat.photos,
-      arrosages: etat.arrosages,
+      arrosages: etat.arrosages, souhaits: etat.souhaits,
     }));
   } catch { /* stockage plein ou bloque : pas grave */ }
   // Previent l'appli (pastille de l'onglet "Aujourd'hui", etc.) que les donnees ont change
@@ -59,6 +61,7 @@ export function viderEtat() {
   etat.plantes = [];
   etat.photos = [];
   etat.arrosages = [];
+  etat.souhaits = [];
   etat.charge = false;
   etat.horsLigne = false;
   etat.userId = null;
@@ -88,20 +91,23 @@ export async function charger(session) {
   try {
     // On ne charge que les 180 derniers jours (et 1000 lignes au maximum, limite de Supabase)
     const depuis = ajouterJours(dateIsoLocale(), -180);
-    const [pieces, plantes, photos, arrosages] = await Promise.all([
+    const [pieces, plantes, photos, arrosages, souhaits] = await Promise.all([
       supabase.from('pieces').select('*').order('position').order('nom'),
       supabase.from('plantes').select('*').order('nom'),
       supabase.from('photos').select('*').order('created_at'),
       supabase.from('arrosages').select('*').gte('jour', depuis).order('jour', { ascending: false }).limit(1000),
+      supabase.from('souhaits').select('*').order('created_at', { ascending: false }),
     ]);
     if (pieces.error) throw pieces.error;
     if (plantes.error) throw plantes.error;
     if (photos.error) throw photos.error;
     if (arrosages.error) throw arrosages.error;
+    if (souhaits.error) throw souhaits.error;
     etat.pieces = pieces.data;
     etat.plantes = plantes.data;
     etat.photos = photos.data;
     etat.arrosages = arrosages.data;
+    etat.souhaits = souhaits.data;
     etat.horsLigne = false;
     if (!etat.pieces.length && !session.user.user_metadata?.pieces_initialisees) {
       await creerPiecesParDefaut();
@@ -116,6 +122,7 @@ export async function charger(session) {
     etat.plantes = cache.plantes;
     etat.photos = cache.photos || [];
     etat.arrosages = cache.arrosages || [];
+    etat.souhaits = cache.souhaits || [];
     etat.horsLigne = true;
   }
   etat.charge = true;
@@ -255,6 +262,91 @@ export async function supprimerPhoto(idPhoto) {
     else etat.plantes = etat.plantes.map((p) => (p.id === plante.id ? { ...p, photo_principale_id: null } : p));
   }
   sauvegarderCache();
+}
+
+// ---------- Liste de souhaits ----------
+// La photo d'inspiration est stockee comme celles des plantes (2 fichiers JPEG), dans <utilisatrice>/souhaits/.
+
+function nettoyerSouhait(champs) {
+  const texte = (v) => (v == null ? null : String(v).trim() || null);
+  return { nom: texte(champs.nom), espece: texte(champs.espece), note: texte(champs.note) };
+}
+
+async function envoyerPhotoSouhait(fichier) {
+  const prepares = await preparerPhoto(fichier);
+  const chemin = `${etat.userId}/souhaits/${crypto.randomUUID()}.jpg`;
+  await envoyerFichiers(chemin, prepares);
+  return chemin;
+}
+
+export async function creerSouhait(champs, fichier = null) {
+  const chemin = fichier ? await envoyerPhotoSouhait(fichier) : null;
+  const { data, error } = await supabase.from('souhaits')
+    .insert({ ...nettoyerSouhait(champs), photo_chemin: chemin }).select().single();
+  if (error) {
+    if (chemin) await supprimerFichiers([chemin]).catch(() => {});
+    throw error;
+  }
+  etat.souhaits.unshift(data);
+  sauvegarderCache();
+  return data;
+}
+
+// photo : { fichier } pour remplacer la photo, { retirer: true } pour l'enlever
+export async function modifierSouhait(id, champs, photo = {}) {
+  const actuel = trouverSouhait(id);
+  let chemin = actuel?.photo_chemin ?? null;
+  let nouveau = null;
+  let aSupprimer = null;
+  if (photo.fichier) {
+    nouveau = await envoyerPhotoSouhait(photo.fichier);
+    aSupprimer = chemin;
+    chemin = nouveau;
+  } else if (photo.retirer && chemin) {
+    aSupprimer = chemin;
+    chemin = null;
+  }
+  const { data, error } = await supabase.from('souhaits')
+    .update({ ...nettoyerSouhait(champs), photo_chemin: chemin }).eq('id', id).select().single();
+  if (error) {
+    if (nouveau) await supprimerFichiers([nouveau]).catch(() => {});
+    throw error;
+  }
+  etat.souhaits = etat.souhaits.map((s) => (s.id === id ? data : s));
+  if (aSupprimer) await supprimerFichiers([aSupprimer]).catch(() => {});
+  sauvegarderCache();
+  return data;
+}
+
+export async function supprimerSouhait(id) {
+  const souhait = trouverSouhait(id);
+  if (souhait?.photo_chemin) await supprimerFichiers([souhait.photo_chemin]);
+  const { error } = await supabase.from('souhaits').delete().eq('id', id);
+  if (error) throw error;
+  etat.souhaits = etat.souhaits.filter((s) => s.id !== id);
+  sauvegarderCache();
+}
+
+// "Je l'ai !" : le souhait devient une vraie plante. La photo d'inspiration devient sa premiere photo
+// (les fichiers ne bougent pas : on les rattache simplement a la plante).
+export async function realiserSouhait(id) {
+  const souhait = trouverSouhait(id);
+  if (!souhait) throw new Error('Souhait introuvable');
+  const plante = await creerPlante({
+    nom: souhait.nom, espece: souhait.espece, notes: souhait.note, date_acquisition: dateIsoLocale(),
+  });
+  if (souhait.photo_chemin) {
+    const { data, error } = await supabase.from('photos')
+      .insert({ id: crypto.randomUUID(), plante_id: plante.id, chemin: souhait.photo_chemin }).select().single();
+    if (error) throw error;
+    etat.photos.push(data);
+    await definirCouverture(plante.id, data.id);
+  }
+  const { error } = await supabase.from('souhaits').delete().eq('id', id);
+  if (error) throw error;
+  etat.souhaits = etat.souhaits.filter((s) => s.id !== id);
+  sauvegarderCache();
+  return plante;
 }
 
 // ---------- Pieces ----------
