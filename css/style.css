@@ -636,3 +636,101 @@ a.btn { text-decoration: none; }
   box-shadow: 0 8px 24px rgba(37, 57, 58, 0.25);
 }
 .message--erreur { background: var(--erreur); }
+
+/* ---------- Rappels (etape 4) ---------- */
+.tabbar__pastille { position: relative; }
+.tabbar__badge {
+  position: absolute;
+  top: -3px;
+  right: 6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--erreur);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+.section__titre {
+  margin: 28px 4px 12px;
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--vert-fonce);
+}
+.taches { display: flex; flex-direction: column; gap: 12px; }
+.tache {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px 10px 10px;
+  border-radius: var(--rayon);
+  background: var(--papier);
+  box-shadow: var(--ombre-carte);
+}
+.tache__lien {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: inherit;
+  text-decoration: none;
+}
+.tache__photo {
+  flex: none;
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--vert-clair);
+  color: var(--vert);
+}
+.tache__photo .icone { width: 28px; height: 28px; opacity: 0.55; }
+.tache__photo img { width: 100%; height: 100%; object-fit: cover; }
+.tache__texte { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.tache__nom { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tache__info { font-size: 14px; font-weight: 600; color: var(--texte-doux); }
+.tache__info--retard { color: var(--erreur); }
+.tache__info--aujourdhui { color: var(--vert); }
+.tache__piece { font-size: 13px; color: var(--texte-doux); }
+.tache__bouton {
+  flex: none;
+  min-height: 48px;
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--vert);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tache__bouton:active { background: var(--vert-fonce); }
+.tache__bouton:disabled { opacity: 0.6; }
+.tache__bouton .icone { width: 18px; height: 18px; }
+.soins__sous-titre {
+  margin: 20px 0 4px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--texte-doux);
+}
+.soins__actions { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 16px; margin-top: 8px; }
+.historique { list-style: none; margin: 0; padding: 0; }
+.historique__ligne {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+}
+.historique__ligne + .historique__ligne { border-top: 1px solid var(--bordure); }

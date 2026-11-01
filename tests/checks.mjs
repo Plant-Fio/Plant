@@ -139,7 +139,7 @@ export async function verifierConnexion(base, dossier, { version }) {
     // On tente d'inserer une ligne : si la RLS est active, Postgres refuse (code 42501) AVANT
     // toute verification des champs, donc rien n'est jamais ajoute.
     if (urlSupabase && cle) {
-      for (const table of ['pieces', 'plantes', 'photos']) {
+      for (const table of ['pieces', 'plantes', 'photos', 'arrosages']) {
         try {
           const reponse = await fetch(`${urlSupabase}/rest/v1/${table}`, {
             method: 'POST',
@@ -147,7 +147,8 @@ export async function verifierConnexion(base, dossier, { version }) {
               apikey: cle, Authorization: `Bearer ${cle}`,
               'Content-Type': 'application/json', Prefer: 'return=minimal',
             },
-            body: JSON.stringify(table === 'photos' ? { chemin: 'verification-ci' } : { nom: 'verification-ci' }),
+            body: JSON.stringify(table === 'photos' ? { chemin: 'verification-ci' }
+              : table === 'arrosages' ? { jour: '2000-01-01' } : { nom: 'verification-ci' }),
           });
           const corps = await reponse.json().catch(() => ({}));
           if (corps.code === '42501') ok(`table ${table} : presente, RLS active (un visiteur sans compte est refuse)`);
@@ -159,6 +160,20 @@ export async function verifierConnexion(base, dossier, { version }) {
         } catch (e) {
           annoter('error', titre, `Table "${table}" injoignable : ${e.message}`);
         }
+      }
+    }
+
+    // Nouvelles colonnes de l'etape 4 : une lecture anonyme est autorisee a repondre (liste vide grace a la RLS),
+    // mais si une colonne manque, PostgREST repond 400.
+    if (urlSupabase && cle) {
+      try {
+        const reponse = await fetch(`${urlSupabase}/rest/v1/plantes?select=arrosage_jours,dernier_engrais,dernier_rempotage&limit=1`, {
+          headers: { apikey: cle, Authorization: `Bearer ${cle}` },
+        });
+        if (reponse.ok) ok('table plantes : colonnes arrosage_jours, dernier_engrais, dernier_rempotage presentes');
+        else annoter('error', titre, `Colonnes de rappel absentes de "plantes" (${reponse.status}) : le script supabase/03-rappels.sql a-t-il ete lance ?`);
+      } catch (e) {
+        annoter('error', titre, `Verification des colonnes impossible : ${e.message}`);
       }
     }
 
@@ -214,11 +229,20 @@ function verifier(condition, titre, succes, echec) {
   else annoter('error', titre, echec);
 }
 
-async function remplirPlante(page, { nom, espece = '', piece = '', date = '', notes = '' }) {
+// Date locale (celle de l'iPhone simule) decalee de n jours, au format AAAA-MM-JJ
+const jourRelatif = (page, n) => page.evaluate((decalage) => {
+  const d = new Date();
+  d.setDate(d.getDate() + decalage);
+  const deux = (x) => String(x).padStart(2, '0');
+  return `${d.getFullYear()}-${deux(d.getMonth() + 1)}-${deux(d.getDate())}`;
+}, n);
+
+async function remplirPlante(page, { nom, espece = '', piece = '', date = '', notes = '', arrosage = '' }) {
   await page.fill('[name="nom"]', nom);
   await page.fill('[name="espece"]', espece);
   if (piece) await page.selectOption('#piece', { label: piece });
   if (date) await page.fill('[name="date_acquisition"]', date);
+  if (arrosage) await page.fill('[name="arrosage_jours"]', String(arrosage));
   await page.fill('[name="notes"]', notes);
 }
 
@@ -265,7 +289,7 @@ export async function verifierAppli(base, dossier, { version }) {
     ok('le nom de la plante est obligatoire');
 
     await remplirPlante(page, {
-      nom: 'Monstera', espece: 'Monstera deliciosa', piece: 'Salon', date: '2024-03-12',
+      nom: 'Monstera', espece: 'Monstera deliciosa', piece: 'Salon', date: '2024-03-12', arrosage: 7,
       notes: 'Aime la lumière douce.\nArrosage : une fois par semaine.',
     });
     await capturer(page, dossier, '11-formulaire.png');
@@ -356,8 +380,12 @@ export async function verifierAppli(base, dossier, { version }) {
       'Les fichiers de la photo supprimee sont restes dans le stockage.');
 
     // --- Liste, recherche, filtre ---
-    await ajouterPlante(page, { nom: 'Pothos', espece: 'Epipremnum aureum', piece: 'Bureau' });
-    await ajouterPlante(page, { nom: 'Ficus lyrata', piece: 'Salon' });
+    // Pothos : arrosage tous les 3 jours, acquis hier -> a arroser dans 2 jours (bientot)
+    // Ficus : tous les 5 jours, acquis il y a 5 jours -> a arroser aujourd'hui
+    await ajouterPlante(page, {
+      nom: 'Pothos', espece: 'Epipremnum aureum', piece: 'Bureau', arrosage: 3, date: await jourRelatif(page, -1),
+    });
+    await ajouterPlante(page, { nom: 'Ficus lyrata', piece: 'Salon', arrosage: 5, date: await jourRelatif(page, -5) });
     await ouvrirListe(page);
     verifier(await nombre('.vignette') === 3, titre, 'liste : 3 plantes en vignettes',
       `La liste affiche ${await nombre('.vignette')} plantes au lieu de 3.`);
@@ -400,6 +428,74 @@ export async function verifierAppli(base, dossier, { version }) {
     await page.waitForSelector('.fiche__nom');
     verifier((await page.textContent('.fiche__nom')).includes('adansonii'), titre,
       'modification enregistree', 'La modification n\'apparait pas sur la fiche.');
+
+    // --- Rappels : fiche (soins), ecran Aujourd'hui, pastille ---
+    const soin = async (nomSoin) => (await page.textContent(`[data-soin="${nomSoin}"]`)).trim();
+    verifier(await soin('frequence') === 'Tous les 7 jours', titre, 'soins : frequence affichee sur la fiche',
+      `Frequence affichee : "${await soin('frequence')}".`);
+    verifier((await soin('prochain')).startsWith('En retard de'), titre,
+      'soins : Monstera (acquise en 2024, tous les 7 jours) est en retard', `Prochain arrosage : "${await soin('prochain')}".`);
+    await capturer(page, dossier, '12-fiche-soins.png');
+    await verifierDebordement(page, 'Fiche avec soins');
+    await verifierZonesTactiles(page, 'Fiche avec soins');
+
+    // Frequence invalide : refusee avec un message
+    await page.click('a:has-text("Modifier")');
+    await page.waitForSelector('#form-plante');
+    await page.fill('[name="arrosage_jours"]', '400');
+    await page.click('#form-ok');
+    await page.waitForSelector('#form-erreur:not([hidden])');
+    ok('formulaire : une frequence de 400 jours est refusee');
+    await page.click('a.retour');
+    await page.waitForSelector('.fiche__nom');
+
+    await page.click('[data-tab="aujourdhui"]');
+    await page.waitForSelector('.tache');
+    verifier(await nombre('[data-liste="afaire"] .tache') === 2, titre,
+      "aujourd'hui : 2 plantes a arroser (Monstera en retard, Ficus du jour)",
+      `${await nombre('[data-liste="afaire"] .tache')} plantes a arroser au lieu de 2.`);
+    verifier((await page.textContent('[data-liste="afaire"] .tache:first-child .tache__nom')).includes('Monstera'), titre,
+      "aujourd'hui : la plus en retard est en premier", 'La Monstera devrait etre la premiere de la liste.');
+    verifier((await page.textContent('[data-liste="bientot"] .tache__info')).trim() === 'Dans 2 jours', titre,
+      "aujourd'hui : le Pothos est annonce \"Dans 2 jours\"", 'Le Pothos devrait etre annonce "Dans 2 jours".');
+    verifier((await page.textContent('.tabbar__badge')).trim() === '2', titre,
+      "pastille de l'onglet : 2 arrosages a faire", `Pastille : "${await page.textContent('.tabbar__badge')}".`);
+    await capturer(page, dossier, '18-aujourdhui.png');
+    await verifierDebordement(page, "Aujourd'hui");
+    await verifierZonesTactiles(page, "Aujourd'hui");
+
+    await page.click('.tache:has-text("Ficus") [data-arroser]');
+    await page.waitForSelector('[data-liste="faites"] .tache:has-text("Ficus")');
+    verifier((await page.textContent('.tabbar__badge')).trim() === '1' && await nombre('[data-liste="afaire"] .tache') === 1, titre,
+      'arrosee : la plante passe dans "Arrosées aujourd\'hui", la pastille tombe a 1', 'Le bouton Arrosée ne met pas a jour la liste ou la pastille.');
+    await capturer(page, dossier, '18-aujourdhui-arrosee.png');
+    await page.click('.tache:has-text("Ficus") [data-annuler]');
+    await page.waitForSelector('[data-liste="afaire"] .tache:has-text("Ficus")');
+    verifier((await page.textContent('.tabbar__badge')).trim() === '2', titre,
+      'annuler : la plante revient a arroser, la pastille remonte a 2', "L'annulation ne remet pas la plante a arroser.");
+    await page.click('.tache:has-text("Ficus") [data-arroser]');
+    await page.waitForSelector('[data-liste="faites"] .tache:has-text("Ficus")');
+
+    // Fiche de la Monstera : arrosage, historique, annulation, engrais, rempotage
+    await page.click('.tache:has-text("Monstera") .tache__lien');
+    await page.waitForSelector('[data-action="arroser"]');
+    await page.click('[data-action="arroser"]');
+    await page.waitForSelector('[data-action="arroser"][disabled]');
+    verifier(await soin('dernier') === "Aujourd'hui" && (await soin('prochain')) === 'Dans 7 jours', titre,
+      'soins : arrosage note, prochain arrosage dans 7 jours', `Dernier : "${await soin('dernier')}", prochain : "${await soin('prochain')}".`);
+    verifier(await nombre('[data-historique] li') === 1, titre, "soins : l'arrosage apparait dans l'historique",
+      "L'historique est vide apres un arrosage.");
+    await page.click('[data-annuler]');
+    await page.waitForSelector('dialog[open]');
+    await page.click('dialog button[value="ok"]');
+    await page.waitForFunction(() => !document.querySelector('[data-historique]'));
+    verifier((await soin('prochain')).startsWith('En retard de'), titre,
+      "soins : supprimer l'arrosage recalcule le prochain arrosage", 'Le prochain arrosage ne revient pas en retard.');
+    await page.click('[data-action="engrais"]');
+    await page.waitForFunction(() => document.querySelector('[data-soin="engrais"]').textContent.trim() === "Aujourd'hui");
+    await page.click('[data-action="rempotage"]');
+    await page.waitForFunction(() => document.querySelector('[data-soin="rempotage"]').textContent.trim() === "Aujourd'hui");
+    ok('soins : engrais et rempotage notes "Aujourd\'hui"');
 
     // --- Suppression (avec confirmation) ---
     await page.click('a:has-text("Modifier")');
@@ -471,7 +567,11 @@ export async function verifierAppli(base, dossier, { version }) {
     // --- Aujourd'hui + deconnexion ---
     await page.click('[data-tab="aujourdhui"]');
     await page.waitForSelector('.vue__titre:has-text("aujourd")');
-    await capturer(page, dossier, '18-aujourdhui.png');
+    await page.waitForSelector('[data-liste="faites"] .tache:has-text("Ficus")');
+    verifier(await nombre('[data-vide]') === 1 && await nombre('.tabbar__badge:not([hidden])') === 0, titre,
+      "aujourd'hui : plus rien a arroser, message \"Tout est a jour\", pastille cachee",
+      'Apres suppression de la Monstera, l\'ecran Aujourd\'hui devrait afficher "Tout est à jour".');
+    await capturer(page, dossier, '19-aujourdhui-a-jour.png');
     await page.click('[data-tab="reglages"]');
     await page.click('#logout');
     await page.waitForSelector('#login-form', { timeout: 10000 });

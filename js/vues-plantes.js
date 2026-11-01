@@ -2,9 +2,11 @@
 import {
   lireEtat, trouverPlante, nomPiece, creerPlante, modifierPlante, supprimerPlante, expliquerErreur,
   photosDe, photoCouverture, ajouterPhoto, supprimerPhoto, definirCouverture,
+  arrosagesDe, arroserPlante, annulerArrosage, marquerFait,
 } from './donnees.js';
+import { etatArrosage, libelleEcheance } from './rappels.js';
 import { chargerUrls, urlEnCache, cheminVignette } from './photos.js';
-import { echapper, icone, formaterDate, normaliser } from './outils.js';
+import { echapper, icone, formaterDate, normaliser, dateRelative, dateIsoLocale } from './outils.js';
 import { confirmer, message } from './dialogues.js';
 
 // Ce que la liste garde en memoire quand on va voir une fiche puis qu'on revient
@@ -33,15 +35,15 @@ const imageHtml = (url, texte = '') => `<img src="${echapper(url)}" alt="${echap
 
 // Vignette de la liste : la photo de couverture si l'adresse est deja connue, sinon une feuille
 // (les adresses arrivent juste apres, voir remplirPhotos).
-function photoVignetteHtml(plante) {
+export function photoVignetteHtml(plante, classe = 'vignette__photo') {
   const couverture = photoCouverture(plante);
-  if (!couverture) return `<span class="vignette__photo">${icone('feuille')}</span>`;
+  if (!couverture) return `<span class="${classe}">${icone('feuille')}</span>`;
   const chemin = cheminVignette(couverture.chemin);
   const url = urlEnCache(chemin);
-  return `<span class="vignette__photo" data-photo="${echapper(chemin)}">${url ? imageHtml(url) : icone('feuille')}</span>`;
+  return `<span class="${classe}" data-photo="${echapper(chemin)}">${url ? imageHtml(url) : icone('feuille')}</span>`;
 }
 
-async function remplirPhotos(zone) {
+export async function remplirPhotos(zone) {
   const vides = [...zone.querySelectorAll('[data-photo]')].filter((s) => !s.querySelector('img'));
   if (!vides.length) return;
   await chargerUrls(vides.map((s) => s.dataset.photo));
@@ -153,6 +155,7 @@ export function vueFiche(conteneur, id) {
         <span class="ligne__valeur" data-date>${date ? echapper(date) : '—'}</span>
       </div>
     </section>
+    <section class="carte" id="soins" aria-label="Soins"></section>
     ${plante.notes ? `
       <section class="carte">
         <h2 class="carte__titre">Notes</h2>
@@ -161,6 +164,80 @@ export function vueFiche(conteneur, id) {
     <a class="btn btn--douce btn--espace" href="#/plantes/${plante.id}/modifier">Modifier</a>`;
 
   initialiserGalerie(conteneur.querySelector('#galerie'), plante.id);
+  initialiserSoins(conteneur.querySelector('#soins'), plante.id);
+}
+
+// Soins de la fiche : arrosage (frequence, prochain, historique), engrais, rempotage.
+function initialiserSoins(zone, idPlante) {
+  function dessiner() {
+    const plante = trouverPlante(idPlante);
+    if (!plante) return;
+    const aujourdhui = dateIsoLocale();
+    const arrosages = arrosagesDe(idPlante);
+    const etat = etatArrosage(plante, arrosages, aujourdhui);
+    const dejaFait = etat.dernier === aujourdhui;
+    const ligne = (label, valeur, attribut = '') =>
+      `<div class="ligne"><span class="ligne__label">${label}</span><span class="ligne__valeur" ${attribut}>${valeur}</span></div>`;
+
+    zone.innerHTML = `
+      <h2 class="carte__titre">Soins</h2>
+      ${ligne('Arrosage', plante.arrosage_jours
+        ? `Tous les ${plante.arrosage_jours} ${plante.arrosage_jours > 1 ? 'jours' : 'jour'}` : '—', 'data-soin="frequence"')}
+      ${plante.arrosage_jours ? ligne('Prochain arrosage', echapper(libelleEcheance(etat) || '—'), 'data-soin="prochain"') : ''}
+      ${ligne('Dernier arrosage', etat.dernier ? echapper(dateRelative(etat.dernier, aujourdhui)) : '—', 'data-soin="dernier"')}
+      <button class="btn ${dejaFait ? 'btn--douce' : 'btn--primaire'}" type="button" data-action="arroser"${dejaFait ? ' disabled' : ''}>
+        ${dejaFait ? "Arrosée aujourd'hui ✓" : "Arrosée aujourd'hui"}</button>
+      ${arrosages.length ? `
+        <h3 class="soins__sous-titre">Derniers arrosages</h3>
+        <ul class="historique" data-historique>
+          ${arrosages.slice(0, 8).map((a) => `
+            <li class="historique__ligne">
+              <span>${echapper(dateRelative(a.jour, aujourdhui))}</span>
+              <button class="btn-icone" type="button" data-annuler="${a.id}" aria-label="Supprimer cet arrosage">${icone('corbeille')}</button>
+            </li>`).join('')}
+        </ul>` : ''}
+      <h3 class="soins__sous-titre">Entretien</h3>
+      ${ligne('Dernier engrais', plante.dernier_engrais ? echapper(dateRelative(plante.dernier_engrais, aujourdhui)) : '—', 'data-soin="engrais"')}
+      ${ligne('Dernier rempotage', plante.dernier_rempotage ? echapper(dateRelative(plante.dernier_rempotage, aujourdhui)) : '—', 'data-soin="rempotage"')}
+      <div class="soins__actions">
+        <button class="btn-texte" type="button" data-action="engrais">Engrais fait aujourd'hui</button>
+        <button class="btn-texte" type="button" data-action="rempotage">Rempotage fait aujourd'hui</button>
+      </div>`;
+  }
+
+  zone.addEventListener('click', async (evenement) => {
+    const bouton = evenement.target.closest('button');
+    if (!bouton || bouton.disabled) return;
+    try {
+      if (bouton.dataset.action === 'arroser') {
+        await arroserPlante(idPlante);
+        message('Arrosage noté');
+      } else if (bouton.dataset.action === 'engrais') {
+        await marquerFait(idPlante, 'dernier_engrais');
+        message('Engrais noté');
+      } else if (bouton.dataset.action === 'rempotage') {
+        await marquerFait(idPlante, 'dernier_rempotage');
+        message('Rempotage noté');
+      } else if (bouton.dataset.annuler) {
+        const accord = await confirmer({
+          titre: 'Supprimer cet arrosage ?',
+          texte: "Il disparaîtra de l'historique et le prochain arrosage sera recalculé.",
+          action: 'Supprimer',
+          danger: true,
+        });
+        if (!accord) return;
+        await annulerArrosage(bouton.dataset.annuler);
+        message('Arrosage supprimé');
+      } else {
+        return;
+      }
+      dessiner();
+    } catch (erreur) {
+      message(expliquerErreur(erreur), 'erreur');
+    }
+  });
+
+  dessiner();
 }
 
 // Galerie de la fiche : grande photo, bande de vignettes, ajout, couverture, suppression.
@@ -311,6 +388,19 @@ export function vueFormulaire(conteneur, id) {
         <input class="champ__input" name="date_acquisition" type="date" value="${echapper(plante?.date_acquisition)}">
       </label>
       <label class="champ">
+        <span class="champ__label">Arroser tous les (jours)</span>
+        <input class="champ__input" name="arrosage_jours" type="number" inputmode="numeric" min="1" max="365"
+               placeholder="Ex. 7 (vide = pas de rappel)" value="${echapper(plante?.arrosage_jours)}">
+      </label>
+      <label class="champ">
+        <span class="champ__label">Dernier engrais</span>
+        <input class="champ__input" name="dernier_engrais" type="date" value="${echapper(plante?.dernier_engrais)}">
+      </label>
+      <label class="champ">
+        <span class="champ__label">Dernier rempotage</span>
+        <input class="champ__input" name="dernier_rempotage" type="date" value="${echapper(plante?.dernier_rempotage)}">
+      </label>
+      <label class="champ">
         <span class="champ__label">Notes</span>
         <textarea class="champ__input champ__zone" name="notes" rows="5" maxlength="5000"
                   placeholder="Lumière, arrosage, astuces…">${echapper(plante?.notes)}</textarea>
@@ -332,6 +422,13 @@ export function vueFormulaire(conteneur, id) {
       zoneErreur.textContent = 'Donne un nom à ta plante.';
       zoneErreur.hidden = false;
       formulaire.elements.nom.focus();
+      return;
+    }
+    const frequence = String(champs.arrosage_jours || '').trim();
+    if (frequence && !(/^\d+$/.test(frequence) && +frequence >= 1 && +frequence <= 365)) {
+      zoneErreur.textContent = "La fréquence d'arrosage doit être un nombre de jours entre 1 et 365.";
+      zoneErreur.hidden = false;
+      formulaire.elements.arrosage_jours.focus();
       return;
     }
     bouton.disabled = true;

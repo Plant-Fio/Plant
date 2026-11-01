@@ -3,11 +3,15 @@
 // Il imite juste ce que l'appli utilise : auth + from(table).select/insert/update/delete/eq/order/single.
 let session = { user: { id: 'demo', email: 'demo@example.com', user_metadata: {} } };
 const ecouteurs = new Set();
-const tables = { pieces: [], plantes: [], photos: [] };
+const tables = { pieces: [], plantes: [], photos: [], arrosages: [] };
 const valeursParDefaut = {
   pieces: () => ({ position: 0 }),
-  plantes: () => ({ espece: null, piece_id: null, date_acquisition: null, notes: null, photo_principale_id: null }),
+  plantes: () => ({
+    espece: null, piece_id: null, date_acquisition: null, notes: null, photo_principale_id: null,
+    arrosage_jours: null, dernier_engrais: null, dernier_rempotage: null,
+  }),
   photos: () => ({}),
+  arrosages: () => ({}),
 };
 const copie = (x) => JSON.parse(JSON.stringify(x));
 
@@ -47,10 +51,12 @@ const stockage = {
 class Requete {
   constructor(table) {
     this.table = table; this.op = 'select'; this.charge = null;
-    this.filtres = []; this.tris = []; this.retourne = false; this.unique = null;
+    this.filtres = []; this.tris = []; this.minimums = []; this.maximum = null; this.retourne = false; this.unique = null;
   }
   select() { this.retourne = true; return this; }
-  order(colonne) { this.tris.push(colonne); return this; }
+  order(colonne, options) { this.tris.push([colonne, options?.ascending === false]); return this; }
+  gte(colonne, valeur) { this.minimums.push([colonne, valeur]); return this; }
+  limit(nombre) { this.maximum = nombre; return this; }
   eq(colonne, valeur) { this.filtres.push([colonne, valeur]); return this; }
   insert(lignes) { this.op = 'insert'; this.charge = lignes; return this; }
   update(modifs) { this.op = 'update'; this.charge = modifs; return this; }
@@ -61,13 +67,18 @@ class Requete {
 
   executer() {
     const lignes = tables[this.table];
-    const correspond = (l) => this.filtres.every(([c, v]) => l[c] === v);
+    const correspond = (l) => this.filtres.every(([c, v]) => l[c] === v)
+      && this.minimums.every(([c, v]) => l[c] >= v);
     let resultat = [];
 
     if (this.op === 'insert') {
       const maintenant = new Date().toISOString();
       for (const ligne of [].concat(this.charge)) {
         if (this.table === 'pieces' && lignes.some((l) => l.nom === ligne.nom)) {
+          return { data: null, error: { code: '23505', message: 'duplicate key value' } };
+        }
+        // Comme la base : une seule ligne d'arrosage par plante et par jour
+        if (this.table === 'arrosages' && lignes.some((l) => l.plante_id === ligne.plante_id && l.jour === ligne.jour)) {
           return { data: null, error: { code: '23505', message: 'duplicate key value' } };
         }
         const nouvelle = {
@@ -84,7 +95,10 @@ class Requete {
       const supprimees = lignes.filter(correspond).map((l) => l.id);
       tables[this.table] = lignes.filter((l) => !correspond(l));
       // Comme la base : supprimer une plante supprime ses photos
-      if (this.table === 'plantes') tables.photos = tables.photos.filter((p) => !supprimees.includes(p.plante_id));
+      if (this.table === 'plantes') {
+        tables.photos = tables.photos.filter((p) => !supprimees.includes(p.plante_id));
+        tables.arrosages = tables.arrosages.filter((a) => !supprimees.includes(a.plante_id));
+      }
       // ... et supprimer la photo de couverture remet la couverture a vide
       if (this.table === 'photos') {
         tables.plantes.forEach((p) => { if (supprimees.includes(p.photo_principale_id)) p.photo_principale_id = null; });
@@ -94,11 +108,12 @@ class Requete {
     }
 
     resultat = copie(resultat);
-    for (const colonne of [...this.tris].reverse()) {
-      resultat.sort((a, b) => (typeof a[colonne] === 'number'
+    for (const [colonne, decroissant] of [...this.tris].reverse()) {
+      resultat.sort((a, b) => (decroissant ? -1 : 1) * (typeof a[colonne] === 'number'
         ? a[colonne] - b[colonne]
         : String(a[colonne]).localeCompare(String(b[colonne]), 'fr')));
     }
+    if (this.maximum != null) resultat = resultat.slice(0, this.maximum);
 
     if (!this.retourne && this.op !== 'select') return { data: null, error: null };
     if (this.unique === 'single') {

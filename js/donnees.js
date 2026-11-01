@@ -2,6 +2,7 @@
 // Les ecrans lisent uniquement cet etat en memoire ; chaque modification passe par ici.
 import { supabase } from './client.js';
 import { preparerPhoto, envoyerFichiers, supprimerFichiers, viderUrls } from './photos.js';
+import { dateIsoLocale, ajouterJours } from './outils.js';
 
 const CLE_CACHE = 'plantes-cache-v1';
 const PIECES_PAR_DEFAUT = ['Salon', 'Chambre', 'Cuisine', 'Salle de bain', 'Bureau', 'Entrée', 'Balcon'];
@@ -10,6 +11,7 @@ const etat = {
   pieces: [],
   plantes: [],
   photos: [],
+  arrosages: [], // historique des 180 derniers jours
   charge: false,
   horsLigne: false, // true = on affiche la copie locale, la modification est impossible
   userId: null,
@@ -22,6 +24,9 @@ export const photosDe = (idPlante) => etat.photos.filter((p) => p.plante_id === 
 export const photoCouverture = (plante) => (plante
   ? photosDe(plante.id).find((p) => p.id === plante.photo_principale_id) || photosDe(plante.id)[0] || null
   : null);
+export const arrosagesDe = (idPlante) => etat.arrosages
+  .filter((a) => a.plante_id === idPlante)
+  .sort((a, b) => b.jour.localeCompare(a.jour));
 export const trouverPiece = (id) => etat.pieces.find((p) => p.id === id) || null;
 export const nomPiece = (id) => trouverPiece(id)?.nom || '';
 export const nombrePlantesDans = (idPiece) => etat.plantes.filter((p) => p.piece_id === idPiece).length;
@@ -32,8 +37,11 @@ function sauvegarderCache() {
   try {
     localStorage.setItem(CLE_CACHE, JSON.stringify({
       userId: etat.userId, pieces: etat.pieces, plantes: etat.plantes, photos: etat.photos,
+      arrosages: etat.arrosages,
     }));
   } catch { /* stockage plein ou bloque : pas grave */ }
+  // Previent l'appli (pastille de l'onglet "Aujourd'hui", etc.) que les donnees ont change
+  window.dispatchEvent(new Event('donnees-modifiees'));
 }
 
 function lireCache(userId) {
@@ -50,6 +58,7 @@ export function viderEtat() {
   etat.pieces = [];
   etat.plantes = [];
   etat.photos = [];
+  etat.arrosages = [];
   etat.charge = false;
   etat.horsLigne = false;
   etat.userId = null;
@@ -77,17 +86,22 @@ async function creerPiecesParDefaut() {
 export async function charger(session) {
   etat.userId = session.user.id;
   try {
-    const [pieces, plantes, photos] = await Promise.all([
+    // On ne charge que les 180 derniers jours (et 1000 lignes au maximum, limite de Supabase)
+    const depuis = ajouterJours(dateIsoLocale(), -180);
+    const [pieces, plantes, photos, arrosages] = await Promise.all([
       supabase.from('pieces').select('*').order('position').order('nom'),
       supabase.from('plantes').select('*').order('nom'),
       supabase.from('photos').select('*').order('created_at'),
+      supabase.from('arrosages').select('*').gte('jour', depuis).order('jour', { ascending: false }).limit(1000),
     ]);
     if (pieces.error) throw pieces.error;
     if (plantes.error) throw plantes.error;
     if (photos.error) throw photos.error;
+    if (arrosages.error) throw arrosages.error;
     etat.pieces = pieces.data;
     etat.plantes = plantes.data;
     etat.photos = photos.data;
+    etat.arrosages = arrosages.data;
     etat.horsLigne = false;
     if (!etat.pieces.length && !session.user.user_metadata?.pieces_initialisees) {
       await creerPiecesParDefaut();
@@ -101,6 +115,7 @@ export async function charger(session) {
     etat.pieces = cache.pieces;
     etat.plantes = cache.plantes;
     etat.photos = cache.photos || [];
+    etat.arrosages = cache.arrosages || [];
     etat.horsLigne = true;
   }
   etat.charge = true;
@@ -110,6 +125,10 @@ export async function charger(session) {
 
 // Nettoie ce qui vient d'un formulaire : espaces retires, champ vide = rien (null).
 function nettoyerPlante(champs) {
+  const entier = (v) => {
+    const n = Number.parseInt(v, 10);
+    return Number.isInteger(n) ? n : null;
+  };
   const texte = (v) => (v == null ? null : String(v).trim() || null);
   return {
     nom: texte(champs.nom),
@@ -117,6 +136,9 @@ function nettoyerPlante(champs) {
     piece_id: champs.piece_id || null,
     date_acquisition: champs.date_acquisition || null,
     notes: texte(champs.notes),
+    arrosage_jours: entier(champs.arrosage_jours),
+    dernier_engrais: champs.dernier_engrais || null,
+    dernier_rempotage: champs.dernier_rempotage || null,
   };
 }
 
@@ -148,6 +170,43 @@ export async function supprimerPlante(id) {
   if (error) throw error;
   etat.plantes = etat.plantes.filter((p) => p.id !== id);
   etat.photos = etat.photos.filter((p) => p.plante_id !== id);
+  etat.arrosages = etat.arrosages.filter((a) => a.plante_id !== id); // supprimes aussi par la base
+  sauvegarderCache();
+}
+
+// ---------- Soins : arrosages, engrais, rempotage ----------
+
+// Note un arrosage (par defaut aujourd'hui). Deja note ce jour-la : on ne fait rien de plus.
+export async function arroserPlante(idPlante, jour = dateIsoLocale()) {
+  const { data, error } = await supabase.from('arrosages')
+    .insert({ plante_id: idPlante, jour }).select().single();
+  if (error && error.code !== '23505') throw error;
+  let ligne = data;
+  if (error) { // deja note (autre appareil, double clic...) : on recupere la ligne existante
+    const existant = await supabase.from('arrosages').select('*')
+      .eq('plante_id', idPlante).eq('jour', jour).maybeSingle();
+    if (existant.error) throw existant.error;
+    ligne = existant.data;
+  }
+  if (ligne && !etat.arrosages.some((a) => a.id === ligne.id)) etat.arrosages.push(ligne);
+  sauvegarderCache();
+  return ligne;
+}
+
+export async function annulerArrosage(idArrosage) {
+  const { error } = await supabase.from('arrosages').delete().eq('id', idArrosage);
+  if (error) throw error;
+  etat.arrosages = etat.arrosages.filter((a) => a.id !== idArrosage);
+  sauvegarderCache();
+}
+
+// champ : 'dernier_engrais' ou 'dernier_rempotage'
+export async function marquerFait(idPlante, champ, jour = dateIsoLocale()) {
+  const { data, error } = await supabase.from('plantes')
+    .update({ [champ]: jour, updated_at: new Date().toISOString() })
+    .eq('id', idPlante).select().single();
+  if (error) throw error;
+  etat.plantes = etat.plantes.map((p) => (p.id === idPlante ? data : p));
   sauvegarderCache();
 }
 

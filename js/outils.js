@@ -56,3 +56,38 @@ export function formaterDate(iso) {
 export function normaliser(texte) {
   return String(texte ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 }
+
+// ---------- Dates "du jour" (heure locale, jamais UTC) ----------
+
+const deuxChiffres = (n) => String(n).padStart(2, '0');
+
+// Date -> "2026-11-01" (jour local de l'iPhone, pas UTC : a 00h30 on est deja le lendemain)
+export function dateIsoLocale(date = new Date()) {
+  return `${date.getFullYear()}-${deuxChiffres(date.getMonth() + 1)}-${deuxChiffres(date.getDate())}`;
+}
+
+// "2026-11-01" -> Date a midi (midi evite tout decalage lors des changements d'heure)
+function versDate(iso) {
+  const [annee, mois, jour] = String(iso).split('-').map(Number);
+  return new Date(annee, mois - 1, jour, 12);
+}
+
+export function ajouterJours(iso, nombre) {
+  const date = versDate(iso);
+  date.setDate(date.getDate() + nombre);
+  return dateIsoLocale(date);
+}
+
+// Nombre de jours entre deux dates (positif si `fin` est apres `debut`)
+export function joursEntre(debut, fin) {
+  return Math.round((versDate(fin) - versDate(debut)) / 86400000);
+}
+
+// "Aujourd'hui", "Hier", sinon "12 mars 2024"
+export function dateRelative(iso, aujourdhui = dateIsoLocale()) {
+  if (!iso) return '';
+  const ecart = joursEntre(aujourdhui, iso);
+  if (ecart === 0) return "Aujourd'hui";
+  if (ecart === -1) return 'Hier';
+  return formaterDate(iso);
+}
