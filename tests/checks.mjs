@@ -139,7 +139,7 @@ export async function verifierConnexion(base, dossier, { version }) {
     // On tente d'inserer une ligne : si la RLS est active, Postgres refuse (code 42501) AVANT
     // toute verification des champs, donc rien n'est jamais ajoute.
     if (urlSupabase && cle) {
-      for (const table of ['pieces', 'plantes']) {
+      for (const table of ['pieces', 'plantes', 'photos']) {
         try {
           const reponse = await fetch(`${urlSupabase}/rest/v1/${table}`, {
             method: 'POST',
@@ -147,7 +147,7 @@ export async function verifierConnexion(base, dossier, { version }) {
               apikey: cle, Authorization: `Bearer ${cle}`,
               'Content-Type': 'application/json', Prefer: 'return=minimal',
             },
-            body: JSON.stringify({ nom: 'verification-ci' }),
+            body: JSON.stringify(table === 'photos' ? { chemin: 'verification-ci' } : { nom: 'verification-ci' }),
           });
           const corps = await reponse.json().catch(() => ({}));
           if (corps.code === '42501') ok(`table ${table} : presente, RLS active (un visiteur sans compte est refuse)`);
@@ -159,6 +159,29 @@ export async function verifierConnexion(base, dossier, { version }) {
         } catch (e) {
           annoter('error', titre, `Table "${table}" injoignable : ${e.message}`);
         }
+      }
+    }
+
+    // Bucket "photos" : il doit exister et refuser un depot venant d'un visiteur sans compte.
+    // (Bucket absent : "Bucket not found". Bucket present avec RLS : refus "row-level security".)
+    if (urlSupabase && cle) {
+      try {
+        const reponse = await fetch(`${urlSupabase}/storage/v1/object/photos/verification-ci.jpg`, {
+          method: 'POST',
+          headers: { apikey: cle, Authorization: `Bearer ${cle}`, 'Content-Type': 'image/jpeg' },
+          body: new Uint8Array([0xff, 0xd8, 0xff, 0xd9]),
+        });
+        const corps = await reponse.json().catch(() => ({}));
+        const texte = `${corps.error || ''} ${corps.message || ''}`;
+        if (/bucket not found/i.test(texte)) {
+          annoter('error', titre, `Le bucket "photos" n'existe pas : le script supabase/02-photos.sql a-t-il ete lance ?`);
+        } else if (/row-level security|unauthorized/i.test(texte)) {
+          ok('bucket photos : present, depot refuse a un visiteur sans compte');
+        } else {
+          annoter('error', titre, `Bucket "photos" : reponse inattendue (${reponse.status} ${texte.trim()}). Les regles d'acces sont-elles en place ?`);
+        }
+      } catch (e) {
+        annoter('error', titre, `Bucket "photos" injoignable : ${e.message}`);
       }
     }
 
@@ -262,12 +285,88 @@ export async function verifierAppli(base, dossier, { version }) {
     await verifierDebordement(page, 'Fiche');
     await verifierZonesTactiles(page, 'Fiche');
 
+    // --- Photos : envoi, compression, couverture, suppression ---
+    const petitePhoto = fs.readFileSync('icons/icon-512.png');
+    await page.setInputFiles('#hero input[type="file"]', { name: 'monstera.png', mimeType: 'image/png', buffer: petitePhoto });
+    await page.waitForFunction(() => {
+      const i = document.querySelector('#hero img');
+      return i && i.complete && i.naturalWidth > 0;
+    });
+    ok('photos : la premiere photo s\'affiche en grand sur la fiche');
+
+    // Une grande photo (3000 x 2000) fabriquee dans la page, comme un vrai cliche d'iPhone
+    const grandeBase64 = await page.evaluate(async () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 3000;
+      canvas.height = 2000;
+      const c = canvas.getContext('2d');
+      const degrade = c.createLinearGradient(0, 0, 3000, 2000);
+      degrade.addColorStop(0, '#3B5655');
+      degrade.addColorStop(1, '#F6F2E9');
+      c.fillStyle = degrade;
+      c.fillRect(0, 0, 3000, 2000);
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.9));
+      const octets = new Uint8Array(await blob.arrayBuffer());
+      let texte = '';
+      for (let i = 0; i < octets.length; i += 8192) texte += String.fromCharCode(...octets.subarray(i, i + 8192));
+      return btoa(texte);
+    });
+    await page.setInputFiles('.bande__ajout input[type="file"]', {
+      name: 'grande-photo.jpg', mimeType: 'image/jpeg', buffer: Buffer.from(grandeBase64, 'base64'),
+    });
+    await page.waitForFunction(() => document.querySelectorAll('.bande__vignette').length === 2);
+
+    const envois = await page.evaluate(() => globalThis.__uploads);
+    const cote = (e) => Math.max(e.largeur, e.hauteur);
+    const [g1, t1, g2, t2] = envois;
+    verifier(envois.length === 4
+      && envois.every((e) => e.type === 'image/jpeg' && e.chemin.startsWith('demo/') && e.chemin.endsWith('.jpg')),
+    titre, "photos : 2 fichiers JPEG par photo (grande + vignette), dans le dossier de l'utilisatrice",
+    `Envois inattendus : ${JSON.stringify(envois)}`);
+    verifier(t1?.chemin.endsWith('_t.jpg') && t2?.chemin.endsWith('_t.jpg'), titre,
+      'photos : les vignettes portent le suffixe _t.jpg', 'Les vignettes ne sont pas nommees avec _t.jpg.');
+    verifier(cote(g1) === 512 && cote(t1) === 400, titre,
+      "compression : une petite photo n'est pas agrandie (512 px), sa vignette fait 400 px",
+      `Dimensions inattendues pour la petite photo : ${cote(g1)} / ${cote(t1)}.`);
+    verifier(cote(g2) === 1600 && cote(t2) === 400, titre,
+      'compression : une photo de 3000 px est reduite a 1600 px, sa vignette a 400 px',
+      `Dimensions inattendues pour la grande photo : ${cote(g2)} / ${cote(t2)}.`);
+    verifier(t2.taille < g2.taille, titre, 'compression : la vignette est plus legere que la grande photo',
+      'La vignette n\'est pas plus legere que la grande photo.');
+
+    // La premiere photo est la couverture ; on affiche la 2e (derniere ajoutee) et on la choisit
+    verifier(await nombre('.couverture') === 0 && await nombre('[data-action="couverture"]') === 1, titre,
+      'photos : la premiere photo ajoutee sert de couverture', 'La couverture ne correspond pas a la premiere photo.');
+    await page.click('[data-action="couverture"]');
+    await page.waitForSelector('.couverture');
+    ok('photos : choix de la photo de couverture');
+    await capturer(page, dossier, '12-fiche-photos.png');
+    await verifierDebordement(page, 'Fiche avec photos');
+    await verifierZonesTactiles(page, 'Fiche avec photos');
+
+    // Suppression de la photo affichee : la couverture passe a la photo restante
+    await page.click('[data-action="supprimer-photo"]');
+    await page.waitForSelector('dialog[open]');
+    await page.click('dialog button[value="ok"]');
+    await page.waitForFunction(() => document.querySelectorAll('.bande__vignette').length === 1);
+    verifier(await nombre('.couverture') === 1 && await nombre('#hero img') === 1, titre,
+      'photos : apres suppression, la photo restante devient la couverture', 'La couverture n\'a pas ete reportee.');
+    verifier(await page.evaluate(() => globalThis.__nombreFichiers()) === 2, titre,
+      'photos : les 2 fichiers de la photo supprimee sont retires du stockage',
+      'Les fichiers de la photo supprimee sont restes dans le stockage.');
+
     // --- Liste, recherche, filtre ---
     await ajouterPlante(page, { nom: 'Pothos', espece: 'Epipremnum aureum', piece: 'Bureau' });
     await ajouterPlante(page, { nom: 'Ficus lyrata', piece: 'Salon' });
     await ouvrirListe(page);
     verifier(await nombre('.vignette') === 3, titre, 'liste : 3 plantes en vignettes',
       `La liste affiche ${await nombre('.vignette')} plantes au lieu de 3.`);
+    await page.waitForFunction(() => {
+      const i = document.querySelector('.vignette__photo img');
+      return i && i.complete && i.naturalWidth > 0;
+    });
+    verifier(await nombre('.vignette:has-text("Monstera") .vignette__photo img') === 1, titre,
+      'liste : la photo de couverture s\'affiche sur la vignette', 'La vignette de la Monstera n\'affiche pas sa photo.');
     await capturer(page, dossier, '13-liste.png');
     await verifierDebordement(page, 'Liste');
     await verifierZonesTactiles(page, 'Liste');
@@ -317,6 +416,9 @@ export async function verifierAppli(base, dossier, { version }) {
     await page.waitForSelector('.fab');
     verifier(await nombre('.vignette') === 2, titre, 'suppression : la plante a disparu de la liste',
       'La plante supprimee est toujours dans la liste.');
+    verifier(await page.evaluate(() => globalThis.__nombreFichiers()) === 0, titre,
+      "suppression d'une plante : ses fichiers photo sont supprimes aussi",
+      'Des fichiers photo sont restes dans le stockage apres la suppression de la plante.');
 
     // --- Pieces ---
     await page.click('[data-tab="reglages"]');

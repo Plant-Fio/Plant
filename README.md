@@ -26,6 +26,9 @@ La CI prend des captures au format iPhone et les publie sur la branche **`captur
 
 - Seule la cle publique **anon** est dans le depot. Elle est faite pour ca : la protection des donnees
   repose sur la **RLS** (regles d'acces) activee sur chaque table et sur le bucket photos.
+- Les photos sont dans un bucket **prive** : chaque fichier est dans un dossier au nom de l'utilisatrice
+  (`<id>/<plante>/<photo>.jpg`) et seules les regles d'acces (RLS) du stockage y donnent acces.
+  L'appli les affiche avec des adresses temporaires (valables une heure).
 - La cle secrete (`service role`) ne doit **jamais** etre dans le depot. La CI echoue si elle en detecte une.
 
 ## Methode de travail

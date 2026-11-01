@@ -3,12 +3,46 @@
 // Il imite juste ce que l'appli utilise : auth + from(table).select/insert/update/delete/eq/order/single.
 let session = { user: { id: 'demo', email: 'demo@example.com', user_metadata: {} } };
 const ecouteurs = new Set();
-const tables = { pieces: [], plantes: [] };
+const tables = { pieces: [], plantes: [], photos: [] };
 const valeursParDefaut = {
   pieces: () => ({ position: 0 }),
-  plantes: () => ({ espece: null, piece_id: null, date_acquisition: null, notes: null }),
+  plantes: () => ({ espece: null, piece_id: null, date_acquisition: null, notes: null, photo_principale_id: null }),
+  photos: () => ({}),
 };
 const copie = (x) => JSON.parse(JSON.stringify(x));
+
+// Faux stockage : garde les fichiers en memoire et note ce qui a ete envoye (pour que les tests
+// puissent verifier la compression : type, taille, dimensions, nom des fichiers).
+const fichiers = new Map(); // chemin -> Blob
+const adressesObjet = new Map(); // chemin -> blob:...
+globalThis.__uploads = [];
+globalThis.__nombreFichiers = () => fichiers.size;
+
+const stockage = {
+  from: () => ({
+    upload: async (chemin, blob, options) => {
+      const image = await createImageBitmap(blob);
+      globalThis.__uploads.push({
+        chemin, type: blob.type || options?.contentType, taille: blob.size,
+        largeur: image.width, hauteur: image.height,
+      });
+      fichiers.set(chemin, blob);
+      return { data: { path: chemin }, error: null };
+    },
+    createSignedUrls: async (chemins) => ({
+      data: chemins.map((chemin) => {
+        if (!fichiers.has(chemin)) return { path: chemin, signedUrl: null, error: 'introuvable' };
+        if (!adressesObjet.has(chemin)) adressesObjet.set(chemin, URL.createObjectURL(fichiers.get(chemin)));
+        return { path: chemin, signedUrl: adressesObjet.get(chemin), error: null };
+      }),
+      error: null,
+    }),
+    remove: async (chemins) => {
+      chemins.forEach((chemin) => { fichiers.delete(chemin); adressesObjet.delete(chemin); });
+      return { data: [], error: null };
+    },
+  }),
+};
 
 class Requete {
   constructor(table) {
@@ -47,7 +81,14 @@ class Requete {
       resultat = lignes.filter(correspond);
       resultat.forEach((l) => Object.assign(l, this.charge));
     } else if (this.op === 'delete') {
+      const supprimees = lignes.filter(correspond).map((l) => l.id);
       tables[this.table] = lignes.filter((l) => !correspond(l));
+      // Comme la base : supprimer une plante supprime ses photos
+      if (this.table === 'plantes') tables.photos = tables.photos.filter((p) => !supprimees.includes(p.plante_id));
+      // ... et supprimer la photo de couverture remet la couverture a vide
+      if (this.table === 'photos') {
+        tables.plantes.forEach((p) => { if (supprimees.includes(p.photo_principale_id)) p.photo_principale_id = null; });
+      }
     } else {
       resultat = lignes.filter(correspond);
     }
@@ -73,6 +114,7 @@ class Requete {
 export function createClient() {
   return {
     from: (table) => new Requete(table),
+    storage: stockage,
     auth: {
       getSession: async () => ({ data: { session }, error: null }),
       onAuthStateChange: (rappel) => {

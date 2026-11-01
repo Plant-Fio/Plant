@@ -475,6 +475,93 @@ a.btn { text-decoration: none; }
 }
 .fiche__photo .icone { width: 56px; height: 56px; opacity: 0.55; }
 .fiche__photo img { width: 100%; height: 100%; object-fit: cover; }
+
+/* Zone "Ajouter une photo" quand la plante n'a pas encore de photo */
+.fiche__photo--vide {
+  position: relative;
+  align-content: center;
+  justify-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  color: var(--vert);
+  font-weight: 600;
+  cursor: pointer;
+}
+.fiche__photo--vide .icone { opacity: 0.55; }
+
+/* Champ de fichier : invisible, mais il recouvre toute la zone tactile (fiable sur iPhone) */
+.fichier {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  font-size: 0;
+  cursor: pointer;
+}
+
+/* Bande de vignettes sous la grande photo */
+.bande {
+  display: flex;
+  gap: 10px;
+  margin: -6px -20px 6px;
+  padding: 6px 20px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.bande::-webkit-scrollbar { display: none; }
+.bande__vignette, .bande__ajout {
+  position: relative;
+  flex: none;
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 16px;
+  background: var(--vert-clair);
+  cursor: pointer;
+}
+.bande__vignette img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.bande__vignette[aria-pressed="true"] { outline: 2.5px solid var(--vert); outline-offset: 2px; }
+.bande__ajout {
+  display: grid;
+  place-items: center;
+  border: 1.5px dashed var(--vert);
+  background: transparent;
+  color: var(--vert);
+}
+.bande__ajout .icone { width: 26px; height: 26px; }
+
+.actions-photo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 16px;
+  margin-bottom: 20px;
+}
+.btn-texte {
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: var(--vert);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-texte--danger { color: var(--erreur); }
+.couverture {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--texte-doux);
+}
+.envoi { margin: -8px 0 12px; font-size: 14px; color: var(--texte-doux); }
 .fiche__nom {
   font-family: var(--serif);
   font-size: 32px;

@@ -3,6 +3,20 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [0.3.0] - 2026-11-01
+
+Les photos.
+
+### Ajoute
+- Plusieurs photos par plante : appareil photo ou phototheque, plusieurs a la fois
+- Compression sur l'iPhone avant l'envoi : une grande (1600 px max) et une vignette (400 px max)
+- Galerie sur la fiche : grande photo, bande de vignettes, choix de la couverture, suppression
+- Photo de couverture en grand sur la liste des plantes (la premiere photo ajoutee par defaut)
+- Stockage prive (bucket Supabase) : chaque fichier est dans le dossier de l'utilisatrice, protege par la RLS
+- Supprimer une plante supprime aussi ses fichiers photo
+- CI : faux stockage pour tester l'envoi et la compression, controle du bucket et de la table `photos`
+  sur le vrai projet (script SQL dans `supabase/02-photos.sql`)
+
 ## [0.2.0] - 2026-11-01
 
 Les plantes et les pieces.
