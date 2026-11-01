@@ -7,6 +7,7 @@ import { vueReglages, vuePieces } from './vues-reglages.js';
 import { vueSouhaits, vueSouhait, vueFormulaireSouhait } from './vues-souhaits.js';
 import { vueAujourdhui } from './vue-aujourdhui.js';
 import { compterAFaire } from './rappels.js';
+import { appliquerTheme, lireTheme } from './themes.js';
 
 const VERSION = globalThis.APP_VERSION || '?';
 
@@ -231,6 +232,7 @@ function enregistrerServiceWorker() {
 // ---------- Demarrage ----------
 
 async function demarrer() {
+  appliquerTheme(lireTheme());
   enregistrerServiceWorker();
   window.addEventListener('hashchange', afficherVue);
   window.addEventListener('donnees-modifiees', majPastille);
