@@ -9,6 +9,7 @@ import { chargerUrls, urlEnCache, cheminVignette } from './photos.js';
 import { echapper, icone, formaterDate, normaliser, dateRelative, dateIsoLocale, joursEntre, libelleEcart } from './outils.js';
 import { confirmer, demanderDate, message } from './dialogues.js';
 import { recadrer } from './recadrage.js';
+import { ouvrirCamera } from './camera.js';
 
 // Ce que la liste garde en memoire quand on va voir une fiche puis qu'on revient
 let recherche = '';
@@ -286,7 +287,8 @@ function initialiserGalerie(galerie, idPlante) {
     galerie.innerHTML = `
       ${actuelle
         ? `<div class="fiche__photo" id="hero">${urlGrande ? imageHtml(urlGrande, `Photo de ${plante.nom}`) : icone('feuille')}</div>`
-        : `<label class="fiche__photo fiche__photo--vide" id="hero">${icone('feuille')}<span>Ajouter une photo</span>${champFichier}</label>`}
+        : `<label class="fiche__photo fiche__photo--vide" id="hero">${icone('feuille')}<span>Ajouter une photo</span>${champFichier}</label>
+           <button class="btn btn--douce" type="button" data-action="camera">${icone('appareil')} Appareil photo avec repères</button>`}
       ${envoi ? `<p class="envoi" role="status">Envoi de la photo ${envoi.courant} sur ${envoi.total}…</p>` : ''}
       ${actuelle ? `
         <div class="bande">
@@ -305,17 +307,19 @@ function initialiserGalerie(galerie, idPlante) {
           <button class="btn-texte" type="button" data-action="date">Modifier la date</button>
           <button class="btn-texte btn-texte--danger" type="button" data-action="supprimer-photo">Supprimer la photo</button>
         </div>
-        ${photos.length > 1 ? `<a class="btn btn--douce" href="#/plantes/${idPlante}/evolution">Voir l'évolution</a>` : ''}` : ''}`;
+        <button class="btn btn--douce btn--espace" type="button" data-action="camera">${icone('appareil')} Appareil photo avec repères</button>
+        ${photos.length > 1 ? `<a class="btn btn--douce btn--espace" href="#/plantes/${idPlante}/evolution">Voir l'évolution</a>` : ''}` : ''}`;
   }
 
-  async function televerser(fichiers) {
+  async function televerser(fichiers, { recadrage = true } = {}) {
     if (!fichiers.length || envoi || recadrageEnCours) return;
     recadrageEnCours = true;
     let reussies = 0;
     let derniereErreur = null;
     for (let i = 0; i < fichiers.length; i++) {
       // Recadrage (ou « Garder entiere ») avant l'envoi ; « Annuler » passe a la photo suivante
-      const pret = await recadrer(fichiers[i], { position: i + 1, total: fichiers.length });
+      // Photo prise avec l'appareil de l'appli : deja au bon format, pas de recadrage supplementaire
+      const pret = recadrage ? await recadrer(fichiers[i], { position: i + 1, total: fichiers.length }) : fichiers[i];
       if (!pret) continue;
       envoi = { courant: i + 1, total: fichiers.length };
       dessiner();
@@ -350,6 +354,19 @@ function initialiserGalerie(galerie, idPlante) {
       return;
     }
     const bouton = evenement.target.closest('[data-action]');
+    if (bouton?.dataset.action === 'camera') {
+      if (envoi || recadrageEnCours) return;
+      // La derniere photo (la plus recente) sert de « fantome » pour aligner la nouvelle
+      const derniere = photosDe(idPlante).at(-1);
+      let urlFantome = null;
+      if (derniere) {
+        await chargerUrls([derniere.chemin]).catch(() => {});
+        urlFantome = urlEnCache(derniere.chemin);
+      }
+      const photo = await ouvrirCamera({ idPlante, urlFantome });
+      if (photo) televerser([photo], { recadrage: false });
+      return;
+    }
     if (!bouton || !selection) return;
     try {
       if (bouton.dataset.action === 'date') {
