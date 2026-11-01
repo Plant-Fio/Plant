@@ -3,6 +3,10 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [1.2.1] - 2026-11-01
+### Modifié
+- Nouveau logo : une feuille d'alocasia sur fond vert pâle (la couleur de ses nervures), pour l'icône de l'appli sur l'écran d'accueil et l'onglet du navigateur.
+
 ## [1.2.0] - 2026-11-01
 ### Ajouté
 - Quarantaine automatique d'un mois à partir de la date d'acquisition : les plantes concernées sont mises à part en haut de la liste (section « En quarantaine », étiquette avec les jours restants, filtre « Quarantaine »), annoncées sur la fiche et dans le formulaire dès que la date est choisie.
