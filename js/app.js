@@ -180,7 +180,7 @@ function afficherVue() {
   } else if (reste[0] === 'pieces') {
     vuePieces(conteneur);
   } else {
-    vueReglages(conteneur, { email: session.user?.email || '', version: VERSION, deconnecter });
+    vueReglages(conteneur, { email: session.user?.email || '', version: VERSION, deconnecter, chercherMiseAJour });
   }
   majPastille();
   jourAffiche = dateIsoLocale();
@@ -194,6 +194,21 @@ function afficherEcran() {
 
 // ---------- Service worker (mode hors ligne de base) ----------
 
+let enregistrementSW = null;
+
+// Cherche une nouvelle version maintenant. Si elle existe, le service worker s'installe et l'appli
+// se recharge toute seule (voir controllerchange plus bas).
+async function chercherMiseAJour() {
+  try {
+    const enregistrement = enregistrementSW || await navigator.serviceWorker?.getRegistration();
+    if (!enregistrement) return 'indisponible';
+    await enregistrement.update();
+    return enregistrement.installing || enregistrement.waiting ? 'nouvelle' : 'a-jour';
+  } catch {
+    return 'erreur';
+  }
+}
+
 function enregistrerServiceWorker() {
   if (!('serviceWorker' in navigator)) return;
   const avaitUnControleur = !!navigator.serviceWorker.controller;
@@ -205,8 +220,10 @@ function enregistrerServiceWorker() {
       location.reload();
     }
   });
-  navigator.serviceWorker.register('sw.js')
-    .then((enregistrement) => enregistrement.update())
+  // updateViaCache: 'none' : le navigateur ne reutilise jamais une ancienne copie de sw.js ni de version.js
+  // (sinon GitHub Pages peut les garder en cache ~10 min et l'appli resterait sur l'ancienne version)
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
+    .then((enregistrement) => { enregistrementSW = enregistrement; return enregistrement.update(); })
     .catch(() => { /* pas bloquant : l'appli marche sans le mode hors ligne */ });
 }
 
@@ -218,7 +235,9 @@ async function demarrer() {
   window.addEventListener('donnees-modifiees', majPastille);
   // Quand on rouvre l'appli le lendemain, les rappels du nouveau jour s'affichent
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && jourAffiche !== dateIsoLocale()) afficherVue();
+    if (document.visibilityState !== 'visible') return;
+    enregistrementSW?.update().catch(() => {}); // appli rouverte : on cherche une nouvelle version
+    if (jourAffiche !== dateIsoLocale()) afficherVue();
   });
 
   try {

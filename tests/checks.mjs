@@ -608,6 +608,10 @@ export async function verifierAppli(base, dossier, { version }) {
     const emailAffiche = (await page.textContent('[data-email]')).trim();
     verifier(emailAffiche === 'demo@example.com', titre, 'reglages : e-mail du compte',
       `E-mail affiche "${emailAffiche}" au lieu de demo@example.com.`);
+    // Bouton « Verifier les mises a jour » : il repond par un message (a jour, ou impossible ici)
+    await page.click('#maj');
+    await page.waitForSelector('.message');
+    ok('reglages : le bouton « Verifier les mises a jour » repond');
     const versionAffichee = (await page.textContent('[data-version]')).trim();
     verifier(versionAffichee.includes(version), titre, `reglages : version ${version}`,
       `Les reglages affichent "${versionAffichee}" au lieu de ${version}.`);

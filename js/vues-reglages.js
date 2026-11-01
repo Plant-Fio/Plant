@@ -5,7 +5,7 @@ import {
 import { echapper, icone } from './outils.js';
 import { confirmer, demanderTexte, message } from './dialogues.js';
 
-export function vueReglages(conteneur, { email, version, deconnecter }) {
+export function vueReglages(conteneur, { email, version, deconnecter, chercherMiseAJour }) {
   const { pieces } = lireEtat();
   conteneur.innerHTML = `
     <p class="vue__legende">Mon compte</p>
@@ -31,10 +31,23 @@ export function vueReglages(conteneur, { email, version, deconnecter }) {
         <span class="ligne__label">Version</span>
         <span class="ligne__valeur" data-version>${echapper(version)}</span>
       </div>
+      <button class="btn btn--douce" id="maj" type="button">Vérifier les mises à jour</button>
     </section>`;
 
   const bouton = conteneur.querySelector('#logout');
   bouton.addEventListener('click', () => { bouton.disabled = true; deconnecter(); });
+
+  const boutonMaj = conteneur.querySelector('#maj');
+  boutonMaj.addEventListener('click', async () => {
+    boutonMaj.disabled = true;
+    boutonMaj.textContent = 'Vérification…';
+    const resultat = await chercherMiseAJour();
+    boutonMaj.disabled = false;
+    boutonMaj.textContent = 'Vérifier les mises à jour';
+    if (resultat === 'nouvelle') message('Nouvelle version trouvée, redémarrage…');
+    else if (resultat === 'a-jour') message(`Tu as la dernière version (${version})`);
+    else message('Vérification impossible pour le moment', 'erreur');
+  });
 }
 
 export function vuePieces(conteneur) {
