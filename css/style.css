@@ -875,3 +875,29 @@ a.btn { text-decoration: none; }
 .evol__photo img { display: block; width: 100%; height: auto; max-height: 75vh; object-fit: contain; }
 .evol__legende { display: flex; flex-direction: column; gap: 2px; padding: 10px 4px 0; }
 .evol__legende span { color: var(--texte-doux); font-size: 14px; }
+
+/* ---------- Champs date : valeur centree dans la cellule (Safari iPhone la collait en haut) ---------- */
+.champ__input[type="date"] {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: left;
+  line-height: 1.2;
+  padding-top: 0;
+  padding-bottom: 0;
+  min-height: 52px;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.champ__input[type="date"]::-webkit-date-and-time-value {
+  min-height: 1.4em;
+  margin: 0;
+  text-align: left;
+}
+.champ__input[type="date"]::-webkit-datetime-edit,
+.champ__input[type="date"]::-webkit-datetime-edit-fields-wrapper {
+  padding: 0;
+}
+/* Date vide : on garde la meme hauteur et un texte discret */
+.champ__input[type="date"]:not(:valid),
+.champ__input[type="date"][value=""] { color: var(--texte-doux); }

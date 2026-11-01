@@ -14,6 +14,9 @@ Le suivi des plantes dans le temps.
 - Page « Évolution » (bouton « Voir l'évolution » des qu'il y a 2 photos) : toutes les photos en grand, avec leur date
   et l'ecart avec la precedente (« 3 semaines plus tard »)
 
+### Corrige
+- Champs date (calendrier de l'iPhone) : la valeur est centree dans la cellule au lieu d'etre collee en haut
+
 ## [0.8.1] - 2026-11-01
 
 ### Corrige
