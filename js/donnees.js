@@ -1,6 +1,7 @@
 // Acces aux donnees (Supabase) + copie gardee sur l'appareil pour consulter hors ligne.
 // Les ecrans lisent uniquement cet etat en memoire ; chaque modification passe par ici.
 import { supabase } from './client.js';
+import { preparerPhoto, envoyerFichiers, supprimerFichiers, viderUrls } from './photos.js';
 
 const CLE_CACHE = 'plantes-cache-v1';
 const PIECES_PAR_DEFAUT = ['Salon', 'Chambre', 'Cuisine', 'Salle de bain', 'Bureau', 'Entrée', 'Balcon'];
@@ -8,6 +9,7 @@ const PIECES_PAR_DEFAUT = ['Salon', 'Chambre', 'Cuisine', 'Salle de bain', 'Bure
 const etat = {
   pieces: [],
   plantes: [],
+  photos: [],
   charge: false,
   horsLigne: false, // true = on affiche la copie locale, la modification est impossible
   userId: null,
@@ -15,6 +17,11 @@ const etat = {
 
 export const lireEtat = () => etat;
 export const trouverPlante = (id) => etat.plantes.find((p) => p.id === id) || null;
+export const photosDe = (idPlante) => etat.photos.filter((p) => p.plante_id === idPlante);
+// Couverture = la photo choisie, sinon la premiere photo de la plante
+export const photoCouverture = (plante) => (plante
+  ? photosDe(plante.id).find((p) => p.id === plante.photo_principale_id) || photosDe(plante.id)[0] || null
+  : null);
 export const trouverPiece = (id) => etat.pieces.find((p) => p.id === id) || null;
 export const nomPiece = (id) => trouverPiece(id)?.nom || '';
 export const nombrePlantesDans = (idPiece) => etat.plantes.filter((p) => p.piece_id === idPiece).length;
@@ -24,7 +31,7 @@ export const nombrePlantesDans = (idPiece) => etat.plantes.filter((p) => p.piece
 function sauvegarderCache() {
   try {
     localStorage.setItem(CLE_CACHE, JSON.stringify({
-      userId: etat.userId, pieces: etat.pieces, plantes: etat.plantes,
+      userId: etat.userId, pieces: etat.pieces, plantes: etat.plantes, photos: etat.photos,
     }));
   } catch { /* stockage plein ou bloque : pas grave */ }
 }
@@ -42,9 +49,11 @@ function lireCache(userId) {
 export function viderEtat() {
   etat.pieces = [];
   etat.plantes = [];
+  etat.photos = [];
   etat.charge = false;
   etat.horsLigne = false;
   etat.userId = null;
+  viderUrls();
   try { localStorage.removeItem(CLE_CACHE); } catch { /* rien a faire */ }
 }
 
@@ -68,14 +77,17 @@ async function creerPiecesParDefaut() {
 export async function charger(session) {
   etat.userId = session.user.id;
   try {
-    const [pieces, plantes] = await Promise.all([
+    const [pieces, plantes, photos] = await Promise.all([
       supabase.from('pieces').select('*').order('position').order('nom'),
       supabase.from('plantes').select('*').order('nom'),
+      supabase.from('photos').select('*').order('created_at'),
     ]);
     if (pieces.error) throw pieces.error;
     if (plantes.error) throw plantes.error;
+    if (photos.error) throw photos.error;
     etat.pieces = pieces.data;
     etat.plantes = plantes.data;
+    etat.photos = photos.data;
     etat.horsLigne = false;
     if (!etat.pieces.length && !session.user.user_metadata?.pieces_initialisees) {
       await creerPiecesParDefaut();
@@ -88,6 +100,7 @@ export async function charger(session) {
     if (!cache) throw erreur;
     etat.pieces = cache.pieces;
     etat.plantes = cache.plantes;
+    etat.photos = cache.photos || [];
     etat.horsLigne = true;
   }
   etat.charge = true;
@@ -128,9 +141,60 @@ export async function modifierPlante(id, champs) {
 }
 
 export async function supprimerPlante(id) {
+  // Les lignes "photos" partent toutes seules avec la plante, mais pas les fichiers du bucket :
+  // on les supprime d'abord, pour ne laisser aucun fichier orphelin.
+  await supprimerFichiers(photosDe(id).map((p) => p.chemin));
   const { error } = await supabase.from('plantes').delete().eq('id', id);
   if (error) throw error;
   etat.plantes = etat.plantes.filter((p) => p.id !== id);
+  etat.photos = etat.photos.filter((p) => p.plante_id !== id);
+  sauvegarderCache();
+}
+
+// ---------- Photos ----------
+
+export async function definirCouverture(idPlante, idPhoto) {
+  const { data, error } = await supabase.from('plantes')
+    .update({ photo_principale_id: idPhoto, updated_at: new Date().toISOString() })
+    .eq('id', idPlante).select().single();
+  if (error) throw error;
+  etat.plantes = etat.plantes.map((p) => (p.id === idPlante ? data : p));
+  sauvegarderCache();
+}
+
+// Compresse, envoie les deux fichiers, enregistre la photo. La premiere devient la couverture.
+export async function ajouterPhoto(idPlante, fichier) {
+  const prepares = await preparerPhoto(fichier);
+  const id = crypto.randomUUID();
+  const chemin = `${etat.userId}/${idPlante}/${id}.jpg`;
+  await envoyerFichiers(chemin, prepares);
+  const { data, error } = await supabase.from('photos')
+    .insert({ id, plante_id: idPlante, chemin }).select().single();
+  if (error) {
+    await supprimerFichiers([chemin]).catch(() => {});
+    throw error;
+  }
+  etat.photos.push(data);
+  const plante = trouverPlante(idPlante);
+  if (plante && !plante.photo_principale_id) await definirCouverture(idPlante, data.id);
+  sauvegarderCache();
+  return data;
+}
+
+export async function supprimerPhoto(idPhoto) {
+  const photo = etat.photos.find((p) => p.id === idPhoto);
+  if (!photo) return;
+  await supprimerFichiers([photo.chemin]);
+  const { error } = await supabase.from('photos').delete().eq('id', idPhoto);
+  if (error) throw error;
+  etat.photos = etat.photos.filter((p) => p.id !== idPhoto);
+  const plante = trouverPlante(photo.plante_id);
+  if (plante?.photo_principale_id === idPhoto) {
+    // La base remet la couverture a vide ; on passe a la photo suivante s'il en reste une
+    const suivante = photosDe(plante.id)[0] || null;
+    if (suivante) await definirCouverture(plante.id, suivante.id);
+    else etat.plantes = etat.plantes.map((p) => (p.id === plante.id ? { ...p, photo_principale_id: null } : p));
+  }
   sauvegarderCache();
 }
 
@@ -166,6 +230,7 @@ export async function supprimerPiece(id) {
 // Transforme une erreur technique en phrase claire pour l'utilisatrice.
 export function expliquerErreur(erreur) {
   if (erreur?.code === '23505') return 'Cette pièce existe déjà.';
+  if (erreur?.code === 'PHOTO_ILLISIBLE') return "Cette photo n'a pas pu être lue. Essaie une autre image.";
   if (!navigator.onLine || erreur?.name === 'AuthRetryableFetchError' || /fetch|network/i.test(String(erreur?.message))) {
     return 'Impossible de joindre le serveur. Vérifie ta connexion internet.';
   }
