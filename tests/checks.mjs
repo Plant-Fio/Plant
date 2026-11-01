@@ -139,7 +139,7 @@ export async function verifierConnexion(base, dossier, { version }) {
     // On tente d'inserer une ligne : si la RLS est active, Postgres refuse (code 42501) AVANT
     // toute verification des champs, donc rien n'est jamais ajoute.
     if (urlSupabase && cle) {
-      for (const table of ['pieces', 'plantes', 'photos', 'arrosages']) {
+      for (const table of ['pieces', 'plantes', 'photos', 'arrosages', 'souhaits']) {
         try {
           const reponse = await fetch(`${urlSupabase}/rest/v1/${table}`, {
             method: 'POST',
@@ -563,6 +563,87 @@ export async function verifierAppli(base, dossier, { version }) {
     verifier(await nombre('.vignette') === 2 && await nombre('.puce:has-text("Sans pièce")') === 1, titre,
       'supprimer une piece garde ses plantes (elles passent "Sans pièce")',
       'Les plantes de la piece supprimee ont disparu ou ne sont pas classees "Sans pièce".');
+
+    // --- Liste de souhaits ---
+    await page.click('[data-tab="souhaits"]');
+    await page.waitForSelector('.vide__titre:has-text("Ta liste est vide")');
+    ok('souhaits : message de liste vide');
+    await capturer(page, dossier, '20-souhaits-vide.png');
+    await page.click('.fab');
+    await page.waitForSelector('#form-souhait');
+    await page.click('#form-ok');
+    await page.waitForSelector('#form-erreur:not([hidden])');
+    ok('souhaits : le nom est obligatoire');
+    await page.fill('[name="nom"]', 'Calathea orbifolia');
+    await page.fill('[name="espece"]', 'Goeppertia orbifolia');
+    await page.fill('[name="note"]', 'Vue chez le fleuriste du marche, environ 25 EUR.');
+    const avantEnvois = (await page.evaluate(() => globalThis.__uploads)).length;
+    await page.setInputFiles('#apercu input[type="file"]', { name: 'calathea.png', mimeType: 'image/png', buffer: fs.readFileSync('icons/icon-512.png') });
+    await page.waitForSelector('#apercu img');
+    await capturer(page, dossier, '20-souhaits-formulaire.png');
+    await verifierDebordement(page, 'Formulaire de souhait');
+    await page.click('#form-ok');
+    await page.waitForSelector('#je-lai');
+    const envoisSouhait = (await page.evaluate(() => globalThis.__uploads)).slice(avantEnvois);
+    verifier(envoisSouhait.length === 2 && envoisSouhait.every((e) => e.chemin.startsWith('demo/souhaits/')), titre,
+      "souhaits : la photo d'inspiration est compressee et rangee dans le dossier souhaits/",
+      `Envois inattendus : ${JSON.stringify(envoisSouhait)}`);
+    verifier((await page.textContent('.fiche__nom')).includes('Calathea') && (await page.textContent('.notes')).includes('25 EUR'), titre,
+      'souhaits : fiche du souhait (nom, note)', 'La fiche du souhait est incomplete.');
+    await page.waitForFunction(() => {
+      const i = document.querySelector('#photo-souhait img');
+      return i && i.complete && i.naturalWidth > 0;
+    });
+    ok("souhaits : la photo d'inspiration s'affiche");
+    await capturer(page, dossier, '20-souhait-fiche.png');
+    await verifierDebordement(page, 'Fiche de souhait');
+    await verifierZonesTactiles(page, 'Fiche de souhait');
+
+    // Un deuxieme souhait, sans photo, puis la liste
+    await page.click('a:has-text("Souhaits")');
+    await page.waitForSelector('.fab');
+    await page.click('.fab');
+    await page.waitForSelector('#form-souhait');
+    await page.fill('[name="nom"]', 'Alocasia');
+    await page.click('#form-ok');
+    await page.waitForSelector('#je-lai');
+    await page.click('a:has-text("Souhaits")');
+    await page.waitForSelector('[data-liste-souhaits]');
+    verifier(await nombre('[data-liste-souhaits] .vignette') === 2, titre, 'souhaits : 2 souhaits dans la liste',
+      `${await nombre('[data-liste-souhaits] .vignette')} souhaits au lieu de 2.`);
+    await page.waitForFunction(() => document.querySelector('[data-liste-souhaits] img')?.naturalWidth > 0);
+    await capturer(page, dossier, '20-souhaits-liste.png');
+    await verifierDebordement(page, 'Liste de souhaits');
+    await verifierZonesTactiles(page, 'Liste de souhaits');
+
+    // Supprimer le souhait sans photo (avec confirmation)
+    await page.click('.vignette:has-text("Alocasia")');
+    await page.click('a:has-text("Modifier")');
+    await page.waitForSelector('#supprimer');
+    await page.click('#supprimer');
+    await page.waitForSelector('dialog[open]');
+    await page.click('dialog button[value="ok"]');
+    await page.waitForSelector('[data-liste-souhaits]');
+    verifier(await nombre('[data-liste-souhaits] .vignette') === 1, titre, 'souhaits : suppression', "Le souhait n'a pas ete supprime.");
+
+    // "Je l'ai !" : devient une plante, avec sa photo, et quitte la liste
+    const plantesAvant = await (async () => { await ouvrirListe(page); return nombre('.vignette'); })();
+    await page.click('[data-tab="souhaits"]');
+    await page.click('.vignette:has-text("Calathea")');
+    await page.click('#je-lai');
+    await page.waitForSelector('dialog[open]');
+    await page.click('dialog button[value="ok"]');
+    await page.waitForSelector('.fiche__nom');
+    verifier((await page.textContent('.fiche__nom')).includes('Calathea') && await nombre('.bande__vignette') === 1, titre,
+      "souhaits : « Je l'ai ! » cree la plante avec la photo d'inspiration", 'La plante creee depuis le souhait est incomplete.');
+    verifier((await page.textContent('.notes')).includes('25 EUR'), titre, 'souhaits : la note devient les notes de la plante',
+      'La note du souhait est perdue.');
+    await page.click('[data-tab="souhaits"]');
+    await page.waitForSelector('.vide__titre:has-text("Ta liste est vide")');
+    ok('souhaits : le souhait realise a quitte la liste');
+    await ouvrirListe(page);
+    verifier(await nombre('.vignette') === plantesAvant + 1, titre, 'souhaits : une plante de plus dans la collection',
+      'Le nombre de plantes ne correspond pas.');
 
     // --- Aujourd'hui + deconnexion ---
     await page.click('[data-tab="aujourdhui"]');

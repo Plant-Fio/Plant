@@ -4,6 +4,7 @@ import { echapper, icone, dateIsoLocale } from './outils.js';
 import { charger, viderEtat, lireEtat } from './donnees.js';
 import { vueListe, vueFiche, vueFormulaire } from './vues-plantes.js';
 import { vueReglages, vuePieces } from './vues-reglages.js';
+import { vueSouhaits, vueSouhait, vueFormulaireSouhait } from './vues-souhaits.js';
 import { vueAujourdhui } from './vue-aujourdhui.js';
 import { compterAFaire } from './rappels.js';
 
@@ -89,6 +90,7 @@ async function deconnecter() {
 const ONGLETS = [
   { id: 'plantes', libelle: 'Plantes', icone: 'feuille' },
   { id: 'aujourdhui', libelle: "Aujourd'hui", icone: 'goutte' },
+  { id: 'souhaits', libelle: 'Souhaits', icone: 'coeur' },
   { id: 'reglages', libelle: 'Réglages', icone: 'reglages' },
 ];
 
@@ -169,6 +171,12 @@ function afficherVue() {
     else vueFiche(conteneur, premier);
   } else if (onglet === 'aujourdhui') {
     vueAujourdhui(conteneur);
+  } else if (onglet === 'souhaits') {
+    const [premier, second] = reste;
+    if (!premier) vueSouhaits(conteneur);
+    else if (premier === 'nouveau') vueFormulaireSouhait(conteneur, null);
+    else if (second === 'modifier') vueFormulaireSouhait(conteneur, premier);
+    else vueSouhait(conteneur, premier);
   } else if (reste[0] === 'pieces') {
     vuePieces(conteneur);
   } else {
