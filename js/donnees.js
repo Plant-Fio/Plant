@@ -13,6 +13,7 @@ const etat = {
   photos: [],
   arrosages: [], // historique des 180 derniers jours
   souhaits: [], // liste de souhaits
+  taches: [], // petites taches libres (ecran Aujourd'hui)
   charge: false,
   horsLigne: false, // true = on affiche la copie locale, la modification est impossible
   userId: null,
@@ -66,7 +67,7 @@ function sauvegarderCache() {
   try {
     localStorage.setItem(CLE_CACHE, JSON.stringify({
       userId: etat.userId, pieces: etat.pieces, plantes: etat.plantes, photos: etat.photos,
-      arrosages: etat.arrosages, souhaits: etat.souhaits,
+      arrosages: etat.arrosages, souhaits: etat.souhaits, taches: etat.taches,
     }));
   } catch { /* stockage plein ou bloque : pas grave */ }
   // Previent l'appli (pastille de l'onglet "Aujourd'hui", etc.) que les donnees ont change
@@ -89,6 +90,7 @@ export function viderEtat() {
   etat.photos = [];
   etat.arrosages = [];
   etat.souhaits = [];
+  etat.taches = [];
   etat.charge = false;
   etat.horsLigne = false;
   etat.userId = null;
@@ -119,23 +121,26 @@ export async function charger(session) {
   try {
     // On ne charge que les 180 derniers jours (et 1000 lignes au maximum, limite de Supabase)
     const depuis = ajouterJours(dateIsoLocale(), -180);
-    const [pieces, plantes, photos, arrosages, souhaits] = await Promise.all([
+    const [pieces, plantes, photos, arrosages, souhaits, taches] = await Promise.all([
       supabase.from('pieces').select('*').order('position').order('nom'),
       supabase.from('plantes').select('*').order('nom'),
       supabase.from('photos').select('*').order('created_at'),
       supabase.from('arrosages').select('*').gte('jour', depuis).order('jour', { ascending: false }).limit(1000),
       supabase.from('souhaits').select('*').order('created_at', { ascending: false }),
+      supabase.from('taches').select('*').order('created_at'),
     ]);
     if (pieces.error) throw pieces.error;
     if (plantes.error) throw plantes.error;
     if (photos.error) throw photos.error;
     if (arrosages.error) throw arrosages.error;
     if (souhaits.error) throw souhaits.error;
+    if (taches.error) throw taches.error;
     etat.pieces = pieces.data;
     etat.plantes = plantes.data;
     etat.photos = photos.data;
     etat.arrosages = arrosages.data;
     etat.souhaits = souhaits.data;
+    etat.taches = taches.data;
     etat.horsLigne = false;
     if (!etat.pieces.length && !session.user.user_metadata?.pieces_initialisees) {
       await creerPiecesParDefaut();
@@ -151,6 +156,7 @@ export async function charger(session) {
     etat.photos = cache.photos || [];
     etat.arrosages = cache.arrosages || [];
     etat.souhaits = cache.souhaits || [];
+    etat.taches = cache.taches || [];
     etat.horsLigne = true;
   }
   etat.charge = true;
@@ -428,4 +434,33 @@ export function expliquerErreur(erreur) {
     return 'Impossible de joindre le serveur. Vérifie ta connexion internet.';
   }
   return "Une erreur est survenue. Réessaie dans un instant.";
+}
+
+// ---------- Taches libres (ecran Aujourd'hui) ----------
+// "Vaporiser les plantes du salon" : une tache reste la tant qu'elle n'est pas cochee ;
+// cochee (fait_le = jour), elle reste visible ce jour-la puis disparait.
+
+export async function creerTache(texte) {
+  const { data, error } = await supabase.from('taches')
+    .insert({ texte: String(texte).trim().slice(0, 120) }).select().single();
+  if (error) throw error;
+  etat.taches.push(data);
+  sauvegarderCache();
+  return data;
+}
+
+// jour = date du jour pour cocher, null pour decocher
+export async function marquerTache(id, jour) {
+  const { data, error } = await supabase.from('taches').update({ fait_le: jour }).eq('id', id).select().single();
+  if (error) throw error;
+  etat.taches = etat.taches.map((t) => (t.id === id ? data : t));
+  sauvegarderCache();
+  return data;
+}
+
+export async function supprimerTache(id) {
+  const { error } = await supabase.from('taches').delete().eq('id', id);
+  if (error) throw error;
+  etat.taches = etat.taches.filter((t) => t.id !== id);
+  sauvegarderCache();
 }

@@ -3,6 +3,11 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [1.3.0] - 2026-11-01
+### Ajouté
+- Tâches libres dans « À faire aujourd'hui » (ex. « Vaporiser les plantes du salon ») : on les ajoute, on les coche (« Fait », avec « Annuler »), on peut les supprimer. Une tâche cochée reste visible ce jour-là puis disparaît. La pastille de l'onglet compte aussi les tâches non faites.
+- Script SQL `supabase/06-taches.sql` (table des tâches, protégée par compte).
+
 ## [1.2.1] - 2026-11-01
 ### Modifié
 - Nouveau logo : une feuille d'alocasia sur fond vert pâle (la couleur de ses nervures), pour l'icône de l'appli sur l'écran d'accueil et l'onglet du navigateur.

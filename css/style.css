@@ -1114,3 +1114,11 @@ a.btn { text-decoration: none; }
   color: var(--vert-fonce);
   font-size: 15px;
 }
+
+/* ---------- Taches libres (Aujourd'hui) ---------- */
+.tache--libre { gap: 10px; padding: 8px 8px 8px 16px; min-height: 60px; }
+.tache__libre-texte { flex: 1; min-width: 0; font-weight: 500; overflow-wrap: anywhere; }
+.tache--faite .tache__libre-texte { color: var(--texte-doux); text-decoration: line-through; }
+.ajout-tache { display: flex; gap: 10px; margin-top: 12px; }
+.ajout-tache .champ__input { flex: 1; min-width: 0; }
+.ajout-tache .btn { width: auto; flex: none; }
