@@ -3,6 +3,21 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [1.0.0] - 2026-11-01
+
+Les photos qui se ressemblent.
+
+### Ajoute
+- Appareil photo dans l'appli (bouton « Appareil photo avec repères » sur la fiche) avec des reperes pour aligner
+  les photos d'une meme plante :
+  - la derniere photo de la plante en transparence (reglable),
+  - ou une silhouette ombree : touffe, monstera, alocasia, anthurium, tombante, haute, rosette,
+  - et une ligne horizontale qu'on deplace au doigt (par exemple sur le haut d'une feuille)
+- Les reperes ne sont jamais sur la photo enregistree ; reglages retenus pour chaque plante
+- Format fixe 3:4 (4:3 a l'horizontale) pour que les vignettes se ressemblent
+- Le flash n'est pas disponible dans l'appareil photo de l'appli (limite d'iOS pour les sites web) :
+  l'ajout de photo habituel avec l'appareil de l'iPhone reste disponible
+
 ## [0.9.0] - 2026-11-01
 
 Le suivi des plantes dans le temps.

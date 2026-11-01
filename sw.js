@@ -23,6 +23,8 @@ const SQUELETTE = [
   './js/vue-aujourdhui.js',
   './js/vues-souhaits.js',
   './js/recadrage.js',
+  './js/camera.js',
+  './js/silhouettes.js',
   './js/vues-reglages.js',
   './js/app.js',
   './vendor/supabase.js',

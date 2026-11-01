@@ -10,8 +10,11 @@ import { annoter, ok, bilan } from './helpers.mjs';
 const { defaultBrowserType, ...iphone } = devices['iPhone 14'];
 
 async function ouvrir() {
-  const navigateur = await chromium.launch();
-  const contexte = await navigateur.newContext({ ...iphone, locale: 'fr-FR', timezoneId: 'Europe/Paris' });
+  // Fausse camera (image de test) pour verifier l'appareil photo de l'appli sans vrai materiel
+  const navigateur = await chromium.launch({
+    args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'],
+  });
+  const contexte = await navigateur.newContext({ ...iphone, locale: 'fr-FR', timezoneId: 'Europe/Paris', permissions: ['camera'] });
   const page = await contexte.newPage();
   const etat = { horsLigne: false, problemes: [] };
 
@@ -444,6 +447,49 @@ export async function verifierAppli(base, dossier, { version }) {
     await verifierDebordement(page, 'Evolution');
     await page.click('a.retour');
     await page.waitForSelector('#galerie .bande__vignette');
+
+    // Appareil photo de l'appli : fantome de la derniere photo, silhouettes, ligne, prise de photo
+    const avantCamera = (await page.evaluate(() => globalThis.__uploads)).length;
+    await page.click('[data-action="camera"]');
+    await page.waitForSelector('#camera video');
+    await page.waitForFunction(() => document.querySelector('#camera video').videoWidth > 0
+      && !document.querySelector('#camera-declencheur').disabled);
+    ok("camera : l'appareil photo de l'appli s'ouvre et affiche l'image");
+    await page.click('[data-aide="fantome"]');
+    await page.waitForFunction(() => {
+      const i = document.querySelector('.camera__fantome');
+      return !i.hidden && i.complete && i.naturalWidth > 0;
+    });
+    ok('camera : la derniere photo apparait en transparence (fantome)');
+    await page.click('[data-aide="silhouette"]');
+    await page.click('[data-forme="monstera"]');
+    verifier(await nombre('.camera__silhouette svg path') > 5 && await nombre('.camera__fantome:not([hidden])') === 0, titre,
+      'camera : la silhouette (monstera) remplace le fantome', 'La silhouette ne s\'affiche pas.');
+    // La ligne horizontale se deplace au doigt (ici a la souris)
+    const avantLigne = await page.evaluate(() => document.querySelector('#camera-ligne').getBoundingClientRect().top);
+    const boite = await page.locator('#camera-ligne').boundingBox();
+    await page.mouse.move(boite.x + boite.width - 22, boite.y + boite.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(boite.x + boite.width - 22, boite.y + boite.height / 2 + 120, { steps: 5 });
+    await page.mouse.up();
+    const apresLigne = await page.evaluate(() => document.querySelector('#camera-ligne').getBoundingClientRect().top);
+    verifier(apresLigne > avantLigne + 80, titre, 'camera : la ligne horizontale se deplace',
+      `La ligne n'a pas bouge (${Math.round(avantLigne)} -> ${Math.round(apresLigne)}).`);
+    await capturer(page, dossier, '12-camera.png');
+    await verifierDebordement(page, 'Appareil photo');
+    await verifierZonesTactiles(page, 'Appareil photo');
+    await page.click('#camera-declencheur');
+    await page.waitForFunction(() => document.querySelectorAll('.bande__vignette').length === 3);
+    const envoisCamera = (await page.evaluate(() => globalThis.__uploads)).slice(avantCamera);
+    const rapport = envoisCamera[0].largeur / envoisCamera[0].hauteur;
+    verifier(envoisCamera.length === 2 && Math.abs(rapport - 4 / 3) < 0.03, titre,
+      'camera : la photo est enregistree (grande + vignette) au format du cadre, sans les reperes',
+      `Envois de la camera : ${JSON.stringify(envoisCamera)}.`);
+    // On remet 2 photos pour la suite du parcours (suppression de la 3e, la plus recente)
+    await page.click('[data-action="supprimer-photo"]');
+    await page.waitForSelector('dialog[open]');
+    await page.click('dialog button[value="ok"]');
+    await page.waitForFunction(() => document.querySelectorAll('.bande__vignette').length === 2);
     await capturer(page, dossier, '12-fiche-photos.png');
     await verifierDebordement(page, 'Fiche avec photos');
     await verifierZonesTactiles(page, 'Fiche avec photos');

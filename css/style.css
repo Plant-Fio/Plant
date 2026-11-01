@@ -898,3 +898,86 @@ a.btn { text-decoration: none; }
 .champ__input[type="date"]::-webkit-datetime-edit-fields-wrapper {
   padding: 0;
 }
+
+/* ---------- Appareil photo avec reperes ---------- */
+.camera {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  background: #121c1c;
+  color: #fff;
+  padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.camera__espace { min-width: 44px; }
+.camera__scene { flex: 1; min-height: 0; display: grid; place-items: center; padding: 4px 12px; container-type: size; }
+/* Le cadre prend la plus grande place possible en gardant la forme de la photo (--ratio = largeur / hauteur) */
+.camera__cadre {
+  --ratio: 0.75;
+  position: relative;
+  overflow: hidden;
+  width: min(100cqw, calc(100cqh * var(--ratio)));
+  aspect-ratio: var(--ratio);
+  border-radius: 10px;
+  background: #000;
+}
+.camera__cadre video, .camera__fantome { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.camera__fantome { pointer-events: none; }
+.camera__silhouette { position: absolute; inset: 0; pointer-events: none; }
+.silhouette { width: 100%; height: 100%; display: block; }
+.silhouette .s { fill: rgba(255, 255, 255, 0.28); stroke: #fff; stroke-width: 2.5; stroke-linejoin: round; }
+.silhouette .tige { fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; }
+.silhouette .fin { stroke-width: 1.6; }
+.camera__ligne {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 44px;
+  margin-top: -22px;
+  touch-action: none;
+  cursor: ns-resize;
+}
+.camera__ligne::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 21px;
+  height: 2px;
+  background: #ffd84d;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.7);
+}
+.camera__poignee {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #ffd84d;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+.camera__etat { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; margin: 0; text-align: center; background: rgba(0, 0, 0, 0.6); }
+.camera__bas { flex: none; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 8px 16px 12px; }
+.camera__formes { display: flex; gap: 6px; overflow-x: auto; max-width: 100%; padding: 2px 0; scrollbar-width: none; }
+.camera__formes::-webkit-scrollbar { display: none; }
+.camera__formes .recadrage__format { flex: none; }
+.recadrage__format--petit { min-height: 36px; padding: 0 12px; font-size: 14px; }
+.camera__opacite { display: flex; align-items: center; gap: 12px; width: 100%; max-width: 360px; font-size: 14px; }
+.camera__opacite input { flex: 1; min-height: 32px; accent-color: #fff; }
+.camera__declencheur {
+  width: 72px;
+  height: 72px;
+  padding: 0;
+  border: 4px solid #fff;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+.camera__declencheur span { display: block; width: 100%; height: 100%; border-radius: 50%; background: #fff; transition: transform 0.1s ease; }
+.camera__declencheur:active span { transform: scale(0.88); }
+.camera__declencheur:disabled { opacity: 0.4; }
