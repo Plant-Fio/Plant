@@ -627,13 +627,15 @@ export async function verifierAppli(base, dossier, { version }) {
     verifier(await nombre('[data-liste-souhaits] .vignette') === 1, titre, 'souhaits : suppression', "Le souhait n'a pas ete supprime.");
 
     // "Je l'ai !" : devient une plante, avec sa photo, et quitte la liste
-    const plantesAvant = await (async () => { await ouvrirListe(page); return nombre('.vignette'); })();
+    await page.click('[data-tab="plantes"]');
+    await page.waitForSelector('#puces');
+    const plantesAvant = await nombre('.vignette');
     await page.click('[data-tab="souhaits"]');
     await page.click('.vignette:has-text("Calathea")');
     await page.click('#je-lai');
     await page.waitForSelector('dialog[open]');
     await page.click('dialog button[value="ok"]');
-    await page.waitForSelector('.fiche__nom');
+    await page.waitForSelector('#galerie .bande__vignette'); // fiche de la plante (et non du souhait)
     verifier((await page.textContent('.fiche__nom')).includes('Calathea') && await nombre('.bande__vignette') === 1, titre,
       "souhaits : « Je l'ai ! » cree la plante avec la photo d'inspiration", 'La plante creee depuis le souhait est incomplete.');
     verifier((await page.textContent('.notes')).includes('25 EUR'), titre, 'souhaits : la note devient les notes de la plante',
@@ -641,7 +643,8 @@ export async function verifierAppli(base, dossier, { version }) {
     await page.click('[data-tab="souhaits"]');
     await page.waitForSelector('.vide__titre:has-text("Ta liste est vide")');
     ok('souhaits : le souhait realise a quitte la liste');
-    await ouvrirListe(page);
+    await page.click('[data-tab="plantes"]');
+    await page.waitForSelector('#puces');
     verifier(await nombre('.vignette') === plantesAvant + 1, titre, 'souhaits : une plante de plus dans la collection',
       'Le nombre de plantes ne correspond pas.');
 
