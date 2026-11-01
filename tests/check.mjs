@@ -90,6 +90,13 @@ for (const [, chemin] of lire('sw.js').matchAll(/'\.\/([^']*)'/g)) {
     erreur('Service worker', `Le squelette met en cache "${chemin}" qui n'existe pas.`, 'sw.js');
   }
 }
+// ... et inversement : chaque fichier de l'appli doit etre dans le squelette, sinon il manquera hors ligne
+const swTexte = lire('sw.js');
+for (const f of [...liste('js', '.js'), ...liste('css', '.css'), 'index.html', 'manifest.webmanifest']) {
+  if (f !== 'index.html' && !swTexte.includes(`'./${f}'`)) {
+    erreur('Service worker', `${f} n'est pas dans le squelette de sw.js : il ne marcherait pas hors ligne.`, 'sw.js');
+  }
+}
 ok('squelette du service worker coherent');
 
 // 7. Version : js/version.js et CHANGELOG.md doivent dire la meme chose

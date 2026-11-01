@@ -222,15 +222,26 @@ h1, h2, p { margin: 0; }
 
 .ligne {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
+  min-height: 44px;
   padding: 12px 0;
-  border-top: 1px solid var(--bordure);
+  color: inherit;
+  text-decoration: none;
 }
-.ligne:first-of-type { border-top: 0; padding-top: 0; }
+.ligne + .ligne { border-top: 1px solid var(--bordure); }
+.carte__titre + .ligne { padding-top: 0; }
 .ligne__label { color: var(--texte-doux); }
-.ligne__valeur { text-align: right; word-break: break-word; font-weight: 500; }
+.ligne__valeur {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  text-align: right;
+  word-break: break-word;
+  font-weight: 500;
+}
+.ligne--lien .icone { width: 20px; height: 20px; color: var(--texte-doux); }
 .carte .btn { margin-top: 16px; }
 
 /* ---------- Barre d'onglets ---------- */
@@ -274,3 +285,267 @@ h1, h2, p { margin: 0; }
 .tabbar__onglet[aria-current="page"] .tabbar__pastille { background: var(--vert-clair); }
 
 .icone { width: 24px; height: 24px; display: block; }
+
+/* ---------- Boutons et champs : complements ---------- */
+a.btn { text-decoration: none; }
+.btn--espace { margin-top: 16px; }
+.btn--danger { background: var(--erreur-fond); color: var(--erreur); }
+.btn--danger:active { background: #F0D5CE; }
+
+.champ__select {
+  padding-right: 44px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%235F7573' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+}
+.champ__zone {
+  min-height: 130px;
+  padding: 14px 16px;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+/* ---------- Navigation secondaire ---------- */
+.retour {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 44px;
+  margin: -8px 0 8px -6px;
+  padding-right: 12px;
+  color: var(--vert);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* ---------- Liste des plantes ---------- */
+.bandeau {
+  margin: -8px 0 16px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--vert-clair);
+  color: var(--vert-fonce);
+  font-size: 14px;
+}
+
+.recherche {
+  position: relative;
+  margin-bottom: 12px;
+}
+.recherche .icone {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  width: 20px;
+  height: 20px;
+  transform: translateY(-50%);
+  color: var(--texte-doux);
+  pointer-events: none;
+}
+.recherche input {
+  display: block;
+  width: 100%;
+  min-height: 52px;
+  padding: 0 16px 0 46px;
+  border: 1px solid var(--bordure);
+  border-radius: 16px;
+  background: var(--papier);
+  color: var(--texte);
+  font: inherit;
+  font-size: 16px;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.recherche input:focus { outline: 2px solid var(--vert); outline-offset: 1px; border-color: transparent; }
+
+.puces {
+  display: flex;
+  gap: 8px;
+  margin: 0 -20px 20px;
+  padding: 2px 20px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.puces::-webkit-scrollbar { display: none; }
+.puce {
+  flex: none;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--bordure);
+  border-radius: 22px;
+  background: var(--papier);
+  color: var(--texte-doux);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.puce[aria-pressed="true"] {
+  border-color: var(--vert);
+  background: var(--vert);
+  color: #fff;
+}
+.puce__nombre { margin-left: 4px; opacity: 0.7; font-weight: 500; }
+
+.grille {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.vignette {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 10px 10px 14px;
+  border: 1px solid rgba(227, 222, 209, 0.7);
+  border-radius: var(--rayon);
+  background: var(--papier);
+  box-shadow: var(--ombre-carte);
+  color: inherit;
+  text-decoration: none;
+}
+.vignette:active { transform: scale(0.985); }
+.vignette__photo {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 4 / 5;
+  margin-bottom: 10px;
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--vert-clair);
+  color: var(--vert);
+}
+.vignette__photo .icone { width: 40px; height: 40px; opacity: 0.55; }
+.vignette__photo img { width: 100%; height: 100%; object-fit: cover; }
+.vignette__nom {
+  padding: 0 4px;
+  font-family: var(--serif);
+  font-size: 18px;
+  line-height: 1.2;
+  color: var(--vert-fonce);
+  overflow-wrap: anywhere;
+}
+.vignette__espece {
+  margin-top: 2px;
+  padding: 0 4px;
+  font-size: 14px;
+  font-style: italic;
+  color: var(--texte-doux);
+  overflow-wrap: anywhere;
+}
+.vignette__piece {
+  align-self: flex-start;
+  margin: 8px 4px 0;
+  padding: 3px 10px;
+  border-radius: 10px;
+  background: var(--vert-clair-2);
+  color: var(--vert);
+  font-size: 13px;
+  font-weight: 600;
+}
+.aucun-resultat { padding: 32px 0; text-align: center; color: var(--texte-doux); }
+
+.fab {
+  position: fixed;
+  right: 20px;
+  bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 16px);
+  z-index: 9;
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: var(--vert);
+  color: #fff;
+  box-shadow: 0 6px 20px rgba(37, 57, 58, 0.28);
+}
+.fab:active { background: var(--vert-fonce); transform: scale(0.96); }
+.fab .icone { width: 26px; height: 26px; }
+
+/* ---------- Fiche d'une plante ---------- */
+.fiche__photo {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 4 / 3;
+  margin-bottom: 20px;
+  overflow: hidden;
+  border-radius: var(--rayon);
+  background: var(--vert-clair);
+  color: var(--vert);
+}
+.fiche__photo .icone { width: 56px; height: 56px; opacity: 0.55; }
+.fiche__photo img { width: 100%; height: 100%; object-fit: cover; }
+.fiche__nom {
+  font-family: var(--serif);
+  font-size: 32px;
+  font-weight: 500;
+  line-height: 1.15;
+  color: var(--vert-fonce);
+  overflow-wrap: anywhere;
+}
+.fiche__espece { margin: 4px 0 20px; font-style: italic; color: var(--texte-doux); }
+.fiche__espace { height: 20px; }
+.notes { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* ---------- Gestion des pieces ---------- */
+.pieces { margin: 0; padding: 0; list-style: none; }
+.piece {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 56px;
+}
+.piece + .piece { border-top: 1px solid var(--bordure); }
+.piece__texte { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.piece__nom { font-weight: 600; overflow-wrap: anywhere; }
+.piece__nombre { font-size: 14px; color: var(--texte-doux); }
+.btn-icone {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--texte-doux);
+  cursor: pointer;
+}
+.btn-icone:active { background: var(--vert-clair); color: var(--vert-fonce); }
+#form-piece .btn { margin-top: 12px; }
+
+/* ---------- Fenetres de dialogue et messages ---------- */
+.dialogue {
+  width: 100%;
+  max-width: 520px;
+  margin: auto auto 0;
+  padding: 24px 20px calc(env(safe-area-inset-bottom) + 20px);
+  border: 0;
+  border-radius: 28px 28px 0 0;
+  background: var(--papier);
+  color: var(--texte);
+}
+.dialogue::backdrop { background: rgba(37, 57, 58, 0.4); }
+.dialogue__titre { font-family: var(--serif); font-size: 22px; font-weight: 500; color: var(--vert-fonce); }
+.dialogue__texte { margin: 8px 0 4px; color: var(--texte-doux); }
+.dialogue__champ { margin-top: 16px; }
+.dialogue .btn { margin-top: 12px; }
+.dialogue .btn:first-of-type { margin-top: 20px; }
+
+.message {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + 12px);
+  left: 16px;
+  right: 16px;
+  z-index: 50;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: var(--vert-fonce);
+  color: #fff;
+  font-size: 15px;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(37, 57, 58, 0.25);
+}
+.message--erreur { background: var(--erreur); }

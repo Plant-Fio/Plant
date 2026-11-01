@@ -57,6 +57,8 @@ jobs:
   verifier-en-ligne:
     name: Verifier en ligne
     needs: publier
+    permissions:
+      contents: write
     uses: ./.github/workflows/verify-online.yml
     with:
       url: ${{ needs.publier.outputs.page_url }}

@@ -16,8 +16,9 @@ on:
         required: false
         default: ''
 
+# "write" uniquement pour publier les captures d'ecran sur la branche "captures"
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   verifier:
@@ -55,6 +56,14 @@ jobs:
         env:
           SITE_URL: ${{ steps.adresse.outputs.url }}
         run: node tests/run-online.mjs "$SITE_URL"
+
+      - name: Publier les captures sur la branche captures
+        if: always()
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          if [ -d captures ]; then bash scripts/publier-captures.sh captures en-ligne; fi
 
       - name: Garder les captures d'ecran
         if: always()
