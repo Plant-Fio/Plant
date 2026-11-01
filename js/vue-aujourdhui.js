@@ -1,6 +1,6 @@
 // Ecran "Aujourd'hui" : les plantes a arroser (les plus en retard d'abord), celles deja arrosees,
 // et un apercu des 3 prochains jours.
-import { lireEtat, arrosagesDe, arroserPlante, annulerArrosage, expliquerErreur } from './donnees.js';
+import { lireEtat, arrosagesDe, arroserPlante, annulerArrosage, marquerFait, expliquerErreur } from './donnees.js';
 import { planifier, libelleEcheance } from './rappels.js';
 import { photoVignetteHtml, remplirPhotos } from './vues-plantes.js';
 import { echapper, icone, dateDuJour, dateIsoLocale } from './outils.js';
@@ -32,7 +32,7 @@ export function vueAujourdhui(page) {
   function dessiner() {
     const { plantes, arrosages, pieces, horsLigne } = lireEtat();
     const nomsPieces = new Map(pieces.map((p) => [p.id, p.nom]));
-    const { aFaire, faites, bientot, avecRappel } = planifier(plantes, arrosages, jour);
+    const { aFaire, faites, bientot, engraisAFaire, engraisBientot, avecRappel } = planifier(plantes, arrosages, jour);
     const enrichir = (liste) => liste.map((e) => ({
       ...e, libelle: libelleEcheance(e), nomPiece: nomsPieces.get(e.plante.piece_id) || '',
     }));
@@ -47,10 +47,10 @@ export function vueAujourdhui(page) {
       vide = `<section class="carte vide"><div class="vide__bulle">${icone('goutte')}</div>
         <h2 class="vide__titre">Pas encore de rappel</h2>
         <p class="vide__texte">Indique tous les combien de jours arroser une plante (fiche, puis Modifier) et elle apparaîtra ici.</p></section>`;
-    } else if (!aFaire.length) {
+    } else if (!aFaire.length && !engraisAFaire.length) {
       vide = `<section class="carte vide" data-vide><div class="vide__bulle">${icone('goutte')}</div>
         <h2 class="vide__titre">Tout est à jour</h2>
-        <p class="vide__texte">Aucun arrosage à faire pour le moment.</p></section>`;
+        <p class="vide__texte">Rien à faire pour le moment.</p></section>`;
     }
 
     const bouton = `<button class="tache__bouton" type="button" data-arroser>${icone('goutte')} Arrosée</button>`;
@@ -62,24 +62,32 @@ export function vueAujourdhui(page) {
       ${aFaire.length ? `
         <h2 class="section__titre">À arroser <span class="puce__nombre">${aFaire.length}</span></h2>
         <div class="taches" data-liste="afaire">${enrichir(aFaire).map((e) => carte(e, bouton)).join('')}</div>` : ''}
+      ${engraisAFaire.length ? `
+        <h2 class="section__titre">Engrais <span class="puce__nombre">${engraisAFaire.length}</span></h2>
+        <div class="taches" data-liste="engrais">${enrichir(engraisAFaire).map((e) => carte(e,
+    `<button class="tache__bouton" type="button" data-engrais>${icone('feuille')} Fait</button>`)).join('')}</div>` : ''}
       ${faites.length ? `
         <h2 class="section__titre">Arrosées aujourd'hui <span class="puce__nombre">${faites.length}</span></h2>
         <div class="taches" data-liste="faites">${enrichir(faites).map((e) => carte(e,
     `<button class="btn-texte" type="button" data-annuler>Annuler</button>`)).join('')}</div>` : ''}
-      ${bientot.length ? `
+      ${bientot.length || engraisBientot.length ? `
         <h2 class="section__titre">Bientôt</h2>
-        <div class="taches" data-liste="bientot">${enrichir(bientot).map((e) => carte(e, '')).join('')}</div>` : ''}`;
+        <div class="taches" data-liste="bientot">${enrichir(bientot).map((e) => carte(e, '')).join('')}${
+  enrichir(engraisBientot).map((e) => carte({ ...e, libelle: `Engrais : ${e.libelle}` }, '')).join('')}</div>` : ''}`;
     remplirPhotos(conteneur);
   }
 
   conteneur.addEventListener('click', async (evenement) => {
-    const bouton = evenement.target.closest('[data-arroser], [data-annuler]');
+    const bouton = evenement.target.closest('[data-arroser], [data-annuler], [data-engrais]');
     if (!bouton || bouton.disabled) return;
     const idPlante = bouton.closest('[data-plante]')?.dataset.plante;
     if (!idPlante) return;
     bouton.disabled = true;
     try {
-      if (bouton.hasAttribute('data-arroser')) {
+      if (bouton.hasAttribute('data-engrais')) {
+        await marquerFait(idPlante, 'dernier_engrais', jour);
+        message('Engrais noté');
+      } else if (bouton.hasAttribute('data-arroser')) {
         await arroserPlante(idPlante, jour);
         message('Arrosage noté');
       } else {

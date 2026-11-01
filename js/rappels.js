@@ -44,13 +44,30 @@ export function libelleEcheance({ statut, ecart, prochain }) {
   return formaterDate(prochain);
 }
 
-// Range les plantes en trois listes pour l'ecran "Aujourd'hui"
+// Prochaine dose d'engrais : une date choisie a la main. Meme vocabulaire que l'arrosage.
+export function etatEngrais(plante, aujourdhui = dateIsoLocale()) {
+  if (!plante.prochain_engrais) return { statut: 'aucun', prochain: null, ecart: null };
+  const ecart = joursEntre(aujourdhui, plante.prochain_engrais);
+  let statut = 'plustard';
+  if (ecart < 0) statut = 'retard';
+  else if (ecart === 0) statut = 'aujourdhui';
+  else if (ecart <= 3) statut = 'bientot';
+  return { statut, prochain: plante.prochain_engrais, ecart };
+}
+
+// Range les plantes en listes pour l'ecran "Aujourd'hui"
 export function planifier(plantes, arrosages, aujourdhui = dateIsoLocale()) {
   const aFaire = [];
   const faites = [];
   const bientot = [];
+  const engraisAFaire = [];
+  const engraisBientot = [];
   let avecRappel = 0;
   for (const plante of plantes) {
+    const engrais = { plante, ...etatEngrais(plante, aujourdhui) };
+    if (engrais.statut !== 'aucun') avecRappel++;
+    if (engrais.statut === 'retard' || engrais.statut === 'aujourdhui') engraisAFaire.push(engrais);
+    else if (engrais.statut === 'bientot') engraisBientot.push(engrais);
     const etat = { plante, ...etatArrosage(plante, arrosages, aujourdhui) };
     if (etat.statut !== 'aucun') avecRappel++;
     if (etat.statut === 'retard' || etat.statut === 'aujourdhui') aFaire.push(etat);
@@ -61,7 +78,13 @@ export function planifier(plantes, arrosages, aujourdhui = dateIsoLocale()) {
   aFaire.sort((a, b) => (a.ecart - b.ecart) || parNom(a, b)); // les plus en retard d'abord
   bientot.sort((a, b) => (a.ecart - b.ecart) || parNom(a, b));
   faites.sort(parNom);
-  return { aFaire, faites, bientot, avecRappel };
+  engraisAFaire.sort((a, b) => (a.ecart - b.ecart) || parNom(a, b));
+  engraisBientot.sort((a, b) => (a.ecart - b.ecart) || parNom(a, b));
+  return { aFaire, faites, bientot, engraisAFaire, engraisBientot, avecRappel };
 }
 
-export const compterAFaire = (plantes, arrosages, aujourdhui) => planifier(plantes, arrosages, aujourdhui).aFaire.length;
+// Nombre de choses a faire aujourd'hui (arrosages + engrais) : c'est le chiffre de la pastille
+export function compterAFaire(plantes, arrosages, aujourdhui) {
+  const { aFaire, engraisAFaire } = planifier(plantes, arrosages, aujourdhui);
+  return aFaire.length + engraisAFaire.length;
+}

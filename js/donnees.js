@@ -161,6 +161,7 @@ function nettoyerPlante(champs) {
     dernier_engrais: champs.dernier_engrais || null,
     dernier_rempotage: champs.dernier_rempotage || null,
     derniere_feuille: champs.derniere_feuille || null,
+    prochain_engrais: champs.prochain_engrais || null,
     en_vente: champs.en_vente === true || champs.en_vente === 'on',
   };
 }
@@ -226,7 +227,8 @@ export async function annulerArrosage(idArrosage) {
 // champ : 'dernier_engrais' ou 'dernier_rempotage'
 export async function marquerFait(idPlante, champ, jour = dateIsoLocale()) {
   const { data, error } = await supabase.from('plantes')
-    .update({ [champ]: jour, updated_at: new Date().toISOString() })
+    // Engrais fait : la prochaine dose est effacee (a elle d'en choisir une nouvelle)
+    .update({ [champ]: jour, ...(champ === 'dernier_engrais' ? { prochain_engrais: null } : {}), updated_at: new Date().toISOString() })
     .eq('id', idPlante).select().single();
   if (error) throw error;
   etat.plantes = etat.plantes.map((p) => (p.id === idPlante ? data : p));

@@ -752,6 +752,34 @@ export async function verifierAppli(base, dossier, { version }) {
     await page.click('[data-tab="aujourdhui"]');
     await page.waitForSelector('.vue__titre:has-text("aujourd")');
     await page.waitForSelector('[data-liste="faites"] .tache:has-text("Ficus")');
+    // Engrais : une « prochaine dose » fixee a aujourd'hui apparait dans Aujourd'hui (et dans la pastille)
+    await page.click('[data-tab="plantes"]');
+    await page.waitForSelector('#puces');
+    await page.click('.vignette:has-text("Pothos")');
+    await page.waitForSelector('#soins');
+    await page.click('a:has-text("Modifier")');
+    await page.waitForSelector('#form-plante');
+    await page.fill('[name="prochain_engrais"]', await jourRelatif(page, 0));
+    await page.click('#form-ok');
+    await page.waitForSelector('#soins');
+    verifier((await soin('prochain-engrais')) === "Aujourd'hui", titre, "engrais : « Prochaine dose » affichee sur la fiche",
+      `Prochaine dose : "${await soin('prochain-engrais')}".`);
+    await page.click('[data-tab="aujourdhui"]');
+    await page.waitForSelector('[data-liste="engrais"] .tache:has-text("Pothos")');
+    verifier((await page.textContent('.tabbar__badge')).trim() === '1', titre,
+      "engrais : la pastille compte aussi l'engrais du jour", `Pastille : "${await page.textContent('.tabbar__badge')}".`);
+    await capturer(page, dossier, '18-aujourdhui-engrais.png');
+    await page.click('[data-liste="engrais"] .tache:has-text("Pothos") [data-engrais]');
+    await page.waitForSelector('[data-liste="engrais"]', { state: 'detached' });
+    ok('engrais : « Fait » retire la plante de la liste');
+    await page.click('[data-tab="plantes"]');
+    await page.waitForSelector('#puces');
+    await page.click('.vignette:has-text("Pothos")');
+    await page.waitForSelector('#soins');
+    verifier((await soin('engrais')) === "Aujourd'hui" && (await soin('prochain-engrais')) === '—', titre,
+      'engrais : dernier engrais = aujourd\'hui, prochaine dose effacee', `Dernier : "${await soin('engrais')}", prochaine : "${await soin('prochain-engrais')}".`);
+    await page.click('[data-tab="aujourdhui"]');
+    await page.waitForSelector('[data-vide]');
     verifier(await nombre('[data-vide]') === 1 && await nombre('.tabbar__badge:not([hidden])') === 0, titre,
       "aujourd'hui : plus rien a arroser, message \"Tout est a jour\", pastille cachee",
       'Apres suppression de la Monstera, l\'ecran Aujourd\'hui devrait afficher "Tout est à jour".');
