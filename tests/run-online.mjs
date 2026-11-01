@@ -31,4 +31,4 @@ if (!enLigne) {
   process.exit(1);
 }
 
-await verifierConnexion(base, 'captures/en-ligne', { version });
+await verifierConnexion(base, 'captures', { version });

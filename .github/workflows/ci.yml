@@ -6,8 +6,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# "write" uniquement pour publier les captures d'ecran sur la branche "captures"
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -36,6 +37,14 @@ jobs:
 
       - name: Tester dans Chromium (format iPhone)
         run: node tests/run-local.mjs
+
+      - name: Publier les captures sur la branche captures
+        if: always()
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          if [ -d captures ]; then bash scripts/publier-captures.sh captures ci; fi
 
       - name: Garder les captures d'ecran
         if: always()

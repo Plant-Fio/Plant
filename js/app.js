@@ -1,60 +1,18 @@
-// Mes plantes - socle (etape 1) : connexion + navigation par onglets.
-// Les ecrans "Plantes" et "Aujourd'hui" sont des emplacements : ils se remplissent aux etapes suivantes.
-
-// vendor/supabase.js est fabrique par la CI (voir scripts/build.sh) : la bibliotheque Supabase
-// est embarquee dans le site, ce qui permet de la mettre en cache pour le mode hors ligne.
-import { createClient } from '../vendor/supabase.js';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
+// Mes plantes - chef d'orchestre : connexion, navigation par onglets, choix de l'ecran a afficher.
+import { supabase } from './client.js';
+import { echapper, icone, dateDuJour } from './outils.js';
+import { charger, viderEtat, lireEtat } from './donnees.js';
+import { vueListe, vueFiche, vueFormulaire } from './vues-plantes.js';
+import { vueReglages, vuePieces } from './vues-reglages.js';
 
 const VERSION = globalThis.APP_VERSION || '?';
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
-});
 
 const racine = document.getElementById('app');
 let session = null;
 
-// ---------- Petits outils ----------
-
-// Protege l'affichage de texte venant de l'exterieur (ex. l'e-mail) dans du HTML.
-function echapper(texte) {
-  return String(texte).replace(/[&<>"']/g, (c) => (
-    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
-  ));
-}
-
-const CHEMINS_ICONES = {
-  feuille:
-    '<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/>' +
-    '<path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>',
-  goutte:
-    '<path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/>',
-  reglages:
-    '<line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/>' +
-    '<line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/>' +
-    '<line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/>' +
-    '<line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/>' +
-    '<line x1="17" y1="16" x2="23" y2="16"/>',
-};
-
-function icone(nom) {
-  return `<svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" ` +
-    `stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">` +
-    `${CHEMINS_ICONES[nom]}</svg>`;
-}
-
-// "dimanche 1 novembre" -> "Dimanche 1 novembre"
-function dateDuJour() {
-  const texte = new Intl.DateTimeFormat('fr-FR', {
-    weekday: 'long', day: 'numeric', month: 'long',
-  }).format(new Date());
-  return texte.charAt(0).toUpperCase() + texte.slice(1);
-}
-
 // ---------- Connexion ----------
 
-function traduireErreur(erreur) {
+function traduireErreurConnexion(erreur) {
   const message = String(erreur?.message || '');
   if (!navigator.onLine || erreur?.name === 'AuthRetryableFetchError' || /fetch|network/i.test(message)) {
     return 'Impossible de joindre le serveur. Vérifie ta connexion internet.';
@@ -110,14 +68,21 @@ function afficherConnexion() {
       if (error) throw error;
       // Succes : onAuthStateChange (plus bas) affiche l'appli.
     } catch (erreur) {
-      montrerErreur(traduireErreur(erreur));
+      montrerErreur(traduireErreurConnexion(erreur));
       bouton.disabled = false;
       bouton.textContent = 'Se connecter';
     }
   });
 }
 
-// ---------- Appli (apres connexion) ----------
+async function deconnecter() {
+  try { await supabase.auth.signOut(); } catch { /* on deconnecte quand meme l'ecran */ }
+  viderEtat();
+  session = null;
+  afficherEcran();
+}
+
+// ---------- Navigation ----------
 
 const ONGLETS = [
   { id: 'plantes', libelle: 'Plantes', icone: 'feuille' },
@@ -125,52 +90,29 @@ const ONGLETS = [
   { id: 'reglages', libelle: 'Réglages', icone: 'reglages' },
 ];
 
-function ongletCourant() {
-  const id = location.hash.replace(/^#\//, '');
-  return ONGLETS.some((o) => o.id === id) ? id : 'plantes';
+// "#/plantes/abc/modifier" -> { onglet: 'plantes', reste: ['abc', 'modifier'] }
+function lireAdresse() {
+  const morceaux = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
+  const onglet = ONGLETS.some((o) => o.id === morceaux[0]) ? morceaux[0] : 'plantes';
+  return { onglet, reste: morceaux[0] === onglet ? morceaux.slice(1) : [] };
 }
 
-function carteVide(nomIcone, titre, texte) {
-  return `
+function vueAujourdhui(conteneur) {
+  conteneur.innerHTML = `
+    <p class="vue__legende">${echapper(dateDuJour())}</p>
+    <h1 class="vue__titre">À faire aujourd'hui</h1>
     <section class="carte vide">
-      <div class="vide__bulle">${icone(nomIcone)}</div>
-      <h2 class="vide__titre">${titre}</h2>
-      <p class="vide__texte">${texte}</p>
+      <div class="vide__bulle">${icone('goutte')}</div>
+      <h2 class="vide__titre">Rien à signaler</h2>
+      <p class="vide__texte">Les arrosages du jour s'afficheront ici.</p>
     </section>`;
 }
 
-const VUES = {
-  plantes: () => `
-    <p class="vue__legende">Ma collection</p>
-    <h1 class="vue__titre">Mes plantes</h1>
-    ${carteVide('feuille', 'Bientôt ici', 'Toutes tes plantes, en grandes photos.')}`,
+// Un numero par affichage : si l'utilisatrice change d'ecran pendant un chargement, l'ancien est ignore.
+let numeroAffichage = 0;
 
-  aujourdhui: () => `
-    <p class="vue__legende">${echapper(dateDuJour())}</p>
-    <h1 class="vue__titre">À faire aujourd'hui</h1>
-    ${carteVide('goutte', 'Rien à signaler', "Les arrosages du jour s'afficheront ici.")}`,
-
-  reglages: () => `
-    <p class="vue__legende">Mon compte</p>
-    <h1 class="vue__titre">Réglages</h1>
-    <section class="carte">
-      <h2 class="carte__titre">Compte</h2>
-      <div class="ligne">
-        <span class="ligne__label">E-mail</span>
-        <span class="ligne__valeur" data-email>${echapper(session?.user?.email || '')}</span>
-      </div>
-      <button class="btn btn--douce" id="logout" type="button">Se déconnecter</button>
-    </section>
-    <section class="carte">
-      <h2 class="carte__titre">À propos</h2>
-      <div class="ligne">
-        <span class="ligne__label">Version</span>
-        <span class="ligne__valeur" data-version>${echapper(VERSION)}</span>
-      </div>
-    </section>`,
-};
-
-function afficherAppli() {
+async function afficherAppli() {
+  const numero = ++numeroAffichage;
   if (!document.getElementById('tabbar')) {
     racine.innerHTML = `
       <main class="vue" id="vue"></main>
@@ -182,27 +124,52 @@ function afficherAppli() {
           </a>`).join('')}
       </nav>`;
   }
+  const conteneur = document.getElementById('vue');
+
+  if (!lireEtat().charge) {
+    conteneur.innerHTML = '<div class="chargement" role="status" aria-label="Chargement"></div>';
+    try {
+      await charger(session);
+    } catch {
+      if (numero !== numeroAffichage) return;
+      conteneur.innerHTML = `
+        <section class="carte vide">
+          <h2 class="vide__titre">Chargement impossible</h2>
+          <p class="vide__texte">Vérifie ta connexion internet puis réessaie.</p>
+          <button class="btn btn--primaire" id="reessayer" type="button">Réessayer</button>
+        </section>`;
+      document.getElementById('reessayer').addEventListener('click', afficherAppli);
+      return;
+    }
+    if (numero !== numeroAffichage) return;
+  }
   afficherVue();
 }
 
 function afficherVue() {
-  const id = ongletCourant();
-  document.getElementById('vue').innerHTML = VUES[id]();
+  if (!session || !lireEtat().charge) return;
+  const { onglet, reste } = lireAdresse();
+  const conteneur = document.getElementById('vue');
+
   document.querySelectorAll('.tabbar__onglet').forEach((lien) => {
-    if (lien.dataset.tab === id) lien.setAttribute('aria-current', 'page');
+    if (lien.dataset.tab === onglet) lien.setAttribute('aria-current', 'page');
     else lien.removeAttribute('aria-current');
   });
-  window.scrollTo(0, 0);
 
-  const deconnexion = document.getElementById('logout');
-  if (deconnexion) {
-    deconnexion.addEventListener('click', async () => {
-      deconnexion.disabled = true;
-      await supabase.auth.signOut();
-      session = null;
-      afficherEcran();
-    });
+  if (onglet === 'plantes') {
+    const [premier, second] = reste;
+    if (!premier) vueListe(conteneur);
+    else if (premier === 'nouvelle') vueFormulaire(conteneur, null);
+    else if (second === 'modifier') vueFormulaire(conteneur, premier);
+    else vueFiche(conteneur, premier);
+  } else if (onglet === 'aujourdhui') {
+    vueAujourdhui(conteneur);
+  } else if (reste[0] === 'pieces') {
+    vuePieces(conteneur);
+  } else {
+    vueReglages(conteneur, { email: session.user?.email || '', version: VERSION, deconnecter });
   }
+  window.scrollTo(0, 0);
 }
 
 function afficherEcran() {
@@ -232,7 +199,7 @@ function enregistrerServiceWorker() {
 
 async function demarrer() {
   enregistrerServiceWorker();
-  window.addEventListener('hashchange', () => { if (session) afficherVue(); });
+  window.addEventListener('hashchange', afficherVue);
 
   try {
     const { data } = await supabase.auth.getSession();
@@ -243,10 +210,12 @@ async function demarrer() {
 
   // Ne fait rien d'asynchrone ici : on met juste a jour l'etat et l'affichage.
   supabase.auth.onAuthStateChange((_evenement, nouvelleSession) => {
-    const change = (nouvelleSession?.user?.id ?? null) !== (session?.user?.id ?? null)
-      || !!nouvelleSession !== !!session;
+    const change = (nouvelleSession?.user?.id ?? null) !== (session?.user?.id ?? null);
     session = nouvelleSession;
-    if (change) afficherEcran();
+    if (change) {
+      if (!nouvelleSession) viderEtat();
+      afficherEcran();
+    }
   });
 
   afficherEcran();

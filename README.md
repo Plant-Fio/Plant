@@ -12,9 +12,15 @@ donnees dans Supabase.
 | `js/version.js` | Le numero de version, a changer a chaque publication |
 | `js/config.js` | URL du projet Supabase et cle publique "anon" |
 | `sw.js`, `manifest.webmanifest`, `icons/` | Installation sur l'ecran d'accueil + mode hors ligne |
-| `scripts/` | Fabrication du site par la CI (embarque la bibliotheque Supabase) |
+| `supabase/` | Scripts SQL a coller dans le SQL Editor de Supabase (un par etape, numerotes) |
+| `scripts/` | Fabrication du site par la CI (embarque la bibliotheque Supabase) et publication des captures |
 | `tests/` | Controles automatiques et captures d'ecran (Chromium au format iPhone) |
 | `.github/workflows/` | CI (sur les PR), deploiement Pages, verification en ligne |
+
+## Captures d'ecran
+
+La CI prend des captures au format iPhone et les publie sur la branche **`captures`** :
+`ci/` pour la derniere PR, `en-ligne/` pour le dernier deploiement (visibles directement sur GitHub).
 
 ## Securite
 
