@@ -1,6 +1,6 @@
 // Ecrans des plantes : liste (recherche + filtre par piece), fiche, formulaire (ajout / modification).
 import {
-  lireEtat, trouverPlante, nomPiece, pieceLaPlusUtilisee, creerPlante, modifierPlante, supprimerPlante, expliquerErreur,
+  lireEtat, trouverPlante, nomPiece, teintePiece, pieceLaPlusUtilisee, creerPlante, modifierPlante, supprimerPlante, expliquerErreur,
   photosDe, photoCouverture, ajouterPhoto, supprimerPhoto, definirCouverture,
   arrosagesDe, arroserPlante, annulerArrosage, marquerFait, datePhoto, modifierDatePhoto,
 } from './donnees.js';
@@ -100,13 +100,13 @@ export function vueListe(conteneur) {
     if (enVente) puces.push({ id: 'vente', libelle: 'En vente', nombre: enVente });
     for (const piece of pieces) {
       const nombre = plantes.filter((p) => p.piece_id === piece.id).length;
-      if (nombre) puces.push({ id: piece.id, libelle: piece.nom, nombre });
+      if (nombre) puces.push({ id: piece.id, libelle: piece.nom, nombre, teinte: teintePiece(piece.id) });
     }
     if (sansPiece) puces.push({ id: 'aucune', libelle: 'Sans pièce', nombre: sansPiece });
     // Si la piece filtree n'existe plus (ou n'a plus de plantes), on revient a "Toutes"
     if (!puces.some((p) => p.id === filtrePiece)) filtrePiece = 'toutes';
     zonePuces.innerHTML = puces.map((p) => `
-      <button type="button" class="puce" data-piece="${echapper(p.id)}"
+      <button type="button" class="puce" data-piece="${echapper(p.id)}"${p.teinte ? ` data-teinte="${p.teinte}"` : ''}
               aria-pressed="${p.id === filtrePiece}">${echapper(p.libelle)} <span class="puce__nombre">${p.nombre}</span></button>`
     ).join('');
   }
@@ -122,7 +122,7 @@ export function vueListe(conteneur) {
     });
     zoneResultats.innerHTML = trouvees.length
       ? `<div class="grille">${trouvees.map((p) => `
-          <a class="vignette" href="#/plantes/${p.id}">
+          <a class="vignette" href="#/plantes/${p.id}"${p.piece_id ? ` data-teinte="${teintePiece(p.piece_id)}"` : ''}>
             ${photoVignetteHtml(p)}
             ${p.en_vente ? '<span class="pastille-vente">En vente</span>' : ''}
             <span class="vignette__nom">${echapper(p.nom)}</span>
@@ -287,8 +287,7 @@ function initialiserGalerie(galerie, idPlante) {
     galerie.innerHTML = `
       ${actuelle
         ? `<div class="fiche__photo" id="hero">${urlGrande ? imageHtml(urlGrande, `Photo de ${plante.nom}`) : icone('feuille')}</div>`
-        : `<label class="fiche__photo fiche__photo--vide" id="hero">${icone('feuille')}<span>Ajouter une photo</span>${champFichier}</label>
-           <button class="btn btn--douce" type="button" data-action="camera">${icone('appareil')} Appareil photo avec repères</button>`}
+        : `<label class="fiche__photo fiche__photo--vide" id="hero">${icone('feuille')}<span>Ajouter une photo</span>${champFichier}</label>`}
       ${envoi ? `<p class="envoi" role="status">Envoi de la photo ${envoi.courant} sur ${envoi.total}…</p>` : ''}
       ${actuelle ? `
         <div class="bande">
@@ -307,7 +306,7 @@ function initialiserGalerie(galerie, idPlante) {
           <button class="btn-texte" type="button" data-action="date">Modifier la date</button>
           <button class="btn-texte btn-texte--danger" type="button" data-action="supprimer-photo">Supprimer la photo</button>
         </div>
-        <button class="btn btn--douce btn--espace" type="button" data-action="camera">${icone('appareil')} Appareil photo avec repères</button>
+        <button class="btn btn--douce btn--espace" type="button" data-action="camera">${icone('appareil')} Photo d'évolution</button>
         ${photos.length > 1 ? `<a class="btn btn--douce btn--espace" href="#/plantes/${idPlante}/evolution">Voir l'évolution</a>` : ''}` : ''}`;
   }
 

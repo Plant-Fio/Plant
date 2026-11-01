@@ -448,33 +448,24 @@ export async function verifierAppli(base, dossier, { version }) {
     await page.click('a.retour');
     await page.waitForSelector('#galerie .bande__vignette');
 
-    // Appareil photo de l'appli : fantome de la derniere photo, silhouettes, ligne, prise de photo
+    // Appareil photo d'evolution : seulement la derniere photo en transparence, pas de silhouette ni de ligne
     const avantCamera = (await page.evaluate(() => globalThis.__uploads)).length;
     await page.click('[data-action="camera"]');
     await page.waitForSelector('#camera video');
     await page.waitForFunction(() => document.querySelector('#camera video').videoWidth > 0
       && !document.querySelector('#camera-declencheur').disabled);
     ok("camera : l'appareil photo de l'appli s'ouvre et affiche l'image");
-    await page.click('[data-aide="fantome"]');
     await page.waitForFunction(() => {
       const i = document.querySelector('.camera__fantome');
       return !i.hidden && i.complete && i.naturalWidth > 0;
     });
     ok('camera : la derniere photo apparait en transparence (fantome)');
-    await page.click('[data-aide="silhouette"]');
-    await page.click('[data-forme="monstera"]');
-    verifier(await nombre('.camera__silhouette svg path') > 5 && await nombre('.camera__fantome:not([hidden])') === 0, titre,
-      'camera : la silhouette (monstera) remplace le fantome', 'La silhouette ne s\'affiche pas.');
-    // La ligne horizontale se deplace au doigt (ici a la souris)
-    const avantLigne = await page.evaluate(() => document.querySelector('#camera-ligne').getBoundingClientRect().top);
-    const boite = await page.locator('#camera-ligne').boundingBox();
-    await page.mouse.move(boite.x + boite.width - 22, boite.y + boite.height / 2);
-    await page.mouse.down();
-    await page.mouse.move(boite.x + boite.width - 22, boite.y + boite.height / 2 + 120, { steps: 5 });
-    await page.mouse.up();
-    const apresLigne = await page.evaluate(() => document.querySelector('#camera-ligne').getBoundingClientRect().top);
-    verifier(apresLigne > avantLigne + 80, titre, 'camera : la ligne horizontale se deplace',
-      `La ligne n'a pas bouge (${Math.round(avantLigne)} -> ${Math.round(apresLigne)}).`);
+    verifier(await nombre('.camera__silhouette, .camera__ligne') === 0, titre,
+      'camera : plus de silhouette ni de ligne', 'Les anciens reperes sont encore la.');
+    await page.click('[data-fantome]');
+    verifier(await nombre('.camera__fantome:not([hidden])') === 0, titre,
+      'camera : on peut masquer la derniere photo', 'Le fantome reste affiche.');
+    await page.click('[data-fantome]');
     await capturer(page, dossier, '12-camera.png');
     await verifierDebordement(page, 'Appareil photo');
     await verifierZonesTactiles(page, 'Appareil photo');
@@ -720,6 +711,11 @@ export async function verifierAppli(base, dossier, { version }) {
       if (id !== 'herbier') {
         await page.click('[data-tab="plantes"]');
         await page.waitForSelector('.vignette, .vide');
+        if (id === 'fleuriste') {
+          const teintes = await page.evaluate(() => [...document.querySelectorAll('.vignette[data-teinte]')].map((v) => getComputedStyle(v).backgroundColor));
+          verifier(teintes.length > 0 && teintes.every((t) => t !== 'rgb(255, 255, 255)' && t !== 'rgba(0, 0, 0, 0)'), titre,
+            'theme fleuriste : les cartes prennent la teinte de leur piece', `Fonds des cartes : ${teintes.join(' | ') || 'aucune carte avec piece'}.`);
+        }
         await page.waitForTimeout(400);
         await capturer(page, dossier, `17-theme-${id}-liste.png`);
         await verifierDebordement(page, `Liste (${id})`);

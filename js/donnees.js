@@ -21,6 +21,15 @@ const etat = {
 export const lireEtat = () => etat;
 export const trouverPlante = (id) => etat.plantes.find((p) => p.id === id) || null;
 // Date d'une photo (repli sur le jour d'envoi pour une copie locale ancienne)
+// Numero de teinte (0 a 4) d'une piece, stable : selon l'ordre de creation des pieces.
+// Sert au theme Fleuriste (une couleur pastel par piece) ; les autres themes l'ignorent.
+export function teintePiece(idPiece) {
+  if (!idPiece) return '';
+  const ordre = [...etat.pieces].sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)) || a.id.localeCompare(b.id));
+  const rang = ordre.findIndex((p) => p.id === idPiece);
+  return rang < 0 ? '' : String(rang % 5);
+}
+
 export const datePhoto = (photo) => photo.date_photo || String(photo.created_at || '').slice(0, 10);
 // Photos d'une plante de la plus ancienne a la plus recente (selon leur date, modifiable)
 export const photosDe = (idPlante) => etat.photos

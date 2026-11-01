@@ -1,6 +1,6 @@
 // Ecran "Aujourd'hui" : les plantes a arroser (les plus en retard d'abord), celles deja arrosees,
 // et un apercu des 3 prochains jours.
-import { lireEtat, arrosagesDe, arroserPlante, annulerArrosage, marquerFait, expliquerErreur } from './donnees.js';
+import { lireEtat, teintePiece, arrosagesDe, arroserPlante, annulerArrosage, marquerFait, expliquerErreur } from './donnees.js';
 import { planifier, libelleEcheance } from './rappels.js';
 import { photoVignetteHtml, remplirPhotos } from './vues-plantes.js';
 import { echapper, icone, dateDuJour, dateIsoLocale } from './outils.js';
@@ -10,7 +10,7 @@ function carte(etat, bouton) {
   const { plante } = etat;
   const { nomPiece } = etat;
   return `
-    <article class="tache" data-plante="${plante.id}">
+    <article class="tache" data-plante="${plante.id}"${plante.piece_id ? ` data-teinte="${teintePiece(plante.piece_id)}"` : ''}>
       <a class="tache__lien" href="#/plantes/${plante.id}">
         ${photoVignetteHtml(plante, 'tache__photo')}
         <span class="tache__texte">

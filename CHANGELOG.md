@@ -3,6 +3,12 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [1.1.1] - 2026-11-01
+### Ajouté
+- Thème Fleuriste : chaque pièce a sa teinte pastel (cartes des plantes, tâches du jour et filtres de pièces).
+### Modifié
+- Appareil photo : les repères (silhouettes, ligne) sont retirés. Il ne garde que la dernière photo en transparence, pour cadrer une nouvelle photo d'évolution comme la précédente. Le bouton « Photo d'évolution » n'apparaît que lorsque la plante a déjà une photo.
+
 ## [1.1.0] - 2026-11-01
 ### Ajouté
 - Trois thèmes au choix dans Réglages > Apparence : Herbier (crème et serif, par défaut), Serre de nuit (fond sombre et laiton) et Fleuriste (pastels, coins très ronds, barre d'onglets flottante).
