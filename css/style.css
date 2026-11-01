@@ -1,0 +1,276 @@
+/* Mes plantes - theme "vert Armerie" : doux, naturel, apaisant. Mode clair uniquement. */
+
+:root {
+  --vert: #3B5655;          /* couleur principale (vert Armerie Ripolin) */
+  --vert-clair: #E1EAE8;    /* fonds de cartes, bandeaux, pastilles */
+  --vert-clair-2: #EEF3F1;
+  --vert-fonce: #25393A;    /* textes et boutons actifs */
+  --creme: #F6F2E9;         /* fond de l'appli */
+  --papier: #FDFBF6;        /* fond des cartes */
+  --texte: #25393A;
+  --texte-doux: #5F7573;
+  --bordure: #E3DED1;
+  --erreur: #9B3B2F;
+  --erreur-fond: #F7E8E4;
+  --ombre-carte: 0 1px 2px rgba(37, 57, 58, 0.05), 0 8px 24px rgba(37, 57, 58, 0.06);
+  --rayon: 22px;
+  --tabbar-h: 64px;
+  --serif: ui-serif, "New York", "Iowan Old Style", Georgia, serif;
+  --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, "Helvetica Neue", sans-serif;
+  color-scheme: light;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+html { -webkit-text-size-adjust: 100%; background: var(--creme); }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--creme);
+  color: var(--texte);
+  font-family: var(--sans);
+  font-size: 17px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+h1, h2, p { margin: 0; }
+
+/* ---------- Chargement ---------- */
+.chargement {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+.chargement::after {
+  content: "";
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 3px solid var(--vert-clair);
+  border-top-color: var(--vert);
+  animation: tourne 0.9s linear infinite;
+}
+@keyframes tourne { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .chargement::after { animation-duration: 3s; } }
+
+.noscript { padding: 24px; text-align: center; color: var(--texte-doux); }
+
+/* ---------- Boutons et champs ---------- */
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 52px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 16px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+.btn:active { transform: scale(0.985); }
+.btn--primaire { background: var(--vert); color: #fff; }
+.btn--primaire:active { background: var(--vert-fonce); }
+.btn--primaire:disabled { opacity: 0.6; }
+.btn--douce { background: var(--vert-clair); color: var(--vert-fonce); }
+.btn--douce:active { background: #D3DFDC; }
+
+.champ { display: block; margin-bottom: 16px; }
+.champ__label {
+  display: block;
+  margin: 0 0 6px 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--texte-doux);
+}
+.champ__input {
+  display: block;
+  width: 100%;
+  min-height: 52px;
+  padding: 0 16px;
+  border: 1px solid var(--bordure);
+  border-radius: 14px;
+  background: var(--papier);
+  color: var(--texte);
+  font: inherit;
+  font-size: 16px; /* 16px minimum : evite le zoom automatique de Safari */
+  -webkit-appearance: none;
+  appearance: none;
+}
+.champ__input:focus {
+  outline: 2px solid var(--vert);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+.erreur-form {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--erreur-fond);
+  color: var(--erreur);
+  font-size: 15px;
+}
+
+/* ---------- Connexion ---------- */
+.connexion {
+  min-height: 100vh;
+  min-height: 100dvh;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: calc(env(safe-area-inset-top) + 48px) 24px calc(env(safe-area-inset-bottom) + 24px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.connexion__logo {
+  width: 76px;
+  height: 76px;
+  margin: 0 auto 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 24px;
+  background: var(--vert);
+  color: var(--creme);
+  box-shadow: var(--ombre-carte);
+}
+.connexion__logo .icone { width: 38px; height: 38px; }
+.connexion__titre {
+  font-family: var(--serif);
+  font-size: 34px;
+  font-weight: 500;
+  text-align: center;
+  color: var(--vert-fonce);
+}
+.connexion__sous {
+  margin: 6px 0 32px;
+  text-align: center;
+  color: var(--texte-doux);
+}
+
+.version {
+  margin-top: 28px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--texte-doux);
+}
+
+/* ---------- Appli ---------- */
+.vue {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: calc(env(safe-area-inset-top) + 28px) 20px
+           calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 32px);
+}
+.vue__legende {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--texte-doux);
+}
+.vue__titre {
+  margin: 4px 0 24px;
+  font-family: var(--serif);
+  font-size: 34px;
+  font-weight: 500;
+  line-height: 1.15;
+  color: var(--vert-fonce);
+}
+
+.carte {
+  padding: 24px;
+  border: 1px solid rgba(227, 222, 209, 0.7);
+  border-radius: var(--rayon);
+  background: var(--papier);
+  box-shadow: var(--ombre-carte);
+}
+.carte + .carte { margin-top: 16px; }
+.carte__titre {
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--texte-doux);
+}
+
+.vide { text-align: center; padding: 40px 24px; }
+.vide__bulle {
+  width: 68px;
+  height: 68px;
+  margin: 0 auto 16px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--vert-clair);
+  color: var(--vert);
+}
+.vide__bulle .icone { width: 30px; height: 30px; }
+.vide__titre { font-family: var(--serif); font-size: 22px; font-weight: 500; color: var(--vert-fonce); }
+.vide__texte { margin-top: 6px; color: var(--texte-doux); }
+
+.ligne {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-top: 1px solid var(--bordure);
+}
+.ligne:first-of-type { border-top: 0; padding-top: 0; }
+.ligne__label { color: var(--texte-doux); }
+.ligne__valeur { text-align: right; word-break: break-word; font-weight: 500; }
+.carte .btn { margin-top: 16px; }
+
+/* ---------- Barre d'onglets ---------- */
+.tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: space-around;
+  padding: 6px 8px env(safe-area-inset-bottom);
+  background: rgba(253, 251, 246, 0.94);
+  -webkit-backdrop-filter: saturate(1.4) blur(14px);
+  backdrop-filter: saturate(1.4) blur(14px);
+  border-top: 1px solid var(--bordure);
+}
+.tabbar__onglet {
+  flex: 1;
+  max-width: 160px;
+  min-height: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: var(--texte-doux);
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 600;
+}
+.tabbar__pastille {
+  width: 56px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 15px;
+  transition: background-color 0.2s ease;
+}
+.tabbar__onglet[aria-current="page"] { color: var(--vert-fonce); }
+.tabbar__onglet[aria-current="page"] .tabbar__pastille { background: var(--vert-clair); }
+
+.icone { width: 24px; height: 24px; display: block; }

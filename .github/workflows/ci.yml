@@ -1,0 +1,47 @@
+name: CI
+
+# Se lance sur chaque PR. C'est la CI qui fait foi : si elle est verte, on peut fusionner.
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verifier:
+    name: Verifier
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Controles statiques
+        run: node tests/check.mjs
+
+      - name: Fabriquer le site
+        run: bash scripts/build.sh
+
+      - name: Installer Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Tester dans Chromium (format iPhone)
+        run: node tests/run-local.mjs
+
+      - name: Garder les captures d'ecran
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: captures-ci
+          path: captures/
+          if-no-files-found: ignore
+          retention-days: 14
