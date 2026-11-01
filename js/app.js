@@ -108,7 +108,9 @@ function majPastille() {
   if (!pastille) return;
   const { plantes, arrosages, taches, charge } = lireEtat();
   // Pastille : arrosages a faire + taches libres pas encore cochees
-  const nombre = charge ? compterAFaire(plantes, arrosages) + taches.filter((t) => !t.fait_le).length : 0;
+  const jour = dateIsoLocale();
+  const nombre = charge
+    ? compterAFaire(plantes, arrosages) + taches.filter((t) => !t.fait_le && (!t.pour_le || t.pour_le <= jour)).length : 0;
   pastille.textContent = nombre > 99 ? '99+' : String(nombre);
   pastille.hidden = nombre === 0;
   const lien = pastille.closest('.tabbar__onglet');

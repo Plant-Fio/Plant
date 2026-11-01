@@ -194,6 +194,19 @@ export async function verifierConnexion(base, dossier, { version }) {
       }
     }
 
+    // Colonne pour_le (taches prevues a l'avance)
+    if (urlSupabase && cle) {
+      try {
+        const reponse = await fetch(`${urlSupabase}/rest/v1/taches?select=pour_le&limit=1`, {
+          headers: { apikey: cle, Authorization: `Bearer ${cle}` },
+        });
+        if (reponse.ok) ok('table taches : colonne pour_le presente');
+        else annoter('error', titre, `Colonne "pour_le" absente de "taches" (${reponse.status}) : le script supabase/07-taches-date.sql a-t-il ete lance ?`);
+      } catch (e) {
+        annoter('error', titre, `Verification de pour_le impossible : ${e.message}`);
+      }
+    }
+
     // Bucket "photos" : il doit exister et refuser un depot venant d'un visiteur sans compte.
     // (Bucket absent : "Bucket not found". Bucket present avec RLS : refus "row-level security".)
     if (urlSupabase && cle) {
@@ -930,6 +943,9 @@ export async function verifierAppli(base, dossier, { version }) {
     await capturer(page, dossier, '19-aujourdhui-a-jour.png');
 
     // --- Taches libres ---
+    verifier(await page.getAttribute('#form-tache [name="texte"]', 'placeholder') === null, titre,
+      'taches : le champ est vide, sans exemple', 'Le champ de tache affiche encore un exemple.');
+    await page.click('[data-quand="aujourdhui"]');
     await page.fill('#form-tache [name="texte"]', 'Vaporiser les plantes du salon');
     await page.click('#form-tache button[type="submit"]');
     await page.waitForSelector('[data-liste="mes-taches"] .tache');
@@ -949,6 +965,20 @@ export async function verifierAppli(base, dossier, { version }) {
     await page.click('[data-tache-suppr]');
     await page.waitForFunction(() => !document.querySelector('[data-tache]'));
     ok('taches : la tache peut etre supprimee');
+    // Tache prevue pour demain (on la saisit le soir) : section « A venir », pas encore dans la pastille
+    await page.click('[data-quand="demain"]');
+    await page.fill('#form-tache [name="texte"]', 'Vaporiser demain');
+    await page.click('#form-tache button[type="submit"]');
+    await page.waitForSelector('[data-liste="a-venir"] .tache');
+    verifier(await nombre('[data-liste="a-venir"] .tache:has-text("Demain")') === 1
+      && await nombre('[data-liste="mes-taches"] .tache') === 0 && await nombre('.tabbar__badge:not([hidden])') === 0, titre,
+    'taches : une tache pour demain va dans « A venir » (pas dans Mes taches ni la pastille)', 'La tache de demain est mal rangee.');
+    await page.click('[data-quand="autre"]');
+    await page.waitForSelector('#tache-date');
+    ok('taches : le choix « Autre date » affiche un calendrier');
+    await capturer(page, dossier, '19-aujourdhui-a-venir.png');
+    await page.click('[data-tache-suppr]');
+    await page.waitForFunction(() => !document.querySelector('[data-tache]'));
     await page.click('[data-tab="reglages"]');
     await page.click('#logout');
     await page.waitForSelector('#login-form', { timeout: 10000 });

@@ -3,6 +3,14 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [1.4.0] - 2026-11-01
+### Ajouté
+- Tâches prévues à l'avance : en ajoutant une tâche, on choisit « Aujourd'hui », « Demain » (présélectionné après 18 h) ou une autre date. Les tâches à venir sont rangées dans une section « À venir » et passent dans « Mes tâches » le jour venu.
+- Script SQL `supabase/07-taches-date.sql` (colonne de la date prévue).
+### Modifié
+- Le champ d'ajout d'une tâche est vide (plus d'exemple affiché).
+- Fiche d'une plante : plus d'espace entre le bouton « Photo d'évolution » et le nom de la plante.
+
 ## [1.3.0] - 2026-11-01
 ### Ajouté
 - Tâches libres dans « À faire aujourd'hui » (ex. « Vaporiser les plantes du salon ») : on les ajoute, on les coche (« Fait », avec « Annuler »), on peut les supprimer. Une tâche cochée reste visible ce jour-là puis disparaît. La pastille de l'onglet compte aussi les tâches non faites.
