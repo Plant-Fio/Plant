@@ -2,12 +2,12 @@
 import {
   lireEtat, trouverPlante, nomPiece, pieceLaPlusUtilisee, creerPlante, modifierPlante, supprimerPlante, expliquerErreur,
   photosDe, photoCouverture, ajouterPhoto, supprimerPhoto, definirCouverture,
-  arrosagesDe, arroserPlante, annulerArrosage, marquerFait,
+  arrosagesDe, arroserPlante, annulerArrosage, marquerFait, datePhoto, modifierDatePhoto,
 } from './donnees.js';
 import { etatArrosage, etatEngrais, libelleEcheance } from './rappels.js';
 import { chargerUrls, urlEnCache, cheminVignette } from './photos.js';
-import { echapper, icone, formaterDate, normaliser, dateRelative, dateIsoLocale } from './outils.js';
-import { confirmer, message } from './dialogues.js';
+import { echapper, icone, formaterDate, normaliser, dateRelative, dateIsoLocale, joursEntre, libelleEcart } from './outils.js';
+import { confirmer, demanderDate, message } from './dialogues.js';
 import { recadrer } from './recadrage.js';
 
 // Ce que la liste garde en memoire quand on va voir une fiche puis qu'on revient
@@ -297,12 +297,15 @@ function initialiserGalerie(galerie, idPlante) {
           }).join('')}
           <label class="bande__ajout" aria-label="Ajouter des photos">${icone('plus')}${champFichier}</label>
         </div>
+        <p class="photo-date" data-photo-date>Photo du ${echapper(formaterDate(datePhoto(actuelle)))}</p>
         <div class="actions-photo">
           ${couverture?.id === actuelle.id
             ? '<span class="couverture">Photo de couverture</span>'
             : '<button class="btn-texte" type="button" data-action="couverture">Choisir comme couverture</button>'}
+          <button class="btn-texte" type="button" data-action="date">Modifier la date</button>
           <button class="btn-texte btn-texte--danger" type="button" data-action="supprimer-photo">Supprimer la photo</button>
-        </div>` : ''}`;
+        </div>
+        ${photos.length > 1 ? `<a class="btn btn--douce" href="#/plantes/${idPlante}/evolution">Voir l'évolution</a>` : ''}` : ''}`;
   }
 
   async function televerser(fichiers) {
@@ -349,7 +352,14 @@ function initialiserGalerie(galerie, idPlante) {
     const bouton = evenement.target.closest('[data-action]');
     if (!bouton || !selection) return;
     try {
-      if (bouton.dataset.action === 'couverture') {
+      if (bouton.dataset.action === 'date') {
+        const photo = photosDe(idPlante).find((p) => p.id === selection);
+        const date = await demanderDate({ titre: 'Date de la photo', valeur: datePhoto(photo) });
+        if (!date || date === datePhoto(photo)) return;
+        await modifierDatePhoto(selection, date);
+        message('Date modifiée');
+        dessiner();
+      } else if (bouton.dataset.action === 'couverture') {
         await definirCouverture(idPlante, selection);
         message('Couverture modifiée');
         dessiner();
@@ -377,6 +387,32 @@ function initialiserGalerie(galerie, idPlante) {
   if (chemins.length) {
     chargerUrls(chemins).then(() => { if (galerie.isConnected) dessiner(); });
   }
+}
+
+// ---------- Evolution : toutes les photos de la plus ancienne a la plus recente ----------
+
+export function vueEvolution(conteneur, id) {
+  const plante = trouvee(id);
+  if (!plante) return introuvable(conteneur);
+  const photos = photosDe(plante.id);
+
+  conteneur.innerHTML = `
+    <a class="retour" href="#/plantes/${plante.id}">${icone('retour')} ${echapper(plante.nom)}</a>
+    <p class="vue__legende">Évolution</p>
+    <h1 class="vue__titre">${echapper(plante.nom)}</h1>
+    ${photos.length ? photos.map((p, i) => {
+    const url = urlEnCache(p.chemin) || urlEnCache(cheminVignette(p.chemin));
+    const precedente = i ? photos[i - 1] : null;
+    return `
+      <figure class="evol">
+        <div class="evol__photo" data-photo="${echapper(p.chemin)}">${url ? imageHtml(url, `${plante.nom}, ${formaterDate(datePhoto(p))}`) : icone('feuille')}</div>
+        <figcaption class="evol__legende">
+          <strong>${echapper(formaterDate(datePhoto(p)))}</strong>
+          ${precedente ? `<span>${libelleEcart(joursEntre(datePhoto(precedente), datePhoto(p)))}</span>` : '<span>Première photo</span>'}
+        </figcaption>
+      </figure>`;
+  }).join('') : carteVide('Pas encore de photo', 'Ajoute des photos à la fiche pour suivre la plante dans le temps.')}`;
+  remplirPhotos(conteneur);
 }
 
 // Cherche la plante, ou renvoie null si l'identifiant n'a pas la bonne forme

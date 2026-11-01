@@ -155,7 +155,7 @@ export function recadrer(fichier, { position = 1, total = 1 } = {}) {
       const blob = await new Promise((ok) => canvas.toBlob(ok, 'image/jpeg', 0.92));
       canvas.width = 0; // Safari garde la memoire des canvas : on les vide
       canvas.height = 0;
-      terminer(blob ? new File([blob], 'photo-recadree.jpg', { type: 'image/jpeg' }) : fichier);
+      terminer(blob ? new File([blob], 'photo-recadree.jpg', { type: 'image/jpeg', lastModified: fichier.lastModified }) : fichier);
     }
 
     racine.addEventListener('click', (e) => {

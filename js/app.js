@@ -2,7 +2,7 @@
 import { supabase } from './client.js';
 import { echapper, icone, dateIsoLocale } from './outils.js';
 import { charger, viderEtat, lireEtat } from './donnees.js';
-import { vueListe, vueFiche, vueFormulaire } from './vues-plantes.js';
+import { vueListe, vueFiche, vueFormulaire, vueEvolution } from './vues-plantes.js';
 import { vueReglages, vuePieces } from './vues-reglages.js';
 import { vueSouhaits, vueSouhait, vueFormulaireSouhait } from './vues-souhaits.js';
 import { vueAujourdhui } from './vue-aujourdhui.js';
@@ -168,6 +168,7 @@ function afficherVue() {
     if (!premier) vueListe(conteneur);
     else if (premier === 'nouvelle') vueFormulaire(conteneur, null);
     else if (second === 'modifier') vueFormulaire(conteneur, premier);
+    else if (second === 'evolution') vueEvolution(conteneur, premier);
     else vueFiche(conteneur, premier);
   } else if (onglet === 'aujourdhui') {
     vueAujourdhui(conteneur);

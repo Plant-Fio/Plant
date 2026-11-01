@@ -3,6 +3,20 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [0.9.0] - 2026-11-01
+
+Le suivi des plantes dans le temps.
+
+### Ajoute
+- Chaque photo a une date : celle de la prise de vue quand l'iPhone la donne, sinon celle du jour ;
+  elle s'affiche sous la photo et se modifie (« Modifier la date »)
+- Les photos d'une plante sont classees de la plus ancienne a la plus recente
+- Page « Évolution » (bouton « Voir l'évolution » des qu'il y a 2 photos) : toutes les photos en grand, avec leur date
+  et l'ecart avec la precedente (« 3 semaines plus tard »)
+
+### Corrige
+- Champs date (calendrier de l'iPhone) : la valeur est centree dans la cellule au lieu d'etre collee en haut
+
 ## [0.8.1] - 2026-11-01
 
 ### Corrige
