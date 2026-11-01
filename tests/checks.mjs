@@ -167,13 +167,26 @@ export async function verifierConnexion(base, dossier, { version }) {
     // mais si une colonne manque, PostgREST repond 400.
     if (urlSupabase && cle) {
       try {
-        const reponse = await fetch(`${urlSupabase}/rest/v1/plantes?select=arrosage_jours,dernier_engrais,dernier_rempotage&limit=1`, {
+        const reponse = await fetch(`${urlSupabase}/rest/v1/plantes?select=arrosage_jours,dernier_engrais,dernier_rempotage,en_vente,derniere_feuille,prochain_engrais&limit=1`, {
           headers: { apikey: cle, Authorization: `Bearer ${cle}` },
         });
-        if (reponse.ok) ok('table plantes : colonnes arrosage_jours, dernier_engrais, dernier_rempotage presentes');
-        else annoter('error', titre, `Colonnes de rappel absentes de "plantes" (${reponse.status}) : le script supabase/03-rappels.sql a-t-il ete lance ?`);
+        if (reponse.ok) ok('table plantes : colonnes de soins (arrosage, engrais, rempotage, feuille, en vente) presentes');
+        else annoter('error', titre, `Colonnes de rappel absentes de "plantes" (${reponse.status}) : les scripts supabase/03-rappels.sql et 05-evolutions.sql ont-ils ete lances ?`);
       } catch (e) {
         annoter('error', titre, `Verification des colonnes impossible : ${e.message}`);
+      }
+    }
+
+    // Colonne date_photo (suivi de l'evolution) sur la table photos
+    if (urlSupabase && cle) {
+      try {
+        const reponse = await fetch(`${urlSupabase}/rest/v1/photos?select=date_photo&limit=1`, {
+          headers: { apikey: cle, Authorization: `Bearer ${cle}` },
+        });
+        if (reponse.ok) ok('table photos : colonne date_photo presente');
+        else annoter('error', titre, `Colonne "date_photo" absente de "photos" (${reponse.status}) : le script supabase/05-evolutions.sql a-t-il ete lance ?`);
+      } catch (e) {
+        annoter('error', titre, `Verification de date_photo impossible : ${e.message}`);
       }
     }
 
@@ -284,6 +297,9 @@ export async function verifierAppli(base, dossier, { version }) {
     const options = await page.$$eval('#piece option', (o) => o.length);
     verifier(options === 8, titre, 'pieces de depart creees (7 + "Aucune pièce")',
       `Le formulaire propose ${options} choix de piece au lieu de 8.`);
+    const nomsPieces = await page.$$eval('#piece option', (o) => o.map((x) => x.textContent.trim()));
+    verifier(nomsPieces.join('|') === 'Aucune pièce|Balcon|Bureau|Chambre|Cuisine|Entrée|Salle de bain|Salon', titre,
+      'pieces classees de A a Z', `Ordre des pieces : ${nomsPieces.join(', ')}.`);
     await page.click('#form-ok');
     await page.waitForSelector('#form-erreur:not([hidden])');
     ok('le nom de la plante est obligatoire');
@@ -292,6 +308,14 @@ export async function verifierAppli(base, dossier, { version }) {
       nom: 'Monstera', espece: 'Monstera deliciosa', piece: 'Salon', date: '2024-03-12', arrosage: 7,
       notes: 'Aime la lumière douce.\nArrosage : une fois par semaine.',
     });
+    // Corbeille d'un champ date : efface la valeur puis se cache ; on remet la date ensuite
+    await page.click('[data-vider="date_acquisition"]');
+    verifier(await page.inputValue('[name="date_acquisition"]') === ''
+      && await page.locator('[data-vider="date_acquisition"]').isHidden(), titre,
+    'dates : la corbeille efface la valeur (et se cache)', "La corbeille n'efface pas la date.");
+    await page.fill('[name="date_acquisition"]', '2024-03-12');
+    verifier(await page.locator('[data-vider="date_acquisition"]').isVisible(), titre,
+      'dates : la corbeille reapparait quand une date est choisie', 'La corbeille ne reapparait pas.');
     await capturer(page, dossier, '11-formulaire.png');
     await verifierDebordement(page, 'Formulaire');
     await verifierZonesTactiles(page, 'Formulaire');
@@ -443,6 +467,15 @@ export async function verifierAppli(base, dossier, { version }) {
     await capturer(page, dossier, '14-liste-filtre-salon.png');
     await page.click('.puce:has-text("Toutes")');
 
+    // Nouvelle plante : la piece ou il y a le plus de plantes (Salon : 2) est proposee d'office
+    await page.click('.fab');
+    await page.waitForSelector('#form-plante');
+    const pieceProposee = await page.$eval('#piece', (s) => s.selectedOptions[0].textContent.trim());
+    verifier(pieceProposee === 'Salon', titre, 'nouvelle plante : la piece la plus utilisee (Salon) est proposee',
+      `Piece proposee : "${pieceProposee}".`);
+    await page.click('a.retour');
+    await page.waitForSelector('#puces');
+
     // --- Modification ---
     await page.click('.vignette:has-text("Monstera")');
     await page.waitForSelector('.fiche__nom');
@@ -456,6 +489,25 @@ export async function verifierAppli(base, dossier, { version }) {
     await page.waitForSelector('.fiche__nom');
     verifier((await page.textContent('.fiche__nom')).includes('adansonii'), titre,
       'modification enregistree', 'La modification n\'apparait pas sur la fiche.');
+
+    // --- En vente : etiquette, pastille sur la vignette, filtre ---
+    await page.click('a:has-text("Modifier")');
+    await page.waitForSelector('#form-plante');
+    await page.check('[name="en_vente"]');
+    await page.click('#form-ok');
+    await page.waitForSelector('.pastille-vente--fiche');
+    ok('en vente : etiquette sur la fiche');
+    await ouvrirListe(page);
+    await page.waitForSelector('#puces');
+    verifier(await nombre('.vignette .pastille-vente') === 1, titre, 'en vente : pastille sur la vignette',
+      'La pastille « En vente » est absente de la liste.');
+    await page.click('.puce:has-text("En vente")');
+    verifier(await nombre('.vignette') === 1, titre, 'en vente : le filtre ne garde que les plantes en vente',
+      'Le filtre « En vente » devrait afficher 1 plante.');
+    await capturer(page, dossier, '14-liste-en-vente.png');
+    await page.click('.puce:has-text("Toutes")');
+    await page.click('.vignette:has-text("Monstera")');
+    await page.waitForSelector('.fiche__nom');
 
     // --- Rappels : fiche (soins), ecran Aujourd'hui, pastille ---
     const soin = async (nomSoin) => (await page.textContent(`[data-soin="${nomSoin}"]`)).trim();
@@ -524,6 +576,9 @@ export async function verifierAppli(base, dossier, { version }) {
     await page.click('[data-action="rempotage"]');
     await page.waitForFunction(() => document.querySelector('[data-soin="rempotage"]').textContent.trim() === "Aujourd'hui");
     ok('soins : engrais et rempotage notes "Aujourd\'hui"');
+    await page.click('[data-action="feuille"]');
+    await page.waitForFunction(() => document.querySelector('[data-soin="feuille"]').textContent.trim() === "Aujourd'hui");
+    ok('soins : derniere feuille notee "Aujourd\'hui"');
 
     // --- Suppression (avec confirmation) ---
     await page.click('a:has-text("Modifier")');

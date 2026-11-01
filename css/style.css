@@ -831,3 +831,30 @@ a.btn { text-decoration: none; }
   text-decoration: underline;
   cursor: pointer;
 }
+
+/* ---------- Dates avec corbeille, case a cocher, etiquette « En vente » ---------- */
+.champ__date { display: flex; align-items: center; gap: 4px; }
+.champ__date .champ__input { flex: 1; min-width: 0; }
+.case {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  margin-bottom: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.case input { width: 24px; height: 24px; accent-color: var(--vert); }
+.vignette { position: relative; }
+.pastille-vente {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  background: #F3E6C9;
+  color: #6B4E12;
+  font-size: 12px;
+  font-weight: 700;
+}
+.vignette .pastille-vente { position: absolute; top: 16px; left: 16px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2); }
+.fiche__vente { margin: 6px 0 0; }
+.pastille-vente--fiche { font-size: 14px; padding: 4px 12px; }

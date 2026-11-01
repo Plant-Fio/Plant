@@ -1,6 +1,6 @@
 // Ecrans des plantes : liste (recherche + filtre par piece), fiche, formulaire (ajout / modification).
 import {
-  lireEtat, trouverPlante, nomPiece, creerPlante, modifierPlante, supprimerPlante, expliquerErreur,
+  lireEtat, trouverPlante, nomPiece, pieceLaPlusUtilisee, creerPlante, modifierPlante, supprimerPlante, expliquerErreur,
   photosDe, photoCouverture, ajouterPhoto, supprimerPhoto, definirCouverture,
   arrosagesDe, arroserPlante, annulerArrosage, marquerFait,
 } from './donnees.js';
@@ -22,6 +22,18 @@ function carteVide(titre, texte, bouton = '') {
       <p class="vide__texte">${texte}</p>
       ${bouton}
     </section>`;
+}
+
+// Champ date avec une corbeille pour effacer la valeur (le calendrier de l'iPhone n'a pas de vrai bouton « supprimer »)
+function champDate(libelle, nom, valeur) {
+  return `
+      <div class="champ">
+        <label class="champ__label" for="champ-${nom}">${libelle}</label>
+        <div class="champ__date">
+          <input class="champ__input" id="champ-${nom}" name="${nom}" type="date" value="${echapper(valeur)}">
+          <button class="btn-icone" type="button" data-vider="${nom}" aria-label="Supprimer la date : ${libelle}"${valeur ? '' : ' hidden'}>${icone('corbeille')}</button>
+        </div>
+      </div>`;
 }
 
 function introuvable(conteneur) {
@@ -82,7 +94,9 @@ export function vueListe(conteneur) {
 
   function dessinerPuces() {
     const sansPiece = plantes.filter((p) => !p.piece_id).length;
+    const enVente = plantes.filter((p) => p.en_vente).length;
     const puces = [{ id: 'toutes', libelle: 'Toutes', nombre: plantes.length }];
+    if (enVente) puces.push({ id: 'vente', libelle: 'En vente', nombre: enVente });
     for (const piece of pieces) {
       const nombre = plantes.filter((p) => p.piece_id === piece.id).length;
       if (nombre) puces.push({ id: piece.id, libelle: piece.nom, nombre });
@@ -99,8 +113,9 @@ export function vueListe(conteneur) {
   function dessinerResultats() {
     const mots = normaliser(recherche).split(/\s+/).filter(Boolean);
     const trouvees = plantes.filter((p) => {
-      if (filtrePiece === 'aucune' && p.piece_id) return false;
-      if (filtrePiece !== 'toutes' && filtrePiece !== 'aucune' && p.piece_id !== filtrePiece) return false;
+      if (filtrePiece === 'vente') { if (!p.en_vente) return false; }
+      else if (filtrePiece === 'aucune' && p.piece_id) return false;
+      else if (filtrePiece !== 'toutes' && filtrePiece !== 'aucune' && p.piece_id !== filtrePiece) return false;
       const texte = normaliser(`${p.nom} ${p.espece || ''} ${nomPiece(p.piece_id)}`);
       return mots.every((mot) => texte.includes(mot));
     });
@@ -108,6 +123,7 @@ export function vueListe(conteneur) {
       ? `<div class="grille">${trouvees.map((p) => `
           <a class="vignette" href="#/plantes/${p.id}">
             ${photoVignetteHtml(p)}
+            ${p.en_vente ? '<span class="pastille-vente">En vente</span>' : ''}
             <span class="vignette__nom">${echapper(p.nom)}</span>
             ${p.espece ? `<span class="vignette__espece">${echapper(p.espece)}</span>` : ''}
             ${p.piece_id ? `<span class="vignette__piece">${echapper(nomPiece(p.piece_id))}</span>` : ''}
@@ -145,6 +161,7 @@ export function vueFiche(conteneur, id) {
     <a class="retour" href="#/plantes">${icone('retour')} Mes plantes</a>
     <div id="galerie"></div>
     <h1 class="fiche__nom">${echapper(plante.nom)}</h1>
+    ${plante.en_vente ? '<p class="fiche__vente"><span class="pastille-vente pastille-vente--fiche">En vente</span></p>' : ''}
     ${plante.espece ? `<p class="fiche__espece">${echapper(plante.espece)}</p>` : '<div class="fiche__espace"></div>'}
     <section class="carte">
       <div class="ligne">
@@ -200,9 +217,11 @@ function initialiserSoins(zone, idPlante) {
       <h3 class="soins__sous-titre">Entretien</h3>
       ${ligne('Dernier engrais', plante.dernier_engrais ? echapper(dateRelative(plante.dernier_engrais, aujourdhui)) : '—', 'data-soin="engrais"')}
       ${ligne('Dernier rempotage', plante.dernier_rempotage ? echapper(dateRelative(plante.dernier_rempotage, aujourdhui)) : '—', 'data-soin="rempotage"')}
+      ${ligne('Dernière feuille', plante.derniere_feuille ? echapper(dateRelative(plante.derniere_feuille, aujourdhui)) : '—', 'data-soin="feuille"')}
       <div class="soins__actions">
         <button class="btn-texte" type="button" data-action="engrais">Engrais fait aujourd'hui</button>
         <button class="btn-texte" type="button" data-action="rempotage">Rempotage fait aujourd'hui</button>
+        <button class="btn-texte" type="button" data-action="feuille">Nouvelle feuille aujourd'hui</button>
       </div>`;
   }
 
@@ -219,6 +238,9 @@ function initialiserSoins(zone, idPlante) {
       } else if (bouton.dataset.action === 'rempotage') {
         await marquerFait(idPlante, 'dernier_rempotage');
         message('Rempotage noté');
+      } else if (bouton.dataset.action === 'feuille') {
+        await marquerFait(idPlante, 'derniere_feuille');
+        message('Nouvelle feuille notée');
       } else if (bouton.dataset.annuler) {
         const accord = await confirmer({
           titre: 'Supprimer cet arrosage ?',
@@ -367,6 +389,8 @@ export function vueFormulaire(conteneur, id) {
   const plante = id ? trouvee(id) : null;
   if (id && !plante) return introuvable(conteneur);
   const { pieces } = lireEtat();
+  // Nouvelle plante : on propose d'office la piece ou elle en met le plus
+  const pieceProposee = plante ? plante.piece_id : pieceLaPlusUtilisee();
 
   conteneur.innerHTML = `
     <a class="retour" href="${plante ? `#/plantes/${plante.id}` : '#/plantes'}">
@@ -387,25 +411,21 @@ export function vueFormulaire(conteneur, id) {
         <span class="champ__label">Pièce</span>
         <select class="champ__input champ__select" name="piece_id" id="piece">
           <option value="">Aucune pièce</option>
-          ${pieces.map((p) => `<option value="${p.id}"${p.id === plante?.piece_id ? ' selected' : ''}>${echapper(p.nom)}</option>`).join('')}
+          ${pieces.map((p) => `<option value="${p.id}"${p.id === pieceProposee ? ' selected' : ''}>${echapper(p.nom)}</option>`).join('')}
         </select>
       </label>
-      <label class="champ">
-        <span class="champ__label">Date d'acquisition</span>
-        <input class="champ__input" name="date_acquisition" type="date" value="${echapper(plante?.date_acquisition)}">
-      </label>
+      ${champDate("Date d'acquisition", 'date_acquisition', plante?.date_acquisition)}
       <label class="champ">
         <span class="champ__label">Arroser tous les (jours)</span>
         <input class="champ__input" name="arrosage_jours" type="number" inputmode="numeric" min="1" max="365"
                placeholder="Ex. 7 (vide = pas de rappel)" value="${echapper(plante?.arrosage_jours)}">
       </label>
-      <label class="champ">
-        <span class="champ__label">Dernier engrais</span>
-        <input class="champ__input" name="dernier_engrais" type="date" value="${echapper(plante?.dernier_engrais)}">
-      </label>
-      <label class="champ">
-        <span class="champ__label">Dernier rempotage</span>
-        <input class="champ__input" name="dernier_rempotage" type="date" value="${echapper(plante?.dernier_rempotage)}">
+      ${champDate('Dernier engrais', 'dernier_engrais', plante?.dernier_engrais)}
+      ${champDate('Dernier rempotage', 'dernier_rempotage', plante?.dernier_rempotage)}
+      ${champDate('Dernière feuille', 'derniere_feuille', plante?.derniere_feuille)}
+      <label class="case">
+        <input type="checkbox" name="en_vente"${plante?.en_vente ? ' checked' : ''}>
+        <span>En vente</span>
       </label>
       <label class="champ">
         <span class="champ__label">Notes</span>
@@ -418,6 +438,19 @@ export function vueFormulaire(conteneur, id) {
     </form>`;
 
   const formulaire = conteneur.querySelector('#form-plante');
+  // Corbeille des champs date : efface la valeur, puis se cache
+  const majCorbeille = (nom) => {
+    const bouton = formulaire.querySelector(`[data-vider="${nom}"]`);
+    if (bouton) bouton.hidden = !formulaire.elements[nom].value;
+  };
+  formulaire.addEventListener('click', (e) => {
+    const bouton = e.target.closest('[data-vider]');
+    if (!bouton) return;
+    formulaire.elements[bouton.dataset.vider].value = '';
+    majCorbeille(bouton.dataset.vider);
+  });
+  formulaire.addEventListener('input', (e) => { if (e.target.type === 'date') majCorbeille(e.target.name); });
+  formulaire.addEventListener('change', (e) => { if (e.target.type === 'date') majCorbeille(e.target.name); });
   const zoneErreur = conteneur.querySelector('#form-erreur');
   const bouton = conteneur.querySelector('#form-ok');
 

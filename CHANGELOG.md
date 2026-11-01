@@ -3,6 +3,18 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [0.7.0] - 2026-11-01
+
+### Ajoute
+- Etiquette « En vente » (case dans le formulaire) : pastille sur la vignette, mention sur la fiche, filtre « En vente »
+- « Derniere feuille le » : date dans le formulaire + bouton « Nouvelle feuille aujourd'hui » dans les soins
+- Nouvelle plante : la piece ou il y a le plus de plantes est proposee d'office
+- Base de donnees : colonnes `en_vente`, `derniere_feuille`, `engrais_jours` et `date_photo` (script `supabase/05-evolutions.sql`)
+
+### Corrige
+- Pieces classees de A a Z (listes, formulaires, filtres)
+- Champs date (acquisition, engrais, rempotage, feuille) : une corbeille permet d'effacer la valeur choisie
+
 ## [0.6.0] - 2026-11-01
 
 Le recadrage des photos.

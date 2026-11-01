@@ -30,6 +30,19 @@ export const arrosagesDe = (idPlante) => etat.arrosages
   .filter((a) => a.plante_id === idPlante)
   .sort((a, b) => b.jour.localeCompare(a.jour));
 export const trouverPiece = (id) => etat.pieces.find((p) => p.id === id) || null;
+// Piece ou elle met le plus de plantes (proposee d'office pour une nouvelle plante), ou '' s'il n'y en a pas
+export function pieceLaPlusUtilisee() {
+  const compte = new Map();
+  for (const plante of etat.plantes) {
+    if (plante.piece_id && trouverPiece(plante.piece_id)) compte.set(plante.piece_id, (compte.get(plante.piece_id) || 0) + 1);
+  }
+  let meilleure = '';
+  let max = 0;
+  for (const piece of etat.pieces) { // ordre alphabetique : en cas d'egalite, la premiere gagne
+    if ((compte.get(piece.id) || 0) > max) { meilleure = piece.id; max = compte.get(piece.id); }
+  }
+  return meilleure;
+}
 export const nomPiece = (id) => trouverPiece(id)?.nom || '';
 export const nombrePlantesDans = (idPiece) => etat.plantes.filter((p) => p.piece_id === idPiece).length;
 
@@ -73,7 +86,8 @@ export function viderEtat() {
 
 const comparerNoms = (a, b) => a.nom.localeCompare(b.nom, 'fr', { sensitivity: 'base' });
 const trierPlantes = () => etat.plantes.sort(comparerNoms);
-const trierPieces = () => etat.pieces.sort((a, b) => (a.position - b.position) || comparerNoms(a, b));
+// Pieces classees de A a Z (la colonne "position" de la base n'est plus utilisee)
+const trierPieces = () => etat.pieces.sort(comparerNoms);
 
 // ---------- Chargement ----------
 
@@ -146,6 +160,8 @@ function nettoyerPlante(champs) {
     arrosage_jours: entier(champs.arrosage_jours),
     dernier_engrais: champs.dernier_engrais || null,
     dernier_rempotage: champs.dernier_rempotage || null,
+    derniere_feuille: champs.derniere_feuille || null,
+    en_vente: champs.en_vente === true || champs.en_vente === 'on',
   };
 }
 
