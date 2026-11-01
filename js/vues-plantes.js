@@ -4,7 +4,7 @@ import {
   photosDe, photoCouverture, ajouterPhoto, supprimerPhoto, definirCouverture,
   arrosagesDe, arroserPlante, annulerArrosage, marquerFait,
 } from './donnees.js';
-import { etatArrosage, libelleEcheance } from './rappels.js';
+import { etatArrosage, etatEngrais, libelleEcheance } from './rappels.js';
 import { chargerUrls, urlEnCache, cheminVignette } from './photos.js';
 import { echapper, icone, formaterDate, normaliser, dateRelative, dateIsoLocale } from './outils.js';
 import { confirmer, message } from './dialogues.js';
@@ -216,6 +216,7 @@ function initialiserSoins(zone, idPlante) {
         </ul>` : ''}
       <h3 class="soins__sous-titre">Entretien</h3>
       ${ligne('Dernier engrais', plante.dernier_engrais ? echapper(dateRelative(plante.dernier_engrais, aujourdhui)) : '—', 'data-soin="engrais"')}
+      ${ligne("Prochaine dose d'engrais", plante.prochain_engrais ? echapper(libelleEcheance(etatEngrais(plante, aujourdhui))) : '—', 'data-soin="prochain-engrais"')}
       ${ligne('Dernier rempotage', plante.dernier_rempotage ? echapper(dateRelative(plante.dernier_rempotage, aujourdhui)) : '—', 'data-soin="rempotage"')}
       ${ligne('Dernière feuille', plante.derniere_feuille ? echapper(dateRelative(plante.derniere_feuille, aujourdhui)) : '—', 'data-soin="feuille"')}
       <div class="soins__actions">
@@ -421,6 +422,7 @@ export function vueFormulaire(conteneur, id) {
                placeholder="Ex. 7 (vide = pas de rappel)" value="${echapper(plante?.arrosage_jours)}">
       </label>
       ${champDate('Dernier engrais', 'dernier_engrais', plante?.dernier_engrais)}
+      ${champDate("Prochaine dose d'engrais", 'prochain_engrais', plante?.prochain_engrais)}
       ${champDate('Dernier rempotage', 'dernier_rempotage', plante?.dernier_rempotage)}
       ${champDate('Dernière feuille', 'derniere_feuille', plante?.derniere_feuille)}
       <label class="case">

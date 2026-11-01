@@ -3,6 +3,15 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [0.8.0] - 2026-11-01
+
+### Ajoute
+- « Prochaine dose d'engrais » : une date a choisir (formulaire + fiche). A partir de ce jour, la plante apparait
+  dans une section « Engrais » de l'ecran Aujourd'hui, avec un bouton « Fait » ; elle est annoncee dans « Bientot »
+  les 3 jours avant, et comptee dans la pastille de l'onglet
+- « Fait » (ou « Engrais fait aujourd'hui » sur la fiche) : le dernier engrais passe a aujourd'hui et la prochaine
+  dose est effacee
+
 ## [0.7.0] - 2026-11-01
 
 ### Ajoute
