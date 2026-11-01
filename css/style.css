@@ -898,6 +898,3 @@ a.btn { text-decoration: none; }
 .champ__input[type="date"]::-webkit-datetime-edit-fields-wrapper {
   padding: 0;
 }
-/* Date vide : on garde la meme hauteur et un texte discret */
-.champ__input[type="date"]:not(:valid),
-.champ__input[type="date"][value=""] { color: var(--texte-doux); }
