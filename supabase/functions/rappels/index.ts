@@ -68,7 +68,7 @@ function composer({ arroser, engrais, taches }: { arroser: string[]; engrais: st
   if (arroser.length) morceaux.push(`À arroser : ${liste(arroser)}`);
   if (engrais.length) morceaux.push(`Engrais : ${liste(engrais)}`);
   if (taches.length) morceaux.push(`Tâches : ${liste(taches)}`);
-  return morceaux.length ? { titre, corps: morceaux.join(' · '), url: './#/aujourdhui' } : null;
+  return morceaux.length ? { titre, corps: morceaux.join(' · '), url: '#/aujourdhui' } : null;
 }
 
 // ---------- Envoi ----------
@@ -99,7 +99,7 @@ Deno.serve(async (requete) => {
     const jeton = (requete.headers.get('Authorization') || '').replace('Bearer ', '');
     const { data } = await admin.auth.getUser(jeton);
     if (!data?.user) return reponseJson({ erreur: 'non connectee' }, 401);
-    const envoyes = await envoyer(data.user.id, { titre: 'Mes plantes', corps: 'Les notifications fonctionnent 🌿', url: './#/aujourdhui', tag: 'test' });
+    const envoyes = await envoyer(data.user.id, { titre: 'Mes plantes', corps: 'Les notifications fonctionnent 🌿', url: '#/aujourdhui', tag: 'test' });
     return reponseJson({ envoye: envoyes });
   }
 

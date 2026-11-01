@@ -96,14 +96,14 @@ self.addEventListener('push', (evenement) => {
     icon: './icons/icon-192.png',
     badge: './icons/icon-192.png',
     tag: donnees.tag || 'rappel',
-    data: { url: donnees.url || './#/aujourdhui' },
+    data: { url: donnees.url || '#/aujourdhui' },
   }));
 });
 
 // Toucher la notification ouvre l'appli sur l'ecran « Aujourd'hui »
 self.addEventListener('notificationclick', (evenement) => {
   evenement.notification.close();
-  const cible = new URL(evenement.notification.data?.url || './#/aujourdhui', self.registration.scope).href;
+  const cible = new URL(evenement.notification.data?.url || '#/aujourdhui', self.registration.scope).href;
   evenement.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((fenetres) => {
     for (const fenetre of fenetres) {
       if ('focus' in fenetre) { fenetre.navigate?.(cible).catch(() => {}); return fenetre.focus(); }
