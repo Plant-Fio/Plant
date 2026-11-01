@@ -177,6 +177,19 @@ export async function verifierConnexion(base, dossier, { version }) {
       }
     }
 
+    // Colonne date_photo (suivi de l'evolution) sur la table photos
+    if (urlSupabase && cle) {
+      try {
+        const reponse = await fetch(`${urlSupabase}/rest/v1/photos?select=date_photo&limit=1`, {
+          headers: { apikey: cle, Authorization: `Bearer ${cle}` },
+        });
+        if (reponse.ok) ok('table photos : colonne date_photo presente');
+        else annoter('error', titre, `Colonne "date_photo" absente de "photos" (${reponse.status}) : le script supabase/05-evolutions.sql a-t-il ete lance ?`);
+      } catch (e) {
+        annoter('error', titre, `Verification de date_photo impossible : ${e.message}`);
+      }
+    }
+
     // Bucket "photos" : il doit exister et refuser un depot venant d'un visiteur sans compte.
     // (Bucket absent : "Bucket not found". Bucket present avec RLS : refus "row-level security".)
     if (urlSupabase && cle) {
