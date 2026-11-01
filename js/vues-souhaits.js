@@ -7,6 +7,7 @@ import { chargerUrls, urlEnCache, cheminVignette } from './photos.js';
 import { remplirPhotos } from './vues-plantes.js';
 import { echapper, icone } from './outils.js';
 import { confirmer, message } from './dialogues.js';
+import { recadrer } from './recadrage.js';
 
 const imageHtml = (url, texte = '') => `<img src="${echapper(url)}" alt="${echapper(texte)}" decoding="async">`;
 
@@ -158,10 +159,13 @@ export function vueFormulaireSouhait(conteneur, id) {
       ${aUnePhoto ? '<button class="btn-texte btn-texte--danger" type="button" id="retirer-photo">Retirer la photo</button>' : ''}`;
   }
 
-  zonePhoto.addEventListener('change', (evenement) => {
+  zonePhoto.addEventListener('change', async (evenement) => {
     if (!evenement.target.matches('input.fichier')) return;
-    const choisi = evenement.target.files[0];
-    if (!choisi) return;
+    const brut = evenement.target.files[0];
+    evenement.target.value = ''; // permet de rechoisir la meme photo
+    if (!brut) return;
+    const choisi = await recadrer(brut);
+    if (!choisi) return; // recadrage annule : on garde la photo actuelle
     fichier = choisi;
     retirer = false;
     if (apercu) URL.revokeObjectURL(apercu);

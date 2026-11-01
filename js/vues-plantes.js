@@ -8,6 +8,7 @@ import { etatArrosage, libelleEcheance } from './rappels.js';
 import { chargerUrls, urlEnCache, cheminVignette } from './photos.js';
 import { echapper, icone, formaterDate, normaliser, dateRelative, dateIsoLocale } from './outils.js';
 import { confirmer, message } from './dialogues.js';
+import { recadrer } from './recadrage.js';
 
 // Ce que la liste garde en memoire quand on va voir une fiche puis qu'on revient
 let recherche = '';
@@ -244,6 +245,7 @@ function initialiserSoins(zone, idPlante) {
 function initialiserGalerie(galerie, idPlante) {
   let selection = photoCouverture(trouverPlante(idPlante))?.id ?? null; // photo affichee en grand
   let envoi = null; // { courant, total } pendant un envoi
+  let recadrageEnCours = false;
 
   // Le champ qui ouvre l'appareil photo / la phototheque. Il recouvre toute la zone tactile
   // (invisible) : c'est plus fiable sur iPhone qu'un bouton qui "clique" sur un champ cache.
@@ -281,14 +283,18 @@ function initialiserGalerie(galerie, idPlante) {
   }
 
   async function televerser(fichiers) {
-    if (!fichiers.length || envoi) return;
+    if (!fichiers.length || envoi || recadrageEnCours) return;
+    recadrageEnCours = true;
     let reussies = 0;
     let derniereErreur = null;
     for (let i = 0; i < fichiers.length; i++) {
+      // Recadrage (ou « Garder entiere ») avant l'envoi ; « Annuler » passe a la photo suivante
+      const pret = await recadrer(fichiers[i], { position: i + 1, total: fichiers.length });
+      if (!pret) continue;
       envoi = { courant: i + 1, total: fichiers.length };
       dessiner();
       try {
-        const photo = await ajouterPhoto(idPlante, fichiers[i]);
+        const photo = await ajouterPhoto(idPlante, pret);
         await chargerUrls([photo.chemin, cheminVignette(photo.chemin)]);
         selection = photo.id;
         reussies++;
@@ -297,6 +303,7 @@ function initialiserGalerie(galerie, idPlante) {
       }
     }
     envoi = null;
+    recadrageEnCours = false;
     dessiner();
     if (reussies) message(reussies > 1 ? `${reussies} photos ajoutées` : 'Photo ajoutée');
     if (derniereErreur) message(expliquerErreur(derniereErreur), 'erreur');
