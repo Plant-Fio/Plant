@@ -799,11 +799,15 @@ a.btn { text-decoration: none; }
   background: #fff;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
 }
-.recadrage__poignee--nw { left: -22px; top: -22px; }
-.recadrage__poignee--ne { right: -22px; top: -22px; }
-.recadrage__poignee--sw { left: -22px; bottom: -22px; }
-.recadrage__poignee--se { right: -22px; bottom: -22px; }
-.recadrage__poignee::after { left: 13px; top: 13px; }
+.recadrage__poignee--nw { left: 0; top: 0; }
+.recadrage__poignee--ne { right: 0; top: 0; }
+.recadrage__poignee--sw { left: 0; bottom: 0; }
+.recadrage__poignee--se { right: 0; bottom: 0; }
+/* Les poignees sont a l'interieur du cadre : elles ne sont jamais coupees au bord de l'image */
+.recadrage__poignee--nw::after { left: 4px; top: 4px; }
+.recadrage__poignee--ne::after { right: 4px; top: 4px; }
+.recadrage__poignee--sw::after { left: 4px; bottom: 4px; }
+.recadrage__poignee--se::after { right: 4px; bottom: 4px; }
 .recadrage__bas { flex-direction: column; gap: 4px; padding-bottom: 12px; }
 .recadrage__formats { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 .recadrage__format {
