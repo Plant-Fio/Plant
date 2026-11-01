@@ -970,7 +970,7 @@ a.btn { text-decoration: none; }
 .camera .recadrage__formats { flex-wrap: nowrap; gap: 6px; }
 .recadrage__format--petit { padding: 0 12px; font-size: 14px; }
 .camera__opacite { display: flex; align-items: center; gap: 12px; width: 100%; max-width: 360px; font-size: 14px; }
-.camera__opacite input { flex: 1; min-height: 32px; accent-color: #fff; }
+.camera__opacite input { flex: 1; min-height: 44px; accent-color: #fff; }
 .camera__declencheur {
   width: 64px;
   height: 64px;
