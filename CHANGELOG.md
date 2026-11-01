@@ -3,6 +3,12 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [0.5.1] - 2026-11-01
+
+### Corrige
+- Souhait : une fois la photo choisie, toucher la note ou l'espece rouvrait le choix de photo
+  (le champ photo invisible recouvrait tout le formulaire)
+
 ## [0.5.0] - 2026-11-01
 
 La liste de souhaits.

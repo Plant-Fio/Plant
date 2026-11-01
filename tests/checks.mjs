@@ -580,6 +580,14 @@ export async function verifierAppli(base, dossier, { version }) {
     const avantEnvois = (await page.evaluate(() => globalThis.__uploads)).length;
     await page.setInputFiles('#apercu input[type="file"]', { name: 'calathea.png', mimeType: 'image/png', buffer: fs.readFileSync('icons/icon-512.png') });
     await page.waitForSelector('#apercu img');
+    // Bug corrige en 0.5.1 : le champ photo invisible recouvrait tout le formulaire une fois la photo choisie
+    await page.locator('[name="note"]').scrollIntoViewIfNeeded();
+    const surLaNote = await page.evaluate(() => {
+      const r = document.querySelector('[name="note"]').getBoundingClientRect();
+      return document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)?.getAttribute('name');
+    });
+    verifier(surLaNote === 'note', titre, 'souhaits : apres le choix de la photo, les champs restent cliquables',
+      "Le champ photo recouvre le formulaire : toucher la note ouvrirait la photothèque.");
     await capturer(page, dossier, '20-souhaits-formulaire.png');
     await verifierDebordement(page, 'Formulaire de souhait');
     await page.click('#form-ok');
