@@ -112,6 +112,8 @@
   --tb-bordure: 0;
   --tb-ombre: 0 8px 24px rgba(58, 46, 57, 0.14);
   --serif: "Young Serif", ui-serif, Georgia, serif;
+  /* une teinte pastel par piece (rose, sauge, beurre, lilas, bleu) */
+  --t0: #F6D3CB; --t1: #D5E3D6; --t2: #F6E3A1; --t3: #E3D8EE; --t4: #CFE0F0;
   --sans: "DM Sans", -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
 }
 
@@ -1024,49 +1026,11 @@ a.btn { text-decoration: none; }
 }
 .camera__cadre video, .camera__fantome { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .camera__fantome { pointer-events: none; }
-.camera__silhouette { position: absolute; inset: 0; pointer-events: none; }
-.silhouette { width: 100%; height: 100%; display: block; }
-.silhouette .s { fill: rgba(255, 255, 255, 0.28); stroke: #fff; stroke-width: 2.5; stroke-linejoin: round; }
-.silhouette .tige { fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; }
-.silhouette .fin { stroke-width: 1.6; }
-.camera__ligne {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 44px;
-  margin-top: -22px;
-  touch-action: none;
-  cursor: ns-resize;
-}
-.camera__ligne::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 21px;
-  height: 2px;
-  background: #ffd84d;
-  box-shadow: 0 0 3px rgba(0, 0, 0, 0.7);
-}
-.camera__poignee {
-  position: absolute;
-  right: 10px;
-  top: 10px;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: #ffd84d;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
-}
 .camera__etat { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; margin: 0; text-align: center; background: rgba(0, 0, 0, 0.6); }
 .camera__bas { flex: none; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 6px 12px 10px; }
-.camera__formes { display: flex; gap: 6px; overflow-x: auto; max-width: 100%; padding: 2px 0; scrollbar-width: none; }
-.camera__formes::-webkit-scrollbar { display: none; }
-.camera__formes .recadrage__format { flex: none; }
 .camera .recadrage__format { padding: 0 12px; font-size: 14px; }
 .camera .recadrage__formats { flex-wrap: nowrap; gap: 6px; }
 .camera__aides .recadrage__format { padding: 0 9px; font-size: 13px; white-space: nowrap; }
-.recadrage__format--petit { padding: 0 12px; font-size: 14px; }
 .camera__opacite { display: flex; align-items: center; gap: 12px; width: 100%; max-width: 360px; font-size: 14px; }
 .camera__opacite input { flex: 1; min-height: 44px; accent-color: #fff; }
 .camera__declencheur {
@@ -1114,3 +1078,16 @@ a.btn { text-decoration: none; }
 .theme__carte { position: absolute; left: 10px; right: 10px; top: 26px; height: 28px; }
 .theme__point { position: absolute; right: 10px; bottom: 8px; width: 12px; height: 12px; border-radius: 50%; }
 .theme__nom { text-align: center; line-height: 1.2; }
+
+/* ---------- Fleuriste : une teinte par piece ---------- */
+[data-teinte="0"] { --teinte: var(--t0); }
+[data-teinte="1"] { --teinte: var(--t1); }
+[data-teinte="2"] { --teinte: var(--t2); }
+[data-teinte="3"] { --teinte: var(--t3); }
+[data-teinte="4"] { --teinte: var(--t4); }
+:root[data-theme="fleuriste"] .vignette[data-teinte],
+:root[data-theme="fleuriste"] .tache[data-teinte] { border-color: transparent; background: var(--teinte); }
+:root[data-theme="fleuriste"] .vignette[data-teinte] .vignette__photo,
+:root[data-theme="fleuriste"] .tache[data-teinte] .tache__photo { background: rgba(255, 255, 255, 0.55); }
+:root[data-theme="fleuriste"] .vignette[data-teinte] .vignette__piece { background: rgba(255, 255, 255, 0.6); color: var(--vert-fonce); }
+:root[data-theme="fleuriste"] .puce[data-teinte]:not([aria-pressed="true"]) { border-color: transparent; background: var(--teinte); }

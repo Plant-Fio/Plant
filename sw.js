@@ -24,7 +24,6 @@ const SQUELETTE = [
   './js/vues-souhaits.js',
   './js/recadrage.js',
   './js/camera.js',
-  './js/silhouettes.js',
   './js/themes.js',
   './js/vues-reglages.js',
   './js/app.js',
