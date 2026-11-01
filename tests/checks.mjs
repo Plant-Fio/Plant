@@ -416,6 +416,34 @@ export async function verifierAppli(base, dossier, { version }) {
     await page.click('[data-action="couverture"]');
     await page.waitForSelector('.couverture');
     ok('photos : choix de la photo de couverture');
+
+    // Date de la photo : par defaut celle du jour ; modifiable ; la photo la plus ancienne passe en premier
+    const aujourdhuiTexte = await page.evaluate(() => new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date()));
+    verifier((await page.textContent('[data-photo-date]')).includes(aujourdhuiTexte), titre,
+      "photos : la photo porte la date du jour par defaut", `Date affichee : "${await page.textContent('[data-photo-date]')}".`);
+    await page.click('[data-action="date"]');
+    await page.waitForSelector('dialog[open] input[type="date"]');
+    await page.fill('dialog input[type="date"]', '2025-01-15');
+    await page.click('dialog button[value="ok"]');
+    await page.waitForFunction(() => document.querySelector('[data-photo-date]').textContent.includes('15 janvier 2025'));
+    ok('photos : la date de la photo se modifie');
+    const ordre = await page.$$eval('.bande__vignette', (b) => b.map((x) => x.getAttribute('aria-pressed')));
+    verifier(ordre[0] === 'true', titre, 'photos : la photo la plus ancienne passe en premier dans la bande',
+      `Ordre de la bande : ${ordre.join(',')}.`);
+
+    // Evolution : toutes les photos, de la plus ancienne a la plus recente, avec l'ecart entre elles
+    await page.click('a:has-text("Voir l\'évolution")');
+    await page.waitForSelector('.evol');
+    const legendes = await page.$$eval('.evol__legende', (l) => l.map((x) => x.textContent.replace(/\s+/g, ' ').trim()));
+    verifier(legendes.length === 2 && legendes[0].includes('15 janvier 2025') && legendes[0].includes('Première photo')
+      && /plus tard|lendemain|Le même jour/.test(legendes[1]) && legendes[1].includes(aujourdhuiTexte), titre,
+    "evolution : photos classees par date avec l'ecart entre elles", `Legendes : ${JSON.stringify(legendes)}.`);
+    await page.waitForFunction(() => [...document.querySelectorAll('.evol img')].length === 2
+      && [...document.querySelectorAll('.evol img')].every((i) => i.complete && i.naturalWidth > 0));
+    await capturer(page, dossier, '12-evolution.png');
+    await verifierDebordement(page, 'Evolution');
+    await page.click('a.retour');
+    await page.waitForSelector('#galerie .bande__vignette');
     await capturer(page, dossier, '12-fiche-photos.png');
     await verifierDebordement(page, 'Fiche avec photos');
     await verifierZonesTactiles(page, 'Fiche avec photos');

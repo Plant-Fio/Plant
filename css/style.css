@@ -858,3 +858,20 @@ a.btn { text-decoration: none; }
 .vignette .pastille-vente { position: absolute; top: 16px; left: 16px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2); }
 .fiche__vente { margin: 6px 0 0; }
 .pastille-vente--fiche { font-size: 14px; padding: 4px 12px; }
+
+/* ---------- Photos datees et evolution ---------- */
+.photo-date { margin: -6px 0 4px; font-size: 15px; font-weight: 600; color: var(--texte-doux); }
+.actions-photo { flex-wrap: wrap; }
+.evol { margin: 0 0 24px; }
+.evol__photo {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: var(--rayon);
+  background: var(--vert-clair);
+  color: var(--vert);
+  min-height: 160px;
+}
+.evol__photo img { display: block; width: 100%; height: auto; max-height: 75vh; object-fit: contain; }
+.evol__legende { display: flex; flex-direction: column; gap: 2px; padding: 10px 4px 0; }
+.evol__legende span { color: var(--texte-doux); font-size: 14px; }

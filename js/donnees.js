@@ -20,7 +20,12 @@ const etat = {
 
 export const lireEtat = () => etat;
 export const trouverPlante = (id) => etat.plantes.find((p) => p.id === id) || null;
-export const photosDe = (idPlante) => etat.photos.filter((p) => p.plante_id === idPlante);
+// Date d'une photo (repli sur le jour d'envoi pour une copie locale ancienne)
+export const datePhoto = (photo) => photo.date_photo || String(photo.created_at || '').slice(0, 10);
+// Photos d'une plante de la plus ancienne a la plus recente (selon leur date, modifiable)
+export const photosDe = (idPlante) => etat.photos
+  .filter((p) => p.plante_id === idPlante)
+  .sort((a, b) => datePhoto(a).localeCompare(datePhoto(b)) || String(a.created_at).localeCompare(String(b.created_at)));
 // Couverture = la photo choisie, sinon la premiere photo de la plante
 export const photoCouverture = (plante) => (plante
   ? photosDe(plante.id).find((p) => p.id === plante.photo_principale_id) || photosDe(plante.id)[0] || null
@@ -252,8 +257,11 @@ export async function ajouterPhoto(idPlante, fichier) {
   const id = crypto.randomUUID();
   const chemin = `${etat.userId}/${idPlante}/${id}.jpg`;
   await envoyerFichiers(chemin, prepares);
+  // Date de la photo : celle du fichier (photo prise ce jour-la), sinon aujourd'hui. Modifiable ensuite.
+  const modifiee = fichier.lastModified ? dateIsoLocale(new Date(fichier.lastModified)) : dateIsoLocale();
+  const date = modifiee > dateIsoLocale() || modifiee < '2000-01-01' ? dateIsoLocale() : modifiee;
   const { data, error } = await supabase.from('photos')
-    .insert({ id, plante_id: idPlante, chemin }).select().single();
+    .insert({ id, plante_id: idPlante, chemin, date_photo: date }).select().single();
   if (error) {
     await supprimerFichiers([chemin]).catch(() => {});
     throw error;
@@ -263,6 +271,13 @@ export async function ajouterPhoto(idPlante, fichier) {
   if (plante && !plante.photo_principale_id) await definirCouverture(idPlante, data.id);
   sauvegarderCache();
   return data;
+}
+
+export async function modifierDatePhoto(idPhoto, date) {
+  const { data, error } = await supabase.from('photos').update({ date_photo: date }).eq('id', idPhoto).select().single();
+  if (error) throw error;
+  etat.photos = etat.photos.map((p) => (p.id === idPhoto ? data : p));
+  sauvegarderCache();
 }
 
 export async function supprimerPhoto(idPhoto) {

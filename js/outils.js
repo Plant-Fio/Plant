@@ -53,6 +53,17 @@ export function formaterDate(iso) {
     .format(new Date(annee, mois - 1, jour));
 }
 
+// Ecart entre deux photos : "Le même jour", "5 jours plus tard", "3 semaines plus tard", "2 mois plus tard"
+export function libelleEcart(jours) {
+  if (jours <= 0) return 'Le même jour';
+  if (jours === 1) return 'Le lendemain';
+  if (jours < 14) return `${jours} jours plus tard`;
+  if (jours < 60) return `${Math.round(jours / 7)} semaines plus tard`;
+  if (jours < 730) return `${Math.round(jours / 30.4)} mois plus tard`;
+  const ans = Math.round(jours / 365);
+  return `${ans} ans plus tard`;
+}
+
 // Pour la recherche : minuscules et sans accents ("Épine" correspond a "epine").
 export function normaliser(texte) {
   return String(texte ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
