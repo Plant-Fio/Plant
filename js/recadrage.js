@@ -135,12 +135,18 @@ export function recadrer(fichier, { position = 1, total = 1 } = {}) {
       // Cadre = toute l'image : on garde l'original tel quel (pas de recompression pour rien)
       if (rect.w >= W - 1 && rect.h >= H - 1) { terminer(fichier); return; }
       const echelle = image.naturalWidth / W;
-      const sx = Math.round(rect.x * echelle);
-      const sy = Math.round(rect.y * echelle);
-      const sw = Math.max(1, Math.min(Math.round(rect.w * echelle), image.naturalWidth - sx));
-      let sh = Math.max(1, Math.min(Math.round(rect.h * echelle), image.naturalHeight - sy));
-      // Format impose : on cale la hauteur sur la largeur pour que le carre soit un vrai carre (pas de pixel de trop)
-      if (ratio) sh = Math.max(1, Math.min(Math.round(sw / ratio), image.naturalHeight - sy));
+      const largeurImage = image.naturalWidth;
+      const hauteurImage = image.naturalHeight;
+      let sw = Math.max(1, Math.min(Math.round(rect.w * echelle), largeurImage));
+      let sh = Math.max(1, Math.min(Math.round(rect.h * echelle), hauteurImage));
+      // Format impose : proportions exactes (un carre est un vrai carre, sans pixel de trop)
+      if (ratio) {
+        sh = Math.min(Math.round(sw / ratio), hauteurImage);
+        sw = Math.min(Math.round(sh * ratio), largeurImage);
+      }
+      // On decale le cadre plutot que de le rogner s'il depasse d'un pixel
+      const sx = Math.max(0, Math.min(Math.round(rect.x * echelle), largeurImage - sw));
+      const sy = Math.max(0, Math.min(Math.round(rect.y * echelle), hauteurImage - sh));
       const reduction = Math.min(1, COTE_MAX_SORTIE / Math.max(sw, sh));
       const canvas = document.createElement('canvas');
       canvas.width = Math.max(1, Math.round(sw * reduction));
