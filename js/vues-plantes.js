@@ -237,7 +237,7 @@ function initialiserSoins(zone, idPlante) {
             </li>`).join('')}
         </ul>` : ''}
       <h3 class="soins__sous-titre">Entretien</h3>
-      ${ligne('Dernier engrais', plante.dernier_engrais ? echapper(dateRelative(plante.dernier_engrais, aujourdhui)) : '—', 'data-soin="engrais"')}
+      ${ligne('Dernière dose d\'engrais', plante.dernier_engrais ? echapper(dateRelative(plante.dernier_engrais, aujourdhui)) : '—', 'data-soin="engrais"')}
       ${ligne("Prochaine dose d'engrais", plante.prochain_engrais ? echapper(libelleEcheance(etatEngrais(plante, aujourdhui))) : '—', 'data-soin="prochain-engrais"')}
       ${ligne('Dernier rempotage', plante.dernier_rempotage ? echapper(dateRelative(plante.dernier_rempotage, aujourdhui)) : '—', 'data-soin="rempotage"')}
       ${ligne('Dernière feuille', plante.derniere_feuille ? echapper(dateRelative(plante.derniere_feuille, aujourdhui)) : '—', 'data-soin="feuille"')}
@@ -495,7 +495,7 @@ export function vueFormulaire(conteneur, id) {
         <input class="champ__input" name="arrosage_jours" type="number" inputmode="numeric" min="1" max="365"
                placeholder="Ex. 7 (vide = pas de rappel)" value="${echapper(plante?.arrosage_jours)}">
       </label>
-      ${champDate('Dernier engrais', 'dernier_engrais', plante?.dernier_engrais)}
+      ${champDate('Dernière dose d\'engrais', 'dernier_engrais', plante?.dernier_engrais)}
       ${champDate("Prochaine dose d'engrais", 'prochain_engrais', plante?.prochain_engrais)}
       ${champDate('Dernier rempotage', 'dernier_rempotage', plante?.dernier_rempotage)}
       ${champDate('Dernière feuille', 'derniere_feuille', plante?.derniere_feuille)}
