@@ -9,6 +9,7 @@ Toutes les evolutions notables de l'appli. Le numero de version visible dans l'a
 - Script SQL `supabase/07-taches-date.sql` (colonne de la date prévue).
 ### Modifié
 - Le champ d'ajout d'une tâche est vide (plus d'exemple affiché).
+- Fiche d'une plante : plus d'espace entre le bouton « Photo d'évolution » et le nom de la plante.
 
 ## [1.3.0] - 2026-11-01
 ### Ajouté

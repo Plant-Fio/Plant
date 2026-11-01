@@ -667,6 +667,7 @@ a.btn { text-decoration: none; }
 }
 .envoi { margin: -8px 0 12px; font-size: 14px; color: var(--texte-doux); }
 .fiche__nom {
+  margin-top: 28px; /* espace sous la galerie et ses boutons */
   font-family: var(--serif);
   font-size: 32px;
   font-weight: 500;
