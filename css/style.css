@@ -1091,3 +1091,26 @@ a.btn { text-decoration: none; }
 :root[data-theme="fleuriste"] .tache[data-teinte] .tache__photo { background: rgba(255, 255, 255, 0.55); }
 :root[data-theme="fleuriste"] .vignette[data-teinte] .vignette__piece { background: rgba(255, 255, 255, 0.6); color: var(--vert-fonce); }
 :root[data-theme="fleuriste"] .puce[data-teinte]:not([aria-pressed="true"]) { border-color: transparent; background: var(--teinte); }
+
+/* ---------- Quarantaine ---------- */
+.pastille-quarantaine {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  background: var(--vert-clair);
+  color: var(--vert-fonce);
+  font-size: 12px;
+  font-weight: 700;
+}
+.vignette .pastille-quarantaine { position: absolute; top: 16px; left: 16px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2); }
+.vignette .pastille-quarantaine ~ .pastille-vente { top: 46px; }
+.pastille-quarantaine--fiche { font-size: 14px; padding: 4px 12px; }
+.section__titre--haut { margin-top: 8px; }
+.aide-quarantaine {
+  margin: -6px 4px 16px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--vert-clair);
+  color: var(--vert-fonce);
+  font-size: 15px;
+}
