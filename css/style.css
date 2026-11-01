@@ -1123,7 +1123,7 @@ a.btn { text-decoration: none; }
 .ajout-tache { margin-top: 12px; }
 .ajout-tache__ligne { display: flex; gap: 10px; }
 .ajout-tache .champ__input { flex: 1; min-width: 0; }
-.ajout-tache__quand { margin: 10px 0 0; padding: 2px 0; }
+.ajout-tache__quand { margin: 10px 0 0; padding: 2px 0; flex-wrap: wrap; overflow: visible; }
 .ajout-tache > .champ__input { width: 100%; margin-top: 10px; }
 .tache__quand { display: block; margin-top: 2px; font-size: 13px; font-weight: 600; color: var(--texte-doux); }
 .ajout-tache .btn { width: auto; flex: none; }
