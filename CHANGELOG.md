@@ -3,6 +3,11 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [1.5.0] - 2026-11-01
+### Ajouté
+- Notifications de rappel (iPhone, appli installée sur l'écran d'accueil) : un rappel le matin (10 h par défaut) avec ce qu'il y a à faire aujourd'hui (arrosages, engrais, tâches) et un rappel le soir (20 h) pour le lendemain. Activation, heures et rappels réglables dans Réglages > Notifications, avec un bouton de test.
+- Fonction Supabase `rappels` (`supabase/functions/rappels/index.ts`) et scripts SQL `08-notifications.sql` et `09-horloge.sql`.
+
 ## [1.4.1] - 2026-11-01
 ### Modifié
 - « Dernier engrais » devient « Dernière dose d'engrais » (fiche et formulaire), pour aller avec « Prochaine dose d'engrais ».

@@ -1127,3 +1127,12 @@ a.btn { text-decoration: none; }
 .ajout-tache > .champ__input { width: 100%; margin-top: 10px; }
 .tache__quand { display: block; margin-top: 2px; font-size: 13px; font-weight: 600; color: var(--texte-doux); }
 .ajout-tache .btn { width: auto; flex: none; }
+
+/* ---------- Notifications (Reglages) ---------- */
+.notifs__etat { margin: 0 0 12px; color: var(--texte-doux); font-size: 15px; }
+.notif-ligne { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; }
+.notif-ligne__titre { display: flex; align-items: center; gap: 12px; min-height: 44px; flex: 1; font-weight: 500; cursor: pointer; }
+.notif-ligne__titre input { width: 24px; height: 24px; flex: none; accent-color: var(--vert); }
+.notif-ligne__heure { width: 104px; flex: none; margin: 0; }
+#notifs .btn { margin-top: 12px; }
+#notifs .btn-texte { display: block; margin-top: 8px; }
