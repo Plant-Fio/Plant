@@ -138,7 +138,9 @@ export function recadrer(fichier, { position = 1, total = 1 } = {}) {
       const sx = Math.round(rect.x * echelle);
       const sy = Math.round(rect.y * echelle);
       const sw = Math.max(1, Math.min(Math.round(rect.w * echelle), image.naturalWidth - sx));
-      const sh = Math.max(1, Math.min(Math.round(rect.h * echelle), image.naturalHeight - sy));
+      let sh = Math.max(1, Math.min(Math.round(rect.h * echelle), image.naturalHeight - sy));
+      // Format impose : on cale la hauteur sur la largeur pour que le carre soit un vrai carre (pas de pixel de trop)
+      if (ratio) sh = Math.max(1, Math.min(Math.round(sw / ratio), image.naturalHeight - sy));
       const reduction = Math.min(1, COTE_MAX_SORTIE / Math.max(sw, sh));
       const canvas = document.createElement('canvas');
       canvas.width = Math.max(1, Math.round(sw * reduction));
