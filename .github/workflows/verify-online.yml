@@ -1,0 +1,66 @@
+name: Verification en ligne
+
+# Ouvre le site PUBLIE dans Chromium (format iPhone) et prend des captures d'ecran.
+# Appele automatiquement apres chaque deploiement, ou a lancer a la main (onglet Actions > Run workflow).
+on:
+  workflow_call:
+    inputs:
+      url:
+        type: string
+        required: false
+        default: ''
+  workflow_dispatch:
+    inputs:
+      url:
+        description: "Adresse du site (vide = adresse GitHub Pages du depot)"
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  verifier:
+    name: Verifier
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Adresse a verifier
+        id: adresse
+        env:
+          URL_DONNEE: ${{ inputs.url }}
+        run: |
+          URL="$URL_DONNEE"
+          if [ -z "$URL" ]; then
+            PROPRIETAIRE="${GITHUB_REPOSITORY_OWNER,,}"
+            DEPOT="${GITHUB_REPOSITORY#*/}"
+            URL="https://${PROPRIETAIRE}.github.io/${DEPOT}/"
+          fi
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "Adresse verifiee : $URL"
+
+      - name: Installer les outils
+        run: npm install --no-audit --no-fund --no-package-lock
+
+      - name: Installer Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Verifier le site en ligne
+        env:
+          SITE_URL: ${{ steps.adresse.outputs.url }}
+        run: node tests/run-online.mjs "$SITE_URL"
+
+      - name: Garder les captures d'ecran
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: captures-en-ligne
+          path: captures/
+          if-no-files-found: ignore
+          retention-days: 14

@@ -1,0 +1,62 @@
+name: Deploiement
+
+# Se lance quand une PR est fusionnee dans main : fabrique le site, le publie sur GitHub Pages,
+# puis verifie la version en ligne (avec captures d'ecran).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  fabriquer:
+    name: Fabriquer
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Controles statiques
+        run: node tests/check.mjs
+
+      - name: Fabriquer le site
+        run: bash scripts/build.sh
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  publier:
+    name: Publier
+    needs: fabriquer
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  verifier-en-ligne:
+    name: Verifier en ligne
+    needs: publier
+    uses: ./.github/workflows/verify-online.yml
+    with:
+      url: ${{ needs.publier.outputs.page_url }}
