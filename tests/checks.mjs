@@ -713,12 +713,14 @@ export async function verifierAppli(base, dossier, { version }) {
         `Polices chargees : ${charges.join(', ') || 'aucune'}.`);
       const presse = await page.getAttribute(`[data-theme-id="${id}"]`, 'aria-pressed');
       verifier(presse === 'true', titre, `theme ${id} : la vignette est marquee choisie`, `aria-pressed = ${presse}.`);
+      await page.waitForTimeout(400); // laisse finir les transitions de couleur avant la capture
       await capturer(page, dossier, `17-theme-${id}-reglages.png`);
       await verifierDebordement(page, `Reglages (${id})`);
       await verifierZonesTactiles(page, `Reglages (${id})`);
       if (id !== 'herbier') {
         await page.click('[data-tab="plantes"]');
         await page.waitForSelector('.vignette, .vide');
+        await page.waitForTimeout(400);
         await capturer(page, dossier, `17-theme-${id}-liste.png`);
         await verifierDebordement(page, `Liste (${id})`);
         await verifierZonesTactiles(page, `Liste (${id})`);
