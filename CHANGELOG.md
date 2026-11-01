@@ -3,6 +3,16 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [0.6.0] - 2026-11-01
+
+Le recadrage des photos.
+
+### Ajoute
+- Apres le choix d'une photo (plante ou souhait), un ecran de recadrage s'ouvre : on deplace le cadre, on tire
+  les coins, et des formats rapides (Libre, Carre, 4:3, Vertical) sont proposes
+- « Garder entiere » envoie la photo d'origine sans la toucher ; « Annuler » n'ajoute rien
+- Plusieurs photos a la fois : un ecran de recadrage par photo (« Photo 2 sur 3 »)
+
 ## [0.5.2] - 2026-11-01
 
 ### Corrige

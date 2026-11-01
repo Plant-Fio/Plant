@@ -312,6 +312,20 @@ export async function verifierAppli(base, dossier, { version }) {
     // --- Photos : envoi, compression, couverture, suppression ---
     const petitePhoto = fs.readFileSync('icons/icon-512.png');
     await page.setInputFiles('#hero input[type="file"]', { name: 'monstera.png', mimeType: 'image/png', buffer: petitePhoto });
+    // Recadrage : l'ecran s'ouvre ; on tire un coin (le cadre rapetisse), puis « Garder entiere » (photo d'origine)
+    await page.waitForSelector('#recadrage #cadre:not([hidden])');
+    const avantTirage = await page.evaluate(() => document.querySelector('#cadre').getBoundingClientRect().width);
+    const poignee = await page.locator('#cadre [data-coin="se"]').boundingBox();
+    await page.mouse.move(poignee.x + poignee.width / 2, poignee.y + poignee.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(poignee.x + poignee.width / 2 - 100, poignee.y + poignee.height / 2 - 100, { steps: 5 });
+    await page.mouse.up();
+    const apresTirage = await page.evaluate(() => document.querySelector('#cadre').getBoundingClientRect().width);
+    verifier(apresTirage < avantTirage - 60, titre, 'recadrage : tirer un coin reduit le cadre',
+      `Le cadre fait ${Math.round(apresTirage)} px au lieu d'environ ${Math.round(avantTirage - 100)} px apres le tirage.`);
+    await capturer(page, dossier, '12-recadrage.png');
+    await page.click('#recadrage-garder');
+    await page.waitForSelector('#recadrage', { state: 'detached' });
     await page.waitForFunction(() => {
       const i = document.querySelector('#hero img');
       return i && i.complete && i.naturalWidth > 0;
@@ -346,6 +360,10 @@ export async function verifierAppli(base, dossier, { version }) {
     await page.setInputFiles('.bande__ajout input[type="file"]', {
       name: 'grande-photo.jpg', mimeType: 'image/jpeg', buffer: Buffer.from(grandeBase64, 'base64'),
     });
+    // Recadrage en carre : une photo 3000 x 2000 devient 2000 x 2000, puis 1600 x 1600 apres compression
+    await page.waitForSelector('#recadrage #cadre:not([hidden])');
+    await page.click('[data-format="carre"]');
+    await page.click('[data-act="valider"]');
     await page.waitForFunction(() => document.querySelectorAll('.bande__vignette').length === 2);
 
     const envois = await page.evaluate(() => globalThis.__uploads);
@@ -363,6 +381,8 @@ export async function verifierAppli(base, dossier, { version }) {
     verifier(cote(g2) === 1600 && cote(t2) === 400, titre,
       'compression : une photo de 3000 px est reduite a 1600 px, sa vignette a 400 px',
       `Dimensions inattendues pour la grande photo : ${cote(g2)} / ${cote(t2)}.`);
+    verifier(g2.largeur === g2.hauteur && t2.largeur === t2.hauteur, titre,
+      'recadrage : le cadre « Carré » donne bien des photos carrées', `Dimensions apres recadrage carre : ${g2.largeur}x${g2.hauteur}.`);
     verifier(t2.taille < g2.taille, titre, 'compression : la vignette est plus legere que la grande photo',
       'La vignette n\'est pas plus legere que la grande photo.');
 
@@ -585,8 +605,17 @@ export async function verifierAppli(base, dossier, { version }) {
     await page.fill('[name="nom"]', 'Calathea orbifolia');
     await page.fill('[name="espece"]', 'Goeppertia orbifolia');
     await page.fill('[name="note"]', 'Vue chez le fleuriste du marche, environ 25 EUR.');
+    // Annuler le recadrage : aucune photo n'est ajoutee
+    await page.setInputFiles('#apercu input[type="file"]', { name: 'test.png', mimeType: 'image/png', buffer: fs.readFileSync('icons/icon-512.png') });
+    await page.waitForSelector('#recadrage');
+    await page.click('[data-act="annuler"]');
+    await page.waitForSelector('#recadrage', { state: 'detached' });
+    verifier(await nombre('#apercu img') === 0, titre, 'souhaits : annuler le recadrage n\'ajoute pas la photo',
+      'Une photo est apparue malgre l\'annulation du recadrage.');
     const avantEnvois = (await page.evaluate(() => globalThis.__uploads)).length;
     await page.setInputFiles('#apercu input[type="file"]', { name: 'calathea.png', mimeType: 'image/png', buffer: fs.readFileSync('icons/icon-512.png') });
+    await page.waitForSelector('#recadrage #cadre:not([hidden])');
+    await page.click('#recadrage-garder');
     await page.waitForSelector('#apercu img');
     // Bug corrige en 0.5.1 : le champ photo invisible recouvrait tout le formulaire une fois la photo choisie
     await page.locator('[name="note"]').scrollIntoViewIfNeeded();
