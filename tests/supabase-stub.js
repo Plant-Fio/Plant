@@ -14,7 +14,7 @@ const valeursParDefaut = {
   photos: () => ({ date_photo: new Date().toLocaleDateString('sv-SE') }),
   arrosages: () => ({}),
   souhaits: () => ({ espece: null, note: null, photo_chemin: null }),
-  taches: () => ({ fait_le: null }),
+  taches: () => ({ fait_le: null, pour_le: null }),
 };
 const copie = (x) => JSON.parse(JSON.stringify(x));
 

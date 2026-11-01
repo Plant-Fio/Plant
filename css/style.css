@@ -1119,6 +1119,10 @@ a.btn { text-decoration: none; }
 .tache--libre { gap: 10px; padding: 8px 8px 8px 16px; min-height: 60px; }
 .tache__libre-texte { flex: 1; min-width: 0; font-weight: 500; overflow-wrap: anywhere; }
 .tache--faite .tache__libre-texte { color: var(--texte-doux); text-decoration: line-through; }
-.ajout-tache { display: flex; gap: 10px; margin-top: 12px; }
+.ajout-tache { margin-top: 12px; }
+.ajout-tache__ligne { display: flex; gap: 10px; }
 .ajout-tache .champ__input { flex: 1; min-width: 0; }
+.ajout-tache__quand { margin: 10px 0 0; padding: 2px 0; }
+.ajout-tache > .champ__input { width: 100%; margin-top: 10px; }
+.tache__quand { display: block; margin-top: 2px; font-size: 13px; font-weight: 600; color: var(--texte-doux); }
 .ajout-tache .btn { width: auto; flex: none; }

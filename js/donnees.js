@@ -440,9 +440,10 @@ export function expliquerErreur(erreur) {
 // "Vaporiser les plantes du salon" : une tache reste la tant qu'elle n'est pas cochee ;
 // cochee (fait_le = jour), elle reste visible ce jour-la puis disparait.
 
-export async function creerTache(texte) {
+// pourLe : jour prevu ("2026-11-02"), ou null pour "des maintenant"
+export async function creerTache(texte, pourLe = null) {
   const { data, error } = await supabase.from('taches')
-    .insert({ texte: String(texte).trim().slice(0, 120) }).select().single();
+    .insert({ texte: String(texte).trim().slice(0, 120), pour_le: pourLe }).select().single();
   if (error) throw error;
   etat.taches.push(data);
   sauvegarderCache();

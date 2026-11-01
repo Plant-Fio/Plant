@@ -6,7 +6,7 @@ import {
 } from './donnees.js';
 import { planifier, libelleEcheance } from './rappels.js';
 import { photoVignetteHtml, remplirPhotos } from './vues-plantes.js';
-import { echapper, icone, dateDuJour, dateIsoLocale } from './outils.js';
+import { echapper, icone, dateDuJour, dateIsoLocale, ajouterJours, joursEntre, formaterDate } from './outils.js';
 import { message } from './dialogues.js';
 
 function carte(etat, bouton) {
@@ -31,11 +31,17 @@ export function vueAujourdhui(page) {
   const conteneur = document.createElement('div');
   page.replaceChildren(conteneur);
   const jour = dateIsoLocale();
+  // Pour quand est la nouvelle tache ? Le soir (apres 18 h), on propose d'office « Demain ».
+  let quand = new Date().getHours() >= 18 ? 'demain' : 'aujourdhui';
+  let dateAutre = ajouterJours(jour, 2);
 
   function dessiner() {
     const brouillon = conteneur.querySelector('#form-tache [name="texte"]')?.value || '';
     const { plantes, arrosages, pieces, horsLigne, taches } = lireEtat();
-    const tachesAFaire = taches.filter((t) => !t.fait_le);
+    // Une tache sans date, ou dont le jour est arrive, est a faire maintenant
+    const tachesAFaire = taches.filter((t) => !t.fait_le && (!t.pour_le || t.pour_le <= jour));
+    const tachesAVenir = taches.filter((t) => !t.fait_le && t.pour_le > jour)
+      .sort((x, y) => x.pour_le.localeCompare(y.pour_le));
     const tachesFaites = taches.filter((t) => t.fait_le === jour);
     const nomsPieces = new Map(pieces.map((p) => [p.id, p.nom]));
     const { aFaire, faites, bientot, engraisAFaire, engraisBientot, avecRappel } = planifier(plantes, arrosages, jour);
@@ -87,10 +93,26 @@ export function vueAujourdhui(page) {
           </article>`).join('')}
       </div>
       <form class="ajout-tache" id="form-tache" novalidate>
-        <input class="champ__input" name="texte" type="text" maxlength="120" autocomplete="off"
-               placeholder="Ex. Vaporiser les plantes du salon" aria-label="Nouvelle tâche">
-        <button class="btn btn--douce" type="submit">Ajouter</button>
+        <div class="ajout-tache__ligne">
+          <input class="champ__input" name="texte" type="text" maxlength="120" autocomplete="off" aria-label="Nouvelle tâche">
+          <button class="btn btn--douce" type="submit">Ajouter</button>
+        </div>
+        <div class="puces ajout-tache__quand" role="group" aria-label="Pour quand ?">
+          ${[['aujourdhui', "Aujourd'hui"], ['demain', 'Demain'], ['autre', 'Autre date']].map(([id, libelle]) =>
+    `<button type="button" class="puce" data-quand="${id}" aria-pressed="${quand === id}">${libelle}</button>`).join('')}
+        </div>
+        ${quand === 'autre' ? `<input class="champ__input" id="tache-date" type="date" min="${ajouterJours(jour, 1)}" value="${dateAutre}" aria-label="Date de la tâche">` : ''}
       </form>
+      ${tachesAVenir.length ? `
+        <h2 class="section__titre">À venir <span class="puce__nombre">${tachesAVenir.length}</span></h2>
+        <div class="taches" data-liste="a-venir">
+          ${tachesAVenir.map((t) => `
+            <article class="tache tache--libre" data-tache="${t.id}">
+              <span class="tache__libre-texte">${echapper(t.texte)}
+                <span class="tache__quand">${joursEntre(jour, t.pour_le) === 1 ? 'Demain' : echapper(formaterDate(t.pour_le))}</span></span>
+              <button class="btn-icone" type="button" data-tache-suppr aria-label="Supprimer la tâche : ${echapper(t.texte)}">${icone('corbeille')}</button>
+            </article>`).join('')}
+        </div>` : ''}
       ${faites.length ? `
         <h2 class="section__titre">Arrosées aujourd'hui <span class="puce__nombre">${faites.length}</span></h2>
         <div class="taches" data-liste="faites">${enrichir(faites).map((e) => carte(e,
@@ -109,13 +131,25 @@ export function vueAujourdhui(page) {
     const champ = conteneur.querySelector('#form-tache [name="texte"]');
     const texte = champ.value.trim();
     if (!texte) { champ.focus(); return; }
+    const pourLe = quand === 'demain' ? ajouterJours(jour, 1) : quand === 'autre' ? dateAutre : jour;
     try {
-      await creerTache(texte);
+      await creerTache(texte, pourLe);
       champ.value = '';
     } catch (erreur) {
       message(expliquerErreur(erreur), 'erreur');
     }
     if (conteneur.isConnected) dessiner();
+  });
+
+  // Choix « pour quand » de la nouvelle tache
+  conteneur.addEventListener('click', (evenement) => {
+    const puce = evenement.target.closest('[data-quand]');
+    if (!puce) return;
+    quand = puce.dataset.quand;
+    dessiner();
+  });
+  conteneur.addEventListener('change', (evenement) => {
+    if (evenement.target.id === 'tache-date' && evenement.target.value) dateAutre = evenement.target.value;
   });
 
   // Taches libres : cocher, annuler, supprimer
