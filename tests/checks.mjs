@@ -690,6 +690,54 @@ export async function verifierAppli(base, dossier, { version }) {
     verifier(versionAffichee.includes(version), titre, `reglages : version ${version}`,
       `Les reglages affichent "${versionAffichee}" au lieu de ${version}.`);
 
+    // --- Themes : Herbier (defaut), Serre de nuit, Fleuriste ---
+    const fondDe = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+    const polices = () => page.evaluate(async () => {
+      await document.fonts.ready;
+      return [...document.fonts].filter((f) => f.status === 'loaded').map((f) => f.family.replace(/"/g, ''));
+    });
+    const fondHerbier = await fondDe();
+    verifier(await nombre('.theme') === 3, titre, 'themes : trois choix dans Reglages',
+      `${await nombre('.theme')} vignettes de theme au lieu de 3.`);
+    const attendus = { serre: 'Bodoni Moda', fleuriste: 'Young Serif', herbier: 'Cormorant Garamond' };
+    for (const [id, police] of [['serre', attendus.serre], ['fleuriste', attendus.fleuriste], ['herbier', attendus.herbier]]) {
+      await page.click(`[data-theme-id="${id}"]`);
+      const attribut = await page.evaluate(() => document.documentElement.dataset.theme);
+      verifier(attribut === id, titre, `theme ${id} : applique tout de suite`, `data-theme vaut "${attribut}" au lieu de "${id}".`);
+      const fond = await fondDe();
+      if (id !== 'herbier') {
+        verifier(fond !== fondHerbier, titre, `theme ${id} : le fond change`, `Le fond reste ${fond}.`);
+      }
+      const charges = await polices();
+      verifier(charges.includes(police), titre, `theme ${id} : police ${police} chargee`,
+        `Polices chargees : ${charges.join(', ') || 'aucune'}.`);
+      const presse = await page.getAttribute(`[data-theme-id="${id}"]`, 'aria-pressed');
+      verifier(presse === 'true', titre, `theme ${id} : la vignette est marquee choisie`, `aria-pressed = ${presse}.`);
+      await capturer(page, dossier, `17-theme-${id}-reglages.png`);
+      await verifierDebordement(page, `Reglages (${id})`);
+      await verifierZonesTactiles(page, `Reglages (${id})`);
+      if (id !== 'herbier') {
+        await page.click('[data-tab="plantes"]');
+        await page.waitForSelector('.vignette, .vide');
+        await capturer(page, dossier, `17-theme-${id}-liste.png`);
+        await verifierDebordement(page, `Liste (${id})`);
+        await verifierZonesTactiles(page, `Liste (${id})`);
+        await page.click('[data-tab="aujourdhui"]');
+        await page.waitForSelector('.section__titre, .vide');
+        await capturer(page, dossier, `17-theme-${id}-aujourdhui.png`);
+        await page.click('[data-tab="reglages"]');
+        await page.waitForSelector('.theme');
+      }
+    }
+    // Le choix est garde : on prend Serre de nuit, puis un nouvel onglet l'applique des l'ouverture
+    await page.click('[data-theme-id="serre"]');
+    const autre = await page.context().newPage();
+    await autre.goto(base, { waitUntil: 'domcontentloaded' });
+    const dansNouvelOnglet = await autre.evaluate(() => document.documentElement.dataset.theme);
+    await autre.close();
+    verifier(dansNouvelOnglet === 'serre', titre, 'theme : garde et applique des l\'ouverture', `data-theme vaut "${dansNouvelOnglet}".`);
+    await page.click('[data-theme-id="herbier"]');
+
     await page.click('a[href="#/reglages/pieces"]');
     await page.waitForSelector('.piece');
     verifier(await nombre('.piece') === 7, titre, 'pieces : les 7 pieces de depart',

@@ -3,6 +3,12 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [1.1.0] - 2026-11-01
+### Ajouté
+- Trois thèmes au choix dans Réglages > Apparence : Herbier (crème et serif, par défaut), Serre de nuit (fond sombre et laiton) et Fleuriste (pastels, coins très ronds, barre d'onglets flottante).
+- Le thème choisi est gardé sur l'appareil et s'applique tout de suite.
+- Polices embarquées dans l'appli, donc disponibles aussi hors ligne.
+
 ## [1.0.0] - 2026-11-01
 
 Les photos qui se ressemblent.

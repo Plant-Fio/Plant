@@ -4,9 +4,11 @@ import {
 } from './donnees.js';
 import { echapper, icone } from './outils.js';
 import { confirmer, demanderTexte, message } from './dialogues.js';
+import { THEMES, lireTheme, choisirTheme } from './themes.js';
 
 export function vueReglages(conteneur, { email, version, deconnecter, chercherMiseAJour }) {
   const { pieces } = lireEtat();
+  const themeActuel = lireTheme();
   conteneur.innerHTML = `
     <p class="vue__legende">Mon compte</p>
     <h1 class="vue__titre">Réglages</h1>
@@ -16,6 +18,20 @@ export function vueReglages(conteneur, { email, version, deconnecter, chercherMi
         <span>Mes pièces</span>
         <span class="ligne__valeur">${pieces.length} ${icone('chevron')}</span>
       </a>
+    </section>
+    <section class="carte">
+      <h2 class="carte__titre">Apparence</h2>
+      <div class="themes" role="group" aria-label="Choisir le thème">
+        ${THEMES.map((t) => `
+          <button class="theme" type="button" data-theme-id="${t.id}" aria-pressed="${t.id === themeActuel}">
+            <span class="theme__apercu" style="background:${t.fond};--coins:${t.coins}">
+              <span class="theme__titre" style="background:${t.texte}"></span>
+              <span class="theme__carte" style="background:${t.carte};border-radius:${t.coins}"></span>
+              <span class="theme__point" style="background:${t.accent}"></span>
+            </span>
+            <span class="theme__nom">${echapper(t.nom)}</span>
+          </button>`).join('')}
+      </div>
     </section>
     <section class="carte">
       <h2 class="carte__titre">Compte</h2>
@@ -33,6 +49,16 @@ export function vueReglages(conteneur, { email, version, deconnecter, chercherMi
       </div>
       <button class="btn btn--douce" id="maj" type="button">Vérifier les mises à jour</button>
     </section>`;
+
+  // Choix du theme : il s'applique tout de suite
+  conteneur.querySelectorAll('.theme').forEach((vignette) => {
+    vignette.addEventListener('click', () => {
+      choisirTheme(vignette.dataset.themeId);
+      conteneur.querySelectorAll('.theme').forEach((v) => {
+        v.setAttribute('aria-pressed', String(v === vignette));
+      });
+    });
+  });
 
   const bouton = conteneur.querySelector('#logout');
   bouton.addEventListener('click', () => { bouton.disabled = true; deconnecter(); });
