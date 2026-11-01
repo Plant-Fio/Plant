@@ -3,6 +3,16 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [0.8.1] - 2026-11-01
+
+### Corrige
+- Mises a jour plus fiables : le navigateur ne garde plus d'ancienne copie du service worker ni du numero de version
+  (l'appli pouvait rester sur l'ancienne version une dizaine de minutes apres un deploiement)
+- L'appli cherche une nouvelle version a chaque fois qu'on la rouvre
+
+### Ajoute
+- Reglages : bouton « Verifier les mises a jour »
+
 ## [0.8.0] - 2026-11-01
 
 ### Ajoute
