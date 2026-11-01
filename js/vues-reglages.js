@@ -5,6 +5,96 @@ import {
 import { echapper, icone } from './outils.js';
 import { confirmer, demanderTexte, message } from './dialogues.js';
 import { THEMES, lireTheme, choisirTheme } from './themes.js';
+import {
+  disponibilite, permission, estAbonne, activerNotifications, desactiverNotifications, envoyerTest,
+  lireReglagesNotifs, enregistrerReglagesNotifs, REGLAGES_PAR_DEFAUT,
+} from './notifications.js';
+
+const optionsHeures = () => Array.from({ length: 24 }, (_, h) => `<option value="${h}">${h} h</option>`).join('');
+
+// Carte « Notifications » : etat de l'appareil, reglages des heures, test
+function initialiserNotifications(conteneur) {
+  const userId = lireEtat().userId;
+  const el = (id) => conteneur.querySelector(`#${id}`);
+  const champs = {
+    matin_actif: el('matin-actif'), heure_matin: el('heure-matin'), soir_actif: el('soir-actif'), heure_soir: el('heure-soir'),
+  };
+  const montrerReglages = (r) => {
+    champs.matin_actif.checked = r.matin_actif;
+    champs.heure_matin.value = String(r.heure_matin);
+    champs.soir_actif.checked = r.soir_actif;
+    champs.heure_soir.value = String(r.heure_soir);
+  };
+  montrerReglages(REGLAGES_PAR_DEFAUT);
+
+  async function majEtat() {
+    const dispo = disponibilite();
+    const abonne = dispo === 'ok' && await estAbonne();
+    const texte = {
+      'a-installer': "Sur iPhone, ajoute d'abord l'appli à l'écran d'accueil (bouton Partager, puis « Sur l'écran d'accueil »), puis ouvre-la depuis son icône.",
+      indisponible: "Les notifications ne sont pas disponibles sur cet appareil.",
+    }[dispo] || (permission() === 'denied'
+      ? 'Les notifications sont bloquées : autorise-les dans les réglages de l\'iPhone (Notifications, puis Plantes).'
+      : abonne ? 'Activées sur cet appareil.' : 'Reçois chaque matin et chaque soir ce qu\'il y a à faire.');
+    el('notifs-etat').textContent = texte;
+    el('notifs-activer').hidden = !(dispo === 'ok' && !abonne && permission() !== 'denied');
+    el('notifs-test').hidden = !abonne;
+    el('notifs-stop').hidden = !abonne;
+  }
+
+  lireReglagesNotifs().then(montrerReglages).catch(() => { /* reglages par defaut */ });
+  majEtat();
+
+  conteneur.querySelector('#notifs').addEventListener('change', async (evenement) => {
+    if (!evenement.target.closest('.notif-ligne')) return;
+    try {
+      await enregistrerReglagesNotifs(userId, {
+        matin_actif: champs.matin_actif.checked, heure_matin: Number(champs.heure_matin.value),
+        soir_actif: champs.soir_actif.checked, heure_soir: Number(champs.heure_soir.value),
+      });
+      message('Réglages enregistrés');
+    } catch (erreur) {
+      message(expliquerErreur(erreur), 'erreur');
+    }
+  });
+
+  el('notifs-activer').addEventListener('click', async (evenement) => {
+    const bouton = evenement.currentTarget;
+    bouton.disabled = true;
+    try {
+      const reponse = await activerNotifications(userId);
+      if (reponse === 'granted') {
+        await enregistrerReglagesNotifs(userId, {
+          matin_actif: champs.matin_actif.checked, heure_matin: Number(champs.heure_matin.value),
+          soir_actif: champs.soir_actif.checked, heure_soir: Number(champs.heure_soir.value),
+        });
+        message('Notifications activées');
+      }
+    } catch (erreur) {
+      message(expliquerErreur(erreur), 'erreur');
+    }
+    bouton.disabled = false;
+    majEtat();
+  });
+
+  el('notifs-test').addEventListener('click', async (evenement) => {
+    const bouton = evenement.currentTarget;
+    bouton.disabled = true;
+    try {
+      await envoyerTest();
+      message('Notification envoyée, elle arrive dans un instant');
+    } catch (erreur) {
+      message("L'envoi du test a échoué. La fonction de rappels est-elle bien installée ?", 'erreur');
+    }
+    bouton.disabled = false;
+  });
+
+  el('notifs-stop').addEventListener('click', async () => {
+    await desactiverNotifications().catch(() => {});
+    message('Notifications désactivées sur cet appareil');
+    majEtat();
+  });
+}
 
 export function vueReglages(conteneur, { email, version, deconnecter, chercherMiseAJour }) {
   const { pieces } = lireEtat();
@@ -33,6 +123,21 @@ export function vueReglages(conteneur, { email, version, deconnecter, chercherMi
           </button>`).join('')}
       </div>
     </section>
+    <section class="carte" id="notifs">
+      <h2 class="carte__titre">Notifications</h2>
+      <p class="notifs__etat" id="notifs-etat" role="status"></p>
+      <button class="btn btn--primaire" id="notifs-activer" type="button" hidden>Activer les notifications</button>
+      <div class="notif-ligne">
+        <label class="notif-ligne__titre"><input type="checkbox" id="matin-actif"> Rappel du matin</label>
+        <select class="champ__input champ__select notif-ligne__heure" id="heure-matin" aria-label="Heure du rappel du matin">${optionsHeures()}</select>
+      </div>
+      <div class="notif-ligne">
+        <label class="notif-ligne__titre"><input type="checkbox" id="soir-actif"> Rappel du soir (pour demain)</label>
+        <select class="champ__input champ__select notif-ligne__heure" id="heure-soir" aria-label="Heure du rappel du soir">${optionsHeures()}</select>
+      </div>
+      <button class="btn btn--douce" id="notifs-test" type="button" hidden>Envoyer une notification test</button>
+      <button class="btn-texte" id="notifs-stop" type="button" hidden>Désactiver sur cet appareil</button>
+    </section>
     <section class="carte">
       <h2 class="carte__titre">Compte</h2>
       <div class="ligne">
@@ -49,6 +154,8 @@ export function vueReglages(conteneur, { email, version, deconnecter, chercherMi
       </div>
       <button class="btn btn--douce" id="maj" type="button">Vérifier les mises à jour</button>
     </section>`;
+
+  initialiserNotifications(conteneur);
 
   // Choix du theme : il s'applique tout de suite
   conteneur.querySelectorAll('.theme').forEach((vignette) => {

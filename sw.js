@@ -25,6 +25,7 @@ const SQUELETTE = [
   './js/recadrage.js',
   './js/camera.js',
   './js/themes.js',
+  './js/notifications.js',
   './js/vues-reglages.js',
   './js/app.js',
   './vendor/supabase.js',
@@ -82,4 +83,31 @@ self.addEventListener('fetch', (evenement) => {
       });
     })
   );
+});
+
+// ---------- Notifications (rappels envoyes par le serveur) ----------
+
+self.addEventListener('push', (evenement) => {
+  let donnees = {};
+  try { donnees = evenement.data ? evenement.data.json() : {}; } catch { /* message sans details */ }
+  // iOS exige d'afficher une notification a chaque message recu
+  evenement.waitUntil(self.registration.showNotification(donnees.titre || 'Mes plantes', {
+    body: donnees.corps || 'Il y a des choses à faire aujourd\'hui.',
+    icon: './icons/icon-192.png',
+    badge: './icons/icon-192.png',
+    tag: donnees.tag || 'rappel',
+    data: { url: donnees.url || '#/aujourdhui' },
+  }));
+});
+
+// Toucher la notification ouvre l'appli sur l'ecran « Aujourd'hui »
+self.addEventListener('notificationclick', (evenement) => {
+  evenement.notification.close();
+  const cible = new URL(evenement.notification.data?.url || '#/aujourdhui', self.registration.scope).href;
+  evenement.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((fenetres) => {
+    for (const fenetre of fenetres) {
+      if ('focus' in fenetre) { fenetre.navigate?.(cible).catch(() => {}); return fenetre.focus(); }
+    }
+    return self.clients.openWindow(cible);
+  }));
 });

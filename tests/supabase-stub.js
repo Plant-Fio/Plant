@@ -3,7 +3,7 @@
 // Il imite juste ce que l'appli utilise : auth + from(table).select/insert/update/delete/eq/order/single.
 let session = { user: { id: 'demo', email: 'demo@example.com', user_metadata: {} } };
 const ecouteurs = new Set();
-const tables = { pieces: [], plantes: [], photos: [], arrosages: [], souhaits: [], taches: [] };
+const tables = { pieces: [], plantes: [], photos: [], arrosages: [], souhaits: [], taches: [], appareils_push: [], reglages_notifs: [] };
 const valeursParDefaut = {
   pieces: () => ({ position: 0 }),
   plantes: () => ({
@@ -15,6 +15,10 @@ const valeursParDefaut = {
   arrosages: () => ({}),
   souhaits: () => ({ espece: null, note: null, photo_chemin: null }),
   taches: () => ({ fait_le: null, pour_le: null }),
+  appareils_push: () => ({}),
+  reglages_notifs: () => ({
+    matin_actif: true, heure_matin: 10, soir_actif: true, heure_soir: 20, fuseau: 'Europe/Paris', dernier_matin: null, dernier_soir: null,
+  }),
 };
 const copie = (x) => JSON.parse(JSON.stringify(x));
 
@@ -62,6 +66,7 @@ class Requete {
   limit(nombre) { this.maximum = nombre; return this; }
   eq(colonne, valeur) { this.filtres.push([colonne, valeur]); return this; }
   insert(lignes) { this.op = 'insert'; this.charge = lignes; return this; }
+  upsert(lignes, options) { this.op = 'upsert'; this.charge = lignes; this.conflit = options?.onConflict || 'id'; return this; }
   update(modifs) { this.op = 'update'; this.charge = modifs; return this; }
   delete() { this.op = 'delete'; return this; }
   single() { this.unique = 'single'; return this; }
@@ -88,6 +93,15 @@ class Requete {
           id: crypto.randomUUID(), user_id: 'demo', created_at: maintenant, updated_at: maintenant,
           ...valeursParDefaut[this.table](), ...ligne,
         };
+        lignes.push(nouvelle);
+        resultat.push(nouvelle);
+      }
+    } else if (this.op === 'upsert') {
+      // Comme la base : si la ligne existe deja (meme cle), on la met a jour, sinon on l'ajoute
+      for (const ligne of [].concat(this.charge)) {
+        const existante = lignes.find((l) => l[this.conflit] === ligne[this.conflit]);
+        if (existante) { Object.assign(existante, ligne); resultat.push(existante); continue; }
+        const nouvelle = { id: crypto.randomUUID(), user_id: 'demo', created_at: new Date().toISOString(), ...valeursParDefaut[this.table](), ...ligne };
         lignes.push(nouvelle);
         resultat.push(nouvelle);
       }
@@ -133,6 +147,8 @@ export function createClient() {
   return {
     from: (table) => new Requete(table),
     storage: stockage,
+    // Fonctions Supabase : ici, la fonction de rappels repond toujours "envoye"
+    functions: { invoke: async () => ({ data: { envoye: 1 }, error: null }) },
     auth: {
       getSession: async () => ({ data: { session }, error: null }),
       onAuthStateChange: (rappel) => {

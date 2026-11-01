@@ -142,7 +142,7 @@ export async function verifierConnexion(base, dossier, { version }) {
     // On tente d'inserer une ligne : si la RLS est active, Postgres refuse (code 42501) AVANT
     // toute verification des champs, donc rien n'est jamais ajoute.
     if (urlSupabase && cle) {
-      for (const table of ['pieces', 'plantes', 'photos', 'arrosages', 'souhaits', 'taches']) {
+      for (const table of ['pieces', 'plantes', 'photos', 'arrosages', 'souhaits', 'taches', 'appareils_push', 'reglages_notifs']) {
         try {
           const reponse = await fetch(`${urlSupabase}/rest/v1/${table}`, {
             method: 'POST',
@@ -152,7 +152,9 @@ export async function verifierConnexion(base, dossier, { version }) {
             },
             body: JSON.stringify(table === 'photos' ? { chemin: 'verification-ci' }
               : table === 'arrosages' ? { jour: '2000-01-01' }
-                : table === 'taches' ? { texte: 'verification-ci' } : { nom: 'verification-ci' }),
+                : table === 'taches' ? { texte: 'verification-ci' }
+                  : table === 'appareils_push' ? { endpoint: 'verification-ci', p256dh: 'x', auth: 'x' }
+                    : table === 'reglages_notifs' ? { heure_matin: 10 } : { nom: 'verification-ci' }),
           });
           const corps = await reponse.json().catch(() => ({}));
           if (corps.code === '42501') ok(`table ${table} : presente, RLS active (un visiteur sans compte est refuse)`);
@@ -713,6 +715,25 @@ export async function verifierAppli(base, dossier, { version }) {
     const versionAffichee = (await page.textContent('[data-version]')).trim();
     verifier(versionAffichee.includes(version), titre, `reglages : version ${version}`,
       `Les reglages affichent "${versionAffichee}" au lieu de ${version}.`);
+
+    // --- Notifications : etat de l'appareil (iPhone non installe), reglages des heures ---
+    verifier((await page.textContent('#notifs-etat')).includes("écran d'accueil") && await page.locator('#notifs-activer').isHidden(), titre,
+      "notifications : sur iPhone non installe, l'appli explique d'ajouter l'ecran d'accueil", `Message : "${await page.textContent('#notifs-etat')}".`);
+    verifier(await page.inputValue('#heure-matin') === '10' && await page.inputValue('#heure-soir') === '20'
+      && await page.isChecked('#matin-actif') && await page.isChecked('#soir-actif'), titre,
+    'notifications : par defaut 10 h le matin et 20 h le soir', 'Les heures par defaut ne sont pas 10 h et 20 h.');
+    await verifierZonesTactiles(page, 'Reglages (notifications)');
+    await page.selectOption('#heure-matin', '8');
+    await page.uncheck('#soir-actif');
+    await page.waitForSelector('.message:has-text("Réglages enregistrés")');
+    await page.click('[data-tab="plantes"]');
+    await page.waitForSelector('#puces, .vide');
+    await page.click('[data-tab="reglages"]');
+    await page.waitForSelector('#notifs');
+    await page.waitForFunction(() => document.querySelector('#heure-matin').value === '8');
+    verifier(!(await page.isChecked('#soir-actif')), titre,
+      'notifications : les reglages sont enregistres et retrouves', 'Les reglages de notification ne sont pas retrouves.');
+    await capturer(page, dossier, '17-notifications.png');
 
     // --- Themes : Herbier (defaut), Serre de nuit, Fleuriste ---
     const fondDe = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
