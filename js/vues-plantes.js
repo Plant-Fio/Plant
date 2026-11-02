@@ -425,7 +425,22 @@ function initialiserGalerie(galerie, idPlante) {
   // Les adresses des photos arrivent ensuite (une seule requete), puis on redessine
   const chemins = photosDe(idPlante).flatMap((p) => [p.chemin, cheminVignette(p.chemin)]);
   if (chemins.length) {
-    chargerUrls(chemins).then(() => { if (galerie.isConnected) dessiner(); });
+    chargerUrls(chemins).then(async () => {
+      // On prepare la grande photo AVANT de redessiner : la vignette reste affichee jusqu'a ce que
+      // la grande soit prete, au lieu d'un trou blanc pendant son chargement (le "saut" a la 1re ouverture).
+      const actuelle = photosDe(idPlante).find((p) => p.id === selection) || photosDe(idPlante)[0];
+      const url = actuelle && urlEnCache(actuelle.chemin);
+      if (url) {
+        await new Promise((fini) => {
+          const image = new Image();
+          image.onload = fini;
+          image.onerror = fini;
+          image.src = url;
+          setTimeout(fini, 3000); // connexion lente : on ne bloque pas plus longtemps
+        });
+      }
+      if (galerie.isConnected) dessiner();
+    });
   }
 }
 
