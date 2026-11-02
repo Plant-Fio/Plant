@@ -3,6 +3,10 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [1.9.3] - 2026-11-02
+### Corrigé
+- Zones de texte (note du journal, note d'un problème, notes d'une plante) : le texte n'est plus collé au bord du haut. Règle générale dans la feuille de style + contrôle automatique pour les futurs champs.
+
 ## [1.9.2] - 2026-11-02
 ### Corrigé
 - Bilan du mois : une pression sur la flèche ne saute plus plusieurs mois (les écouteurs s'empilaient à chaque visite de l'écran). Le bilan repart toujours du mois en cours.
