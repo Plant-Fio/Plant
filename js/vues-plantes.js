@@ -11,6 +11,7 @@ import { confirmer, demanderDate, message } from './dialogues.js';
 import { recadrer } from './recadrage.js';
 import { ouvrirCamera } from './camera.js';
 import { initialiserJournal } from './journal.js';
+import { initialiserProblemes } from './problemes.js';
 
 // Ce que la liste garde en memoire quand on va voir une fiche puis qu'on revient
 let recherche = '';
@@ -197,6 +198,7 @@ export function vueFiche(conteneur, id) {
       </div>` : ''}
     </section>
     <section class="carte" id="soins" aria-label="Soins"></section>
+    <section class="carte" id="problemes" aria-label="Problèmes"></section>
     <section class="carte" id="journal" aria-label="Journal"></section>
     ${plante.notes ? `
       <section class="carte">
@@ -207,6 +209,7 @@ export function vueFiche(conteneur, id) {
 
   initialiserGalerie(conteneur.querySelector('#galerie'), plante.id);
   initialiserSoins(conteneur.querySelector('#soins'), plante.id);
+  initialiserProblemes(conteneur.querySelector('#problemes'), plante.id);
   initialiserJournal(conteneur.querySelector('#journal'), plante.id);
 }
 
@@ -243,11 +246,9 @@ function initialiserSoins(zone, idPlante) {
       ${ligne('Dernière dose d\'engrais', plante.dernier_engrais ? echapper(dateRelative(plante.dernier_engrais, aujourdhui)) : '—', 'data-soin="engrais"')}
       ${ligne("Prochaine dose d'engrais", plante.prochain_engrais ? echapper(libelleEcheance(etatEngrais(plante, aujourdhui))) : '—', 'data-soin="prochain-engrais"')}
       ${ligne('Dernier rempotage', plante.dernier_rempotage ? echapper(dateRelative(plante.dernier_rempotage, aujourdhui)) : '—', 'data-soin="rempotage"')}
-      ${ligne('Dernière feuille', plante.derniere_feuille ? echapper(dateRelative(plante.derniere_feuille, aujourdhui)) : '—', 'data-soin="feuille"')}
       <div class="soins__actions">
         <button class="btn-texte" type="button" data-action="engrais">Engrais fait aujourd'hui</button>
         <button class="btn-texte" type="button" data-action="rempotage">Rempotage fait aujourd'hui</button>
-        <button class="btn-texte" type="button" data-action="feuille">Nouvelle feuille aujourd'hui</button>
       </div>`;
   }
 
@@ -264,9 +265,6 @@ function initialiserSoins(zone, idPlante) {
       } else if (bouton.dataset.action === 'rempotage') {
         await marquerFait(idPlante, 'dernier_rempotage');
         message('Rempotage noté');
-      } else if (bouton.dataset.action === 'feuille') {
-        await marquerFait(idPlante, 'derniere_feuille');
-        message('Nouvelle feuille notée');
       } else if (bouton.dataset.annuler) {
         const accord = await confirmer({
           titre: 'Supprimer cet arrosage ?',
@@ -553,7 +551,6 @@ export function vueFormulaire(conteneur, id) {
       ${champDate('Dernière dose d\'engrais', 'dernier_engrais', plante?.dernier_engrais)}
       ${champDate("Prochaine dose d'engrais", 'prochain_engrais', plante?.prochain_engrais)}
       ${champDate('Dernier rempotage', 'dernier_rempotage', plante?.dernier_rempotage)}
-      ${champDate('Dernière feuille', 'derniere_feuille', plante?.derniere_feuille)}
       <label class="case">
         <input type="checkbox" name="en_vente"${plante?.en_vente ? ' checked' : ''}>
         <span>En vente</span>

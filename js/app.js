@@ -106,11 +106,12 @@ function lireAdresse() {
 function majPastille() {
   const pastille = document.querySelector('.tabbar__badge');
   if (!pastille) return;
-  const { plantes, arrosages, taches, charge } = lireEtat();
-  // Pastille : arrosages a faire + taches libres pas encore cochees
+  const { plantes, arrosages, taches, problemes, charge } = lireEtat();
+  // Pastille : arrosages a faire + taches libres pas encore cochees + traitements a refaire
   const jour = dateIsoLocale();
   const nombre = charge
-    ? compterAFaire(plantes, arrosages) + taches.filter((t) => !t.fait_le && (!t.pour_le || t.pour_le <= jour)).length : 0;
+    ? compterAFaire(plantes, arrosages) + taches.filter((t) => !t.fait_le && (!t.pour_le || t.pour_le <= jour)).length
+      + problemes.filter((q) => !q.resolu_le && q.relance_le && q.relance_le <= jour).length : 0;
   pastille.textContent = nombre > 99 ? '99+' : String(nombre);
   pastille.hidden = nombre === 0;
   const lien = pastille.closest('.tabbar__onglet');

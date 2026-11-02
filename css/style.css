@@ -1175,3 +1175,22 @@ a.btn { text-decoration: none; }
 .stockage__jauge::-webkit-progress-value { background: var(--vert); border-radius: 5px; }
 .stockage__jauge::-moz-progress-bar { background: var(--vert); }
 .stockage__aide { margin: 8px 0 0; font-size: 13px; color: var(--texte-doux); }
+
+/* ---------- Suivi des problemes (fiche) ---------- */
+.problemes { list-style: none; margin: 0; padding: 0; }
+.probleme { padding: 12px 0; }
+.probleme + .probleme { border-top: 1px solid var(--bordure); }
+.probleme__tete { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.probleme__depuis { font-size: 13px; color: var(--texte-doux); font-weight: 500; }
+.probleme__note { margin: 4px 0 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+.probleme__relance { margin: 4px 0 0; font-size: 14px; font-weight: 600; color: var(--texte-doux); }
+.probleme__relance--urgent { color: var(--erreur); }
+.probleme__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0 16px; margin-top: 4px; }
+.probleme__actions .btn-icone { margin-left: auto; }
+.probleme--resolu { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; color: var(--texte-doux); }
+.probleme__vide { margin: 0 0 4px; color: var(--texte-doux); }
+.probleme__form { display: grid; gap: 10px; margin-top: 12px; }
+.probleme__form .champ__input { width: 100%; font: inherit; }
+.probleme__label { display: grid; gap: 6px; font-size: 14px; font-weight: 600; color: var(--texte-doux); }
+.probleme__boutons { display: flex; gap: 10px; }
+.probleme__boutons .btn { flex: 1; }

@@ -142,7 +142,7 @@ export async function verifierConnexion(base, dossier, { version }) {
     // On tente d'inserer une ligne : si la RLS est active, Postgres refuse (code 42501) AVANT
     // toute verification des champs, donc rien n'est jamais ajoute.
     if (urlSupabase && cle) {
-      for (const table of ['pieces', 'plantes', 'photos', 'arrosages', 'souhaits', 'taches', 'journal', 'appareils_push', 'reglages_notifs']) {
+      for (const table of ['pieces', 'plantes', 'photos', 'arrosages', 'souhaits', 'taches', 'journal', 'problemes', 'appareils_push', 'reglages_notifs']) {
         try {
           const reponse = await fetch(`${urlSupabase}/rest/v1/${table}`, {
             method: 'POST',
@@ -153,6 +153,7 @@ export async function verifierConnexion(base, dossier, { version }) {
             body: JSON.stringify(table === 'photos' ? { chemin: 'verification-ci' }
               : table === 'arrosages' ? { jour: '2000-01-01' }
                 : table === 'taches' || table === 'journal' ? { texte: 'verification-ci' }
+                  : table === 'problemes' ? { type: 'verification-ci' }
                   : table === 'appareils_push' ? { endpoint: 'verification-ci', p256dh: 'x', auth: 'x' }
                     : table === 'reglages_notifs' ? { heure_matin: 10 } : { nom: 'verification-ci' }),
           });
@@ -701,9 +702,23 @@ export async function verifierAppli(base, dossier, { version }) {
     await page.click('[data-action="rempotage"]');
     await page.waitForFunction(() => document.querySelector('[data-soin="rempotage"]').textContent.trim() === "Aujourd'hui");
     ok('soins : engrais et rempotage notes "Aujourd\'hui"');
-    await page.click('[data-action="feuille"]');
-    await page.waitForFunction(() => document.querySelector('[data-soin="feuille"]').textContent.trim() === "Aujourd'hui");
-    ok('soins : derniere feuille notee "Aujourd\'hui"');
+    verifier(await nombre('[data-soin="feuille"]') === 0 && await nombre('[data-action="feuille"]') === 0, titre,
+      'soins : la ligne « Dernière feuille » a disparu (remplacée par le journal)', 'La ligne ou le bouton « Dernière feuille » est encore là.');
+
+    // Suivi des problemes : signaler, voir la relance, traiter, resoudre
+    await page.click('#problemes [data-ouvrir]');
+    await page.selectOption('#problemes select[name="type"]', 'Cochenilles');
+    await page.fill('#problemes textarea[name="note"]', 'Savon noir');
+    await page.selectOption('#problemes select[name="relance"]', '3');
+    await page.click('#problemes button[type="submit"]');
+    await page.waitForSelector('#problemes .probleme');
+    verifier((await page.textContent('#problemes .probleme')).includes('Cochenilles')
+      && (await page.textContent('#problemes .probleme__relance')).includes('dans 3 jours'), titre,
+    'problemes : un probleme signale apparait avec sa relance', `Probleme : "${await page.textContent('#problemes .probleme')}".`);
+    await capturer(page, dossier, '20-probleme-fiche.png');
+    await page.click('#problemes [data-resolu]');
+    await page.waitForSelector('#problemes .probleme--resolu');
+    ok('problemes : « Résolu » range le probleme dans les resolus');
 
     // --- Suppression (avec confirmation) ---
     await page.click('a:has-text("Modifier")');

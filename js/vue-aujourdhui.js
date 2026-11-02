@@ -2,8 +2,9 @@
 // et un apercu des 3 prochains jours.
 import {
   lireEtat, teintePiece, arrosagesDe, arroserPlante, annulerArrosage, marquerFait, expliquerErreur,
-  creerTache, marquerTache, supprimerTache,
+  creerTache, marquerTache, supprimerTache, traiterProbleme, resoudreProbleme, trouverPlante,
 } from './donnees.js';
+import { libelleRelance } from './problemes.js';
 import { planifier, libelleEcheance } from './rappels.js';
 import { photoVignetteHtml, remplirPhotos } from './vues-plantes.js';
 import { echapper, icone, dateDuJour, dateIsoLocale, ajouterJours, joursEntre, formaterDate } from './outils.js';
@@ -37,7 +38,9 @@ export function vueAujourdhui(page) {
 
   function dessiner() {
     const brouillon = conteneur.querySelector('#form-tache [name="texte"]')?.value || '';
-    const { plantes, arrosages, pieces, horsLigne, taches } = lireEtat();
+    const { plantes, arrosages, pieces, horsLigne, taches, problemes } = lireEtat();
+    // Traitements a refaire : probleme en cours dont la date de relance est arrivee
+    const traitements = problemes.filter((q) => !q.resolu_le && q.relance_le && q.relance_le <= jour && trouverPlante(q.plante_id));
     // Une tache sans date, ou dont le jour est arrive, est a faire maintenant
     const tachesAFaire = taches.filter((t) => !t.fait_le && (!t.pour_le || t.pour_le <= jour));
     const tachesAVenir = taches.filter((t) => !t.fait_le && t.pour_le > jour)
@@ -59,7 +62,7 @@ export function vueAujourdhui(page) {
       vide = `<section class="carte vide"><div class="vide__bulle">${icone('goutte')}</div>
         <h2 class="vide__titre">Pas encore de rappel</h2>
         <p class="vide__texte">Indique tous les combien de jours arroser une plante (fiche, puis Modifier) et elle apparaîtra ici.</p></section>`;
-    } else if (!aFaire.length && !engraisAFaire.length && !tachesAFaire.length) {
+    } else if (!aFaire.length && !engraisAFaire.length && !tachesAFaire.length && !traitements.length) {
       vide = `<section class="carte vide" data-vide><div class="vide__bulle">${icone('goutte')}</div>
         <h2 class="vide__titre">Tout est à jour</h2>
         <p class="vide__texte">Rien à faire pour le moment.</p></section>`;
@@ -78,6 +81,22 @@ export function vueAujourdhui(page) {
         <h2 class="section__titre">Engrais <span class="puce__nombre">${engraisAFaire.length}</span></h2>
         <div class="taches" data-liste="engrais">${enrichir(engraisAFaire).map((e) => carte(e,
     `<button class="tache__bouton" type="button" data-engrais>${icone('feuille')} Fait</button>`)).join('')}</div>` : ''}
+      ${traitements.length ? `
+        <h2 class="section__titre">Traitements <span class="puce__nombre">${traitements.length}</span></h2>
+        <div class="taches" data-liste="traitements">${traitements.map((q) => {
+    const plante = trouverPlante(q.plante_id);
+    return `
+          <article class="tache tache--libre" data-probleme="${q.id}">
+            <a class="tache__lien" href="#/plantes/${plante.id}">
+              <span class="tache__texte">
+                <span class="tache__nom">${echapper(q.type)} · ${echapper(plante.nom)}</span>
+                <span class="tache__info tache__info--retard">${echapper(libelleRelance(q.relance_le, jour))}</span>
+              </span>
+            </a>
+            <button class="btn-texte" type="button" data-traite>Traité</button>
+            <button class="btn-texte" type="button" data-resolu>Résolu</button>
+          </article>`;
+  }).join('')}</div>` : ''}
       <h2 class="section__titre">Mes tâches${tachesAFaire.length ? ` <span class="puce__nombre">${tachesAFaire.length}</span>` : ''}</h2>
       <div class="taches" data-liste="mes-taches">
         ${tachesAFaire.map((t) => `
@@ -150,6 +169,21 @@ export function vueAujourdhui(page) {
   });
   conteneur.addEventListener('change', (evenement) => {
     if (evenement.target.id === 'tache-date' && evenement.target.value) dateAutre = evenement.target.value;
+  });
+
+  // Traitements : « Traité » (relance dans 7 jours) ou « Résolu »
+  conteneur.addEventListener('click', async (evenement) => {
+    const b = evenement.target.closest('[data-traite], [data-resolu]');
+    const idProbleme = b?.closest('[data-probleme]')?.dataset.probleme;
+    if (!b || b.disabled || !idProbleme) return;
+    b.disabled = true;
+    try {
+      if (b.hasAttribute('data-traite')) { await traiterProbleme(idProbleme, 7); message('Traitement noté, relance dans 7 jours'); }
+      else { await resoudreProbleme(idProbleme); message('Problème résolu'); }
+    } catch (erreur) {
+      message(expliquerErreur(erreur), 'erreur');
+    }
+    if (conteneur.isConnected) dessiner();
   });
 
   // Taches libres : cocher, annuler, supprimer

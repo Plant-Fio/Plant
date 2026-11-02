@@ -3,7 +3,7 @@
 // Il imite juste ce que l'appli utilise : auth + from(table).select/insert/update/delete/eq/order/single.
 let session = { user: { id: 'demo', email: 'demo@example.com', user_metadata: {} } };
 const ecouteurs = new Set();
-const tables = { pieces: [], plantes: [], photos: [], arrosages: [], souhaits: [], taches: [], journal: [], appareils_push: [], reglages_notifs: [] };
+const tables = { pieces: [], plantes: [], photos: [], arrosages: [], souhaits: [], taches: [], journal: [], problemes: [], appareils_push: [], reglages_notifs: [] };
 const valeursParDefaut = {
   pieces: () => ({ position: 0 }),
   plantes: () => ({
@@ -15,6 +15,7 @@ const valeursParDefaut = {
   arrosages: () => ({}),
   souhaits: () => ({ espece: null, note: null, photo_chemin: null }),
   taches: () => ({ fait_le: null, pour_le: null }),
+  problemes: () => ({ note: null, relance_le: null, resolu_le: null, debut: new Date().toLocaleDateString('sv-SE') }),
   journal: () => ({ photo_id: null, date_note: new Date().toLocaleDateString('sv-SE') }),
   appareils_push: () => ({}),
   reglages_notifs: () => ({
@@ -117,6 +118,7 @@ class Requete {
         tables.photos = tables.photos.filter((p) => !supprimees.includes(p.plante_id));
         tables.arrosages = tables.arrosages.filter((a) => !supprimees.includes(a.plante_id));
         tables.journal = tables.journal.filter((n) => !supprimees.includes(n.plante_id));
+        tables.problemes = tables.problemes.filter((q) => !supprimees.includes(q.plante_id));
       }
       // ... et supprimer la photo de couverture remet la couverture a vide
       if (this.table === 'photos') {
