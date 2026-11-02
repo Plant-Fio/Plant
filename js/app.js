@@ -6,6 +6,7 @@ import { vueListe, vueFiche, vueFormulaire, vueEvolution } from './vues-plantes.
 import { vueReglages, vuePieces } from './vues-reglages.js';
 import { vueSouhaits, vueSouhait, vueFormulaireSouhait } from './vues-souhaits.js';
 import { vueAujourdhui } from './vue-aujourdhui.js';
+import { vueBilan } from './vue-bilan.js';
 import { compterAFaire } from './rappels.js';
 import { appliquerTheme, lireTheme } from './themes.js';
 
@@ -185,6 +186,8 @@ function afficherVue() {
     else vueSouhait(conteneur, premier);
   } else if (reste[0] === 'pieces') {
     vuePieces(conteneur);
+  } else if (reste[0] === 'bilan') {
+    vueBilan(conteneur);
   } else {
     vueReglages(conteneur, { email: session.user?.email || '', version: VERSION, deconnecter, chercherMiseAJour });
   }

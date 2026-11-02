@@ -485,11 +485,11 @@ export async function supprimerTache(id) {
 // ---------- Journal de la plante ----------
 // Une note = un texte + la date du jour, avec (si on veut) une photo. La photo rejoint la galerie
 // de la plante comme les autres (compressee pareil) ; supprimer la note ne supprime pas la photo.
-export async function ajouterNote(idPlante, texte, fichier = null) {
+export async function ajouterNote(idPlante, texte, fichier = null, icone = null) {
   let idPhoto = null;
   if (fichier) idPhoto = (await ajouterPhoto(idPlante, fichier)).id;
   const { data, error } = await supabase.from('journal')
-    .insert({ plante_id: idPlante, texte, date_note: dateIsoLocale(), photo_id: idPhoto }).select().single();
+    .insert({ plante_id: idPlante, texte, date_note: dateIsoLocale(), photo_id: idPhoto, icone }).select().single();
   if (error) throw error;
   etat.journal = [data, ...etat.journal];
   sauvegarderCache();

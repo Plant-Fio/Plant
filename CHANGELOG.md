@@ -3,6 +3,13 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [1.9.0] - 2026-11-02
+### Ajouté
+- Bilan du mois (Réglages > Bilan du mois) : arrosages, photos, notes, plantes ajoutées, problèmes signalés et résolus, avec les notes du mois ; navigation mois par mois.
+- Journal en frise du temps : une icône (emoji) par note, devinée d'après les mots (feuille, cochenilles, rempotage, arrosage…) et modifiable avant d'ajouter. Script SQL `12-journal-icone.sql`.
+### Corrigé
+- Journal : le texte d'exemple n'est plus collé au cadre de saisie.
+
 ## [1.8.0] - 2026-11-02
 ### Ajouté
 - Suivi des problèmes : sur la fiche, « Signaler un problème » (cochenilles, araignées rouges, pucerons…) avec une note et une relance du traitement (3, 7 ou 14 jours). Les traitements à refaire apparaissent dans Aujourd'hui (section « Traitements », comptés dans la pastille) et dans la notification du matin. Boutons « Traité » et « Résolu ». Script SQL `11-problemes.sql`.
