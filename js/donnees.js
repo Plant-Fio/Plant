@@ -14,6 +14,7 @@ const etat = {
   arrosages: [], // historique des 180 derniers jours
   souhaits: [], // liste de souhaits
   taches: [], // petites taches libres (ecran Aujourd'hui)
+  journal: [], // notes datees des plantes (fiche)
   charge: false,
   horsLigne: false, // true = on affiche la copie locale, la modification est impossible
   userId: null,
@@ -41,6 +42,7 @@ export const photoCouverture = (plante) => (plante
   ? photosDe(plante.id).find((p) => p.id === plante.photo_principale_id) || photosDe(plante.id)[0] || null
   : null);
 export const trouverSouhait = (id) => etat.souhaits.find((s) => s.id === id) || null;
+export const journalDe = (idPlante) => etat.journal.filter((n) => n.plante_id === idPlante);
 export const arrosagesDe = (idPlante) => etat.arrosages
   .filter((a) => a.plante_id === idPlante)
   .sort((a, b) => b.jour.localeCompare(a.jour));
@@ -67,7 +69,7 @@ function sauvegarderCache() {
   try {
     localStorage.setItem(CLE_CACHE, JSON.stringify({
       userId: etat.userId, pieces: etat.pieces, plantes: etat.plantes, photos: etat.photos,
-      arrosages: etat.arrosages, souhaits: etat.souhaits, taches: etat.taches,
+      arrosages: etat.arrosages, souhaits: etat.souhaits, taches: etat.taches, journal: etat.journal,
     }));
   } catch { /* stockage plein ou bloque : pas grave */ }
   // Previent l'appli (pastille de l'onglet "Aujourd'hui", etc.) que les donnees ont change
@@ -91,6 +93,7 @@ export function viderEtat() {
   etat.arrosages = [];
   etat.souhaits = [];
   etat.taches = [];
+  etat.journal = [];
   etat.charge = false;
   etat.horsLigne = false;
   etat.userId = null;
@@ -121,13 +124,14 @@ export async function charger(session) {
   try {
     // On ne charge que les 180 derniers jours (et 1000 lignes au maximum, limite de Supabase)
     const depuis = ajouterJours(dateIsoLocale(), -180);
-    const [pieces, plantes, photos, arrosages, souhaits, taches] = await Promise.all([
+    const [pieces, plantes, photos, arrosages, souhaits, taches, journal] = await Promise.all([
       supabase.from('pieces').select('*').order('position').order('nom'),
       supabase.from('plantes').select('*').order('nom'),
       supabase.from('photos').select('*').order('created_at'),
       supabase.from('arrosages').select('*').gte('jour', depuis).order('jour', { ascending: false }).limit(1000),
       supabase.from('souhaits').select('*').order('created_at', { ascending: false }),
       supabase.from('taches').select('*').order('created_at'),
+      supabase.from('journal').select('*').order('date_note', { ascending: false }).order('created_at', { ascending: false }),
     ]);
     if (pieces.error) throw pieces.error;
     if (plantes.error) throw plantes.error;
@@ -141,6 +145,7 @@ export async function charger(session) {
     etat.arrosages = arrosages.data;
     etat.souhaits = souhaits.data;
     etat.taches = taches.data;
+    etat.journal = journal.error ? [] : journal.data; // le journal ne doit jamais bloquer le reste de l'appli
     etat.horsLigne = false;
     if (!etat.pieces.length && !session.user.user_metadata?.pieces_initialisees) {
       await creerPiecesParDefaut();
@@ -157,6 +162,7 @@ export async function charger(session) {
     etat.arrosages = cache.arrosages || [];
     etat.souhaits = cache.souhaits || [];
     etat.taches = cache.taches || [];
+    etat.journal = cache.journal || [];
     etat.horsLigne = true;
   }
   etat.charge = true;
@@ -215,6 +221,7 @@ export async function supprimerPlante(id) {
   etat.plantes = etat.plantes.filter((p) => p.id !== id);
   etat.photos = etat.photos.filter((p) => p.plante_id !== id);
   etat.arrosages = etat.arrosages.filter((a) => a.plante_id !== id); // supprimes aussi par la base
+  etat.journal = etat.journal.filter((n) => n.plante_id !== id);
   sauvegarderCache();
 }
 
@@ -302,6 +309,7 @@ export async function supprimerPhoto(idPhoto) {
   const { error } = await supabase.from('photos').delete().eq('id', idPhoto);
   if (error) throw error;
   etat.photos = etat.photos.filter((p) => p.id !== idPhoto);
+  etat.journal = etat.journal.map((n) => (n.photo_id === idPhoto ? { ...n, photo_id: null } : n)); // la base fait pareil
   const plante = trouverPlante(photo.plante_id);
   if (plante?.photo_principale_id === idPhoto) {
     // La base remet la couverture a vide ; on passe a la photo suivante s'il en reste une
@@ -463,5 +471,26 @@ export async function supprimerTache(id) {
   const { error } = await supabase.from('taches').delete().eq('id', id);
   if (error) throw error;
   etat.taches = etat.taches.filter((t) => t.id !== id);
+  sauvegarderCache();
+}
+
+// ---------- Journal de la plante ----------
+// Une note = un texte + la date du jour, avec (si on veut) une photo. La photo rejoint la galerie
+// de la plante comme les autres (compressee pareil) ; supprimer la note ne supprime pas la photo.
+export async function ajouterNote(idPlante, texte, fichier = null) {
+  let idPhoto = null;
+  if (fichier) idPhoto = (await ajouterPhoto(idPlante, fichier)).id;
+  const { data, error } = await supabase.from('journal')
+    .insert({ plante_id: idPlante, texte, date_note: dateIsoLocale(), photo_id: idPhoto }).select().single();
+  if (error) throw error;
+  etat.journal = [data, ...etat.journal];
+  sauvegarderCache();
+  return data;
+}
+
+export async function supprimerNote(idNote) {
+  const { error } = await supabase.from('journal').delete().eq('id', idNote);
+  if (error) throw error;
+  etat.journal = etat.journal.filter((n) => n.id !== idNote);
   sauvegarderCache();
 }
