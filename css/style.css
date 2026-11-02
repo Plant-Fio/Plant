@@ -1223,7 +1223,7 @@ a.btn { text-decoration: none; }
 }
 .bilan__tuile--zero { opacity: 0.55; }
 .bilan__emoji { font-size: 22px; line-height: 1; }
-.bilan__nombre { font-family: var(--serif); font-size: 40px; font-weight: 600; line-height: 1.1; color: var(--vert-fonce); }
+.bilan__nombre { font-family: var(--sans); font-size: 36px; font-weight: 700; line-height: 1.1; color: var(--vert-fonce); }
 .bilan__texte { font-size: 14px; color: var(--texte-doux); }
 .bilan__notes { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
 .bilan__notes li { display: flex; gap: 12px; align-items: flex-start; }

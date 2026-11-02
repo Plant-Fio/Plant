@@ -48,7 +48,7 @@ export function initialiserJournal(zone, idPlante) {
         </div>
         <div class="journal__actions">
           <label class="btn-texte journal__photo-bouton">
-            ${icone('appareil')} ${photoChoisie ? 'Photo jointe ✓' : 'Ajouter une photo'}
+            ${icone('appareil')} ${photoChoisie ? 'Photo jointe ✓' : 'Photo'}
             <input class="fichier" type="file" accept="image/*" aria-label="Joindre une photo">
           </label>
           <button class="btn btn--primaire journal__ajout" type="submit"${envoi ? ' disabled' : ''}>${envoi ? 'Envoi…' : 'Ajouter'}</button>
