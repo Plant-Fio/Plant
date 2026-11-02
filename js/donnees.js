@@ -191,6 +191,7 @@ function nettoyerPlante(champs) {
     notes: texte(champs.notes),
     arrosage_jours: entier(champs.arrosage_jours),
     dernier_engrais: champs.dernier_engrais || null,
+    type_engrais: texte(champs.type_engrais),
     dernier_rempotage: champs.dernier_rempotage || null,
     // L'ancien champ « derniere_feuille » n'est plus affiche (le journal le remplace) : on ne l'efface pas
     ...(champs.derniere_feuille !== undefined ? { derniere_feuille: champs.derniere_feuille || null } : {}),
