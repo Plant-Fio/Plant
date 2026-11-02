@@ -501,6 +501,14 @@ export async function ajouterNote(idPlante, texte, fichier = null, icone = null)
   return data;
 }
 
+export async function modifierNote(idNote, texte, icone) {
+  const { data, error } = await supabase.from('journal').update({ texte, icone }).eq('id', idNote).select().single();
+  if (error) throw error;
+  etat.journal = etat.journal.map((n) => (n.id === idNote ? data : n));
+  sauvegarderCache();
+  return data;
+}
+
 export async function supprimerNote(idNote) {
   const { error } = await supabase.from('journal').delete().eq('id', idNote);
   if (error) throw error;
