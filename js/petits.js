@@ -80,7 +80,7 @@ export function initialiserCroissance(zone, idPlante) {
             <i>${e.emoji}</i>${echapper(e.libelle)}</button>`).join('')}
       </div>
       <div class="etapes__donne"><button class="btn-texte" type="button" data-etape="donne" aria-pressed="${donne}">🎁 ${donne ? 'Donnée ✓' : "Je l'ai donnée"}</button></div>
-      <p class="etapes__date">Née le ${echapper(formaterDate(naissance(plante)))} · ${jours < 14 ? `${Math.max(jours, 0)} j` : jours < 60 ? `${Math.round(jours / 7)} semaines` : `${Math.round(jours / 30.4)} mois`}</p>`;
+      <p class="etapes__date">${jours < 1 ? `Née aujourd'hui, le ${echapper(formaterDate(naissance(plante)))}` : `Née le ${echapper(formaterDate(naissance(plante)))} · ${jours < 14 ? `${jours} j` : jours < 60 ? `${Math.round(jours / 7)} semaines` : `${Math.round(jours / 30.4)} mois`}`}</p>`;
   }
   zone.addEventListener('click', async (e) => {
     const b = e.target.closest('[data-etape]');
