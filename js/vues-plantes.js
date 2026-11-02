@@ -552,13 +552,15 @@ export function vueFormulaire(conteneur, id, idMereProposee = null) {
           ${pieces.map((p) => `<option value="${p.id}"${p.id === pieceProposee ? ' selected' : ''}>${echapper(p.nom)}</option>`).join('')}
         </select>
       </label>
-      <label class="champ">
+      <div class="champ" id="champ-mere">
         <span class="champ__label">Plante mère (si c'est un petit)</span>
-        <select class="champ__input champ__select" name="mere_id" id="mere">
-          <option value="">Aucune</option>
-          ${plantes.filter((p) => p.id !== plante?.id).map((p) => `<option value="${p.id}"${p.id === idMere ? ' selected' : ''}>${echapper(p.nom)}</option>`).join('')}
-        </select>
-      </label>
+        <input type="hidden" name="mere_id" value="${echapper(idMere || '')}">
+        <div class="mere-choix" id="mere-choix"></div>
+        <div class="mere-liste" id="mere-liste" hidden>
+          <input class="champ__input" id="mere-recherche" type="search" placeholder="Chercher une plante…" autocomplete="off">
+          <div class="mere-liste__lignes" id="mere-lignes"></div>
+        </div>
+      </div>
       <div id="bloc-petit" ${idMere ? '' : 'hidden'}>
         <label class="champ">
           <span class="champ__label">Étape du petit</span>
@@ -620,10 +622,53 @@ export function vueFormulaire(conteneur, id, idMereProposee = null) {
     infoQuarantaine.hidden = !quar;
     if (quar) infoQuarantaine.textContent = `Quarantaine d'un mois : elle sera mise à part jusqu'au ${formaterDate(quar.fin)}.`;
   }
-  // L'etape et la date du prelevement n'apparaissent que si on choisit une plante mere
-  formulaire.elements.mere_id.addEventListener('change', (e) => {
-    conteneur.querySelector('#bloc-petit').hidden = !e.target.value;
+  // Choix de la mere : liste avec photo, nom, espece et piece (les noms peuvent etre identiques)
+  const champMere = formulaire.elements.mere_id;
+  const zoneChoix = conteneur.querySelector('#mere-choix');
+  const zoneListe = conteneur.querySelector('#mere-liste');
+  const zoneLignes = conteneur.querySelector('#mere-lignes');
+  const champRecherche = conteneur.querySelector('#mere-recherche');
+  const candidates = plantes.filter((p) => p.id !== plante?.id);
+  const detail = (p) => [p.espece, p.piece_id ? nomPiece(p.piece_id) : ''].filter(Boolean).join(' · ');
+  function afficherChoix() {
+    const mere = candidates.find((p) => p.id === champMere.value);
+    zoneChoix.innerHTML = mere ? `
+      <button class="mere-ligne mere-ligne--choisie" type="button" data-mere-ouvrir>
+        ${photoVignetteHtml(mere, 'mere-ligne__photo')}
+        <span class="mere-ligne__texte"><strong>${echapper(mere.nom)}</strong><small>${echapper(detail(mere))}</small></span>
+        <span class="mere-ligne__action">Changer</span>
+      </button>
+      <button class="btn-texte" type="button" data-mere-retirer>Retirer la mère</button>` : `
+      <button class="btn btn--douce" type="button" data-mere-ouvrir>Choisir une plante mère</button>`;
+    conteneur.querySelector('#bloc-petit').hidden = !champMere.value;
+    remplirPhotos(zoneChoix);
+  }
+  function afficherLignes() {
+    const q = normaliser(champRecherche.value);
+    const liste = candidates.filter((p) => !q || normaliser(`${p.nom} ${p.espece || ''}`).includes(q));
+    zoneLignes.innerHTML = liste.length ? liste.map((p) => `
+      <button class="mere-ligne" type="button" data-mere-id="${p.id}">
+        ${photoVignetteHtml(p, 'mere-ligne__photo')}
+        <span class="mere-ligne__texte"><strong>${echapper(p.nom)}</strong><small>${echapper(detail(p))}</small></span>
+      </button>`).join('') : '<p class="aide">Aucune plante trouvée.</p>';
+    remplirPhotos(zoneLignes);
+  }
+  champRecherche.addEventListener('input', afficherLignes);
+  zoneLignes.addEventListener('click', (e) => {
+    const ligne = e.target.closest('[data-mere-id]');
+    if (!ligne) return;
+    champMere.value = ligne.dataset.mereId;
+    zoneListe.hidden = true;
+    afficherChoix();
   });
+  zoneChoix.addEventListener('click', (e) => {
+    if (e.target.closest('[data-mere-retirer]')) { champMere.value = ''; afficherChoix(); return; }
+    if (e.target.closest('[data-mere-ouvrir]')) {
+      zoneListe.hidden = !zoneListe.hidden;
+      if (!zoneListe.hidden) { champRecherche.value = ''; afficherLignes(); }
+    }
+  });
+  afficherChoix();
   const surDate = (e) => { if (e.target.type === 'date') { majCorbeille(e.target.name); majQuarantaine(); } };
   formulaire.addEventListener('input', surDate);
   formulaire.addEventListener('change', surDate);

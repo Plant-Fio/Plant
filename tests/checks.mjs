@@ -767,8 +767,16 @@ export async function verifierAppli(base, dossier, { version }) {
       'petits : une plante sans petit le dit', `Carte petits : "${await page.textContent('#petits')}".`);
     await page.click('#petits a:has-text("Ajouter un petit")');
     await page.waitForSelector('#form-plante');
-    verifier(await page.isVisible('#bloc-petit') && (await page.inputValue('select[name="mere_id"]')) !== '', titre,
+    verifier(await page.isVisible('#bloc-petit') && (await page.inputValue('input[name="mere_id"]')) !== '', titre,
       'petits : le formulaire arrive avec la mere deja choisie', 'La mere n\'est pas preselectionnee.');
+    await page.click('#mere-choix [data-mere-ouvrir]');
+    await page.waitForSelector('#mere-lignes [data-mere-id]');
+    verifier((await page.$$('#mere-lignes .mere-ligne__photo')).length > 0, titre,
+      'petits : la liste des meres montre une photo par plante', 'Pas de vignette dans la liste des meres.');
+    await page.click('#mere-lignes [data-mere-id]');
+    verifier(await page.isHidden('#mere-liste') && (await page.inputValue('input[name="mere_id"]')) !== '', titre,
+      'petits : choisir une mere dans la liste la selectionne', 'La mere choisie n\'est pas retenue.');
+    await capturer(page, dossier, '24-choix-mere.png');
     await page.fill('input[name="nom"]', 'Mini bouture');
     await page.click('#form-ok');
     await page.waitForSelector('.bandeau-petit');

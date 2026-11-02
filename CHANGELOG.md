@@ -3,6 +3,10 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [1.10.2] - 2026-11-02
+### Modifié
+- Choix de la plante mère : au lieu d'une liste de noms, une liste avec la photo, le nom, l'espèce et la pièce de chaque plante, plus une recherche. On distingue enfin deux plantes au même nom.
+
 ## [1.10.1] - 2026-11-02
 ### Ajouté
 - Type d'engrais : dans le formulaire d'une plante, un champ libre (Osmocote, engrais liquide…) avec suggestions des types déjà utilisés. Il s'affiche dans « Entretien » sur la fiche. Script SQL `14-type-engrais.sql`.
