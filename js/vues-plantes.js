@@ -12,6 +12,7 @@ import { recadrer } from './recadrage.js';
 import { ouvrirCamera } from './camera.js';
 import { initialiserJournal } from './journal.js';
 import { initialiserProblemes } from './problemes.js';
+import { initialiserPetits, initialiserCroissance, bandeauPetit, ETAPES } from './petits.js';
 
 // Ce que la liste garde en memoire quand on va voir une fiche puis qu'on revient
 let recherche = '';
@@ -183,6 +184,7 @@ export function vueFiche(conteneur, id) {
     ${quar ? `<p class="fiche__vente"><span class="pastille-quarantaine pastille-quarantaine--fiche">${echapper(libelleQuarantaine(quar))}</span></p>` : ''}
     ${plante.en_vente ? '<p class="fiche__vente"><span class="pastille-vente pastille-vente--fiche">En vente</span></p>' : ''}
     ${plante.espece ? `<p class="fiche__espece">${echapper(plante.espece)}</p>` : '<div class="fiche__espace"></div>'}
+    ${bandeauPetit(plante)}
     <section class="carte">
       <div class="ligne">
         <span class="ligne__label">Pièce</span>
@@ -198,6 +200,8 @@ export function vueFiche(conteneur, id) {
       </div>` : ''}
     </section>
     <section class="carte" id="soins" aria-label="Soins"></section>
+    ${plante.mere_id ? '<section class="carte" id="croissance" aria-label="Croissance"></section>' : ''}
+    <section class="carte" id="petits" aria-label="Petits"></section>
     <section class="carte" id="problemes" aria-label="Problèmes"></section>
     <section class="carte" id="journal" aria-label="Journal"></section>
     ${plante.notes ? `
@@ -209,6 +213,8 @@ export function vueFiche(conteneur, id) {
 
   initialiserGalerie(conteneur.querySelector('#galerie'), plante.id);
   initialiserSoins(conteneur.querySelector('#soins'), plante.id);
+  if (plante.mere_id) { initialiserCroissance(conteneur.querySelector('#croissance'), plante.id); remplirPhotos(conteneur); }
+  initialiserPetits(conteneur.querySelector('#petits'), plante.id);
   initialiserProblemes(conteneur.querySelector('#problemes'), plante.id);
   initialiserJournal(conteneur.querySelector('#journal'), plante.id);
 }
@@ -512,17 +518,21 @@ function trouvee(id) {
 
 // ---------- Formulaire (id = null : nouvelle plante) ----------
 
-export function vueFormulaire(conteneur, id) {
+export function vueFormulaire(conteneur, id, idMereProposee = null) {
   const plante = id ? trouvee(id) : null;
   if (id && !plante) return introuvable(conteneur);
-  const { pieces } = lireEtat();
+  const { pieces, plantes } = lireEtat();
+  // Nouveau petit : on arrive depuis la fiche de la mere (#/plantes/nouvelle/<id de la mere>)
+  const mereProposee = !plante && idMereProposee ? trouvee(idMereProposee) : null;
+  const idMere = plante ? plante.mere_id : mereProposee?.id ?? null;
   // Nouvelle plante : on propose d'office la piece ou elle en met le plus
-  const pieceProposee = plante ? plante.piece_id : pieceLaPlusUtilisee();
+  const pieceProposee = plante ? plante.piece_id : mereProposee ? mereProposee.piece_id : pieceLaPlusUtilisee();
 
   conteneur.innerHTML = `
     <a class="retour" href="${plante ? `#/plantes/${plante.id}` : '#/plantes'}">
       ${icone('retour')} ${plante ? 'Annuler' : 'Mes plantes'}</a>
-    <h1 class="vue__titre">${plante ? 'Modifier la plante' : 'Nouvelle plante'}</h1>
+    <h1 class="vue__titre">${plante ? 'Modifier la plante' : mereProposee ? 'Nouveau petit' : 'Nouvelle plante'}</h1>
+    ${mereProposee ? `<p class="aide-quarantaine">Petit de ${echapper(mereProposee.nom)}</p>` : ''}
     <form id="form-plante" novalidate>
       <label class="champ">
         <span class="champ__label">Nom *</span>
@@ -541,6 +551,22 @@ export function vueFormulaire(conteneur, id) {
           ${pieces.map((p) => `<option value="${p.id}"${p.id === pieceProposee ? ' selected' : ''}>${echapper(p.nom)}</option>`).join('')}
         </select>
       </label>
+      <label class="champ">
+        <span class="champ__label">Plante mère (si c'est un petit)</span>
+        <select class="champ__input champ__select" name="mere_id" id="mere">
+          <option value="">Aucune</option>
+          ${plantes.filter((p) => p.id !== plante?.id).map((p) => `<option value="${p.id}"${p.id === idMere ? ' selected' : ''}>${echapper(p.nom)}</option>`).join('')}
+        </select>
+      </label>
+      <div id="bloc-petit" ${idMere ? '' : 'hidden'}>
+        <label class="champ">
+          <span class="champ__label">Étape du petit</span>
+          <select class="champ__input champ__select" name="etape_bouture">
+            ${ETAPES.map((e) => `<option value="${e.id}"${e.id === (plante?.etape_bouture || (mereProposee ? 'preleve' : 'terre')) ? ' selected' : ''}>${e.emoji} ${echapper(e.libelle)}</option>`).join('')}
+          </select>
+        </label>
+        ${champDate('Date du prélèvement', 'date_bouture', plante?.date_bouture || (mereProposee ? dateIsoLocale() : ''))}
+      </div>
       ${champDate("Date d'acquisition", 'date_acquisition', plante?.date_acquisition)}
       <p class="aide-quarantaine" id="quarantaine-info" role="status" hidden></p>
       <label class="champ">
@@ -585,6 +611,10 @@ export function vueFormulaire(conteneur, id) {
     infoQuarantaine.hidden = !quar;
     if (quar) infoQuarantaine.textContent = `Quarantaine d'un mois : elle sera mise à part jusqu'au ${formaterDate(quar.fin)}.`;
   }
+  // L'etape et la date du prelevement n'apparaissent que si on choisit une plante mere
+  formulaire.elements.mere_id.addEventListener('change', (e) => {
+    conteneur.querySelector('#bloc-petit').hidden = !e.target.value;
+  });
   const surDate = (e) => { if (e.target.type === 'date') { majCorbeille(e.target.name); majQuarantaine(); } };
   formulaire.addEventListener('input', surDate);
   formulaire.addEventListener('change', surDate);

@@ -3,6 +3,10 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [1.10.0] - 2026-11-02
+### Ajouté
+- Petits (boutures, bulbilles) : sur la fiche d'une plante, « Ses petits » (photo, âge, étape) et « Ajouter un petit » qui crée la plante déjà rattachée à sa mère. Sur la fiche du petit : bandeau « Petit de … » avec lien vers la mère et frise d'étapes (prélevé, dans l'eau, en terre, adopté, donné) qu'on touche pour avancer. Le formulaire permet aussi de rattacher une plante existante à une mère. Script SQL `13-petits.sql`.
+
 ## [1.9.3] - 2026-11-02
 ### Corrigé
 - Zones de texte (note du journal, note d'un problème, notes d'une plante) : le texte n'est plus collé au bord du haut. Règle générale dans la feuille de style + contrôle automatique pour les futurs champs.

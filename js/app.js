@@ -172,7 +172,7 @@ function afficherVue() {
   if (onglet === 'plantes') {
     const [premier, second] = reste;
     if (!premier) vueListe(conteneur);
-    else if (premier === 'nouvelle') vueFormulaire(conteneur, null);
+    else if (premier === 'nouvelle') vueFormulaire(conteneur, null, second);
     else if (second === 'modifier') vueFormulaire(conteneur, premier);
     else if (second === 'evolution') vueEvolution(conteneur, premier);
     else vueFiche(conteneur, premier);
