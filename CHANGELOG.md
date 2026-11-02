@@ -3,6 +3,10 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [1.7.0] - 2026-11-02
+### Ajouté
+- Frise d'évolution : en haut de l'écran « Évolution » d'une plante (dès 2 photos), un curseur à faire glisser pour voir la plante grandir, de la première à la dernière photo, avec la date et le temps écoulé.
+
 ## [1.6.0] - 2026-11-02
 ### Ajouté
 - Journal de la plante : dans la fiche, des notes datées (nouvelle feuille, cochenilles, rempotage…) avec une photo en option. La photo rejoint la galerie de la plante (même compression). Script SQL `10-journal.sql` (table `journal`).

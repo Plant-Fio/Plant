@@ -468,6 +468,16 @@ export async function verifierAppli(base, dossier, { version }) {
     "evolution : photos classees par date avec l'ecart entre elles", `Legendes : ${JSON.stringify(legendes)}.`);
     await page.waitForFunction(() => [...document.querySelectorAll('.evol img')].length === 2
       && [...document.querySelectorAll('.evol img')].every((i) => i.complete && i.naturalWidth > 0));
+    // Frise : le curseur fait defiler les photos (derniere au depart, premiere tout a gauche)
+    verifier(await nombre('.frise__curseur') === 1 && (await page.textContent('[data-frise-date]')).includes(aujourdhuiTexte), titre,
+      'frise : le curseur demarre sur la photo la plus recente', `Date de la frise : "${await page.textContent('[data-frise-date]')}".`);
+    await page.fill('.frise__curseur', '0');
+    verifier((await page.textContent('[data-frise-ecart]')).includes('Première photo')
+      && (await page.textContent('[data-frise-date]')).includes('15 janvier 2025'), titre,
+    'frise : tout a gauche on voit la premiere photo', `Frise : "${await page.textContent('[data-frise-date]')}".`);
+    await page.waitForFunction(() => document.querySelectorAll('.frise__img--visible').length === 1);
+    await page.fill('.frise__curseur', '1');
+    await capturer(page, dossier, '12a-frise.png');
     await capturer(page, dossier, '12-evolution.png');
     await verifierDebordement(page, 'Evolution');
     await page.click('a.retour');

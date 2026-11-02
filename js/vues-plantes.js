@@ -440,6 +440,14 @@ export function vueEvolution(conteneur, id) {
     <a class="retour" href="#/plantes/${plante.id}">${icone('retour')} ${echapper(plante.nom)}</a>
     <p class="vue__legende">Évolution</p>
     <h1 class="vue__titre">${echapper(plante.nom)}</h1>
+    ${photos.length > 1 ? `
+      <section class="frise" aria-label="Frise d'évolution">
+        <div class="frise__cadre" data-frise-cadre></div>
+        <input class="frise__curseur" type="range" min="0" max="${photos.length - 1}" step="1" value="${photos.length - 1}"
+               aria-label="Faire défiler les photos dans le temps">
+        <p class="frise__date" data-frise-date></p>
+        <p class="frise__ecart" data-frise-ecart></p>
+      </section>` : ''}
     ${photos.length ? photos.map((p, i) => {
     const url = urlEnCache(p.chemin) || urlEnCache(cheminVignette(p.chemin));
     const precedente = i ? photos[i - 1] : null;
@@ -453,6 +461,35 @@ export function vueEvolution(conteneur, id) {
       </figure>`;
   }).join('') : carteVide('Pas encore de photo', 'Ajoute des photos à la fiche pour suivre la plante dans le temps.')}`;
   remplirPhotos(conteneur);
+  if (photos.length > 1) initialiserFrise(conteneur, plante, photos);
+}
+
+// Frise d'evolution : un curseur qui fait defiler les photos, de la plus ancienne a la plus recente.
+// Toutes les photos sont empilees (une seule visible) : le glissement est instantane, sans rechargement.
+function initialiserFrise(conteneur, plante, photos) {
+  const cadre = conteneur.querySelector('[data-frise-cadre]');
+  const curseur = conteneur.querySelector('.frise__curseur');
+  const dateZone = conteneur.querySelector('[data-frise-date]');
+  const ecartZone = conteneur.querySelector('[data-frise-ecart]');
+
+  function afficher() {
+    const i = Number(curseur.value);
+    const date = datePhoto(photos[i]);
+    dateZone.textContent = formaterDate(date);
+    ecartZone.textContent = i ? libelleEcart(joursEntre(datePhoto(photos[0]), date)).replace('plus tard', 'après la première photo') : 'Première photo';
+    cadre.querySelectorAll('img').forEach((img, k) => img.classList.toggle('frise__img--visible', k === i));
+  }
+
+  curseur.addEventListener('input', afficher);
+  afficher();
+  chargerUrls(photos.map((p) => p.chemin)).then(() => {
+    if (!cadre.isConnected) return;
+    cadre.innerHTML = photos.map((p) => {
+      const url = urlEnCache(p.chemin);
+      return url ? `<img class="frise__img" src="${echapper(url)}" alt="${echapper(plante.nom)}, ${echapper(formaterDate(datePhoto(p)))}">` : '<img class="frise__img" alt="">';
+    }).join('');
+    afficher();
+  }).catch(() => {});
 }
 
 // Cherche la plante, ou renvoie null si l'identifiant n'a pas la bonne forme
