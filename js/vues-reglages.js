@@ -111,6 +111,10 @@ export function vueReglages(conteneur, { email, version, deconnecter, chercherMi
         <span>Mes pièces</span>
         <span class="ligne__valeur">${pieces.length} ${icone('chevron')}</span>
       </a>
+      <a class="ligne ligne--lien" href="#/reglages/bilan">
+        <span>Bilan du mois</span>
+        <span class="ligne__valeur">${icone('chevron')}</span>
+      </a>
     </section>
     <section class="carte">
       <h2 class="carte__titre">Apparence</h2>

@@ -197,6 +197,19 @@ export async function verifierConnexion(base, dossier, { version }) {
       }
     }
 
+    // Colonne icone (journal)
+    if (urlSupabase && cle) {
+      try {
+        const reponse = await fetch(`${urlSupabase}/rest/v1/journal?select=icone&limit=1`, {
+          headers: { apikey: cle, Authorization: `Bearer ${cle}` },
+        });
+        if (reponse.ok) ok('table journal : colonne icone presente');
+        else annoter('error', titre, `Colonne "icone" absente de "journal" (${reponse.status}) : le script supabase/12-journal-icone.sql a-t-il ete lance ?`);
+      } catch (e) {
+        annoter('error', titre, `Verification de icone impossible : ${e.message}`);
+      }
+    }
+
     // Colonne pour_le (taches prevues a l'avance)
     if (urlSupabase && cle) {
       try {
@@ -493,6 +506,15 @@ export async function verifierAppli(base, dossier, { version }) {
     verifier((await page.textContent('#journal .journal__note')).includes('Nouvelle feuille sortie ce matin')
       && (await page.textContent('#journal .journal__date')).includes("Aujourd'hui"), titre,
     'journal : la note apparait avec la date du jour', `Note affichee : "${await page.textContent('#journal .journal__note')}".`);
+    verifier((await page.textContent('#journal .journal__pastille')).trim() === '🌱', titre,
+      "journal : l'icone est devinee d'apres le texte (feuille = 🌱)", `Icone : "${await page.textContent('#journal .journal__pastille')}".`);
+    await page.fill('#journal textarea[name="note"]', 'Cochenilles sous les feuilles');
+    verifier(await page.getAttribute('#journal [data-icone="🐛"]', 'aria-pressed') === 'true', titre,
+      "journal : l'icone proposee suit ce qu'on ecrit en direct (cochenilles = 🐛)", "L'icone 🐛 n'est pas mise en avant.");
+    await page.click('#journal [data-icone="💧"]');
+    verifier(await page.getAttribute('#journal [data-icone="💧"]', 'aria-pressed') === 'true', titre,
+      "journal : on peut choisir l'icone a la main", "Le choix manuel de l'icone ne marche pas.");
+    await page.fill('#journal textarea[name="note"]', '');
     await capturer(page, dossier, '12b-journal.png');
     await page.click('#journal [data-supprimer]');
     await page.click('dialog button[value="ok"]');
@@ -743,6 +765,14 @@ export async function verifierAppli(base, dossier, { version }) {
     await page.click('[data-tab="reglages"]');
     await page.waitForSelector('a[href="#/reglages/pieces"]');
     await capturer(page, dossier, '16-reglages.png');
+    // Bilan du mois
+    await page.click('a[href="#/reglages/bilan"]');
+    await page.waitForSelector('.bilan__tuiles, [data-mois]');
+    verifier(await nombre('.bilan__tuile') === 6 || await nombre('.vide') === 1, titre, 'bilan : le bilan du mois s\'affiche',
+      'Le bilan du mois ne s\'affiche pas.');
+    await capturer(page, dossier, '21-bilan.png');
+    await page.click('a.retour');
+    await page.waitForSelector('a[href="#/reglages/pieces"]');
     await verifierDebordement(page, 'Reglages');
     await verifierZonesTactiles(page, 'Reglages');
     const emailAffiche = (await page.textContent('[data-email]')).trim();

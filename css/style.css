@@ -840,20 +840,37 @@ a.btn { text-decoration: none; }
 }
 .historique__ligne + .historique__ligne { border-top: 1px solid var(--bordure); }
 
-/* ---------- Journal de la plante ---------- */
+/* ---------- Journal de la plante (frise du temps) ---------- */
 .journal__form { margin-top: 4px; }
-.journal__texte { width: 100%; min-height: 64px; resize: vertical; font: inherit; }
+.journal__texte { width: 100%; min-height: 76px; resize: vertical; font: inherit; padding: 14px 16px; border-radius: 14px; }
+.journal__icones { display: flex; gap: 8px; margin-top: 10px; }
+.journal__icone {
+  flex: 1; min-height: 44px; border: 1.5px solid var(--bordure); border-radius: 14px;
+  background: transparent; font-size: 20px; line-height: 1; cursor: pointer;
+}
+.journal__icone[aria-pressed="true"] { border-color: var(--vert); background: var(--vert-clair); }
 .journal__actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; }
 .journal__photo-bouton { position: relative; display: inline-flex; align-items: center; gap: 6px; overflow: hidden; }
 .journal__photo-bouton .icone { width: 18px; height: 18px; }
 .journal__ajout { width: auto; flex: none; }
-.journal { list-style: none; margin: 16px 0 0; padding: 0; }
-.journal__note { display: flex; align-items: flex-start; gap: 8px; padding: 12px 0; }
-.journal__note + .journal__note { border-top: 1px solid var(--bordure); }
+.journal { position: relative; list-style: none; margin: 22px 0 0; padding: 0 0 0 44px; }
+.journal::before { content: ""; position: absolute; left: 15px; top: 8px; bottom: 8px; width: 2px; background: var(--vert-clair); }
+.journal__note { position: relative; display: flex; align-items: flex-start; gap: 8px; padding: 0 0 20px; }
+.journal__note:last-child { padding-bottom: 0; }
+.journal__pastille {
+  position: absolute; left: -44px; top: -2px; width: 32px; height: 32px; border-radius: 50%;
+  display: grid; place-items: center; font-size: 17px; line-height: 1;
+  --p: var(--vert-clair); background: linear-gradient(var(--p), var(--p)), var(--papier); box-shadow: 0 0 0 4px var(--papier);
+}
+.journal__pastille--vert { --p: rgba(120, 160, 90, 0.22); }
+.journal__pastille--rose { --p: rgba(210, 100, 140, 0.2); }
+.journal__pastille--rouge { --p: rgba(190, 80, 60, 0.18); }
+.journal__pastille--sable { --p: rgba(200, 150, 60, 0.22); }
+.journal__pastille--bleu { --p: rgba(70, 130, 190, 0.2); }
 .journal__corps { flex: 1; min-width: 0; }
-.journal__date { font-size: 13px; font-weight: 700; color: var(--texte-doux); }
+.journal__date { font-size: 14px; font-weight: 700; color: var(--vert); }
 .journal__contenu { margin: 2px 0 0; overflow-wrap: anywhere; white-space: pre-wrap; }
-.journal__photo { display: block; width: 96px; height: 96px; margin-top: 8px; border-radius: 12px; object-fit: cover; background: var(--vert-clair); }
+.journal__photo { display: block; width: 112px; height: 112px; margin-top: 8px; border-radius: 14px; object-fit: cover; background: var(--vert-clair); }
 
 /* ---------- Recadrage des photos ---------- */
 .recadrage {
@@ -1194,3 +1211,21 @@ a.btn { text-decoration: none; }
 .probleme__label { display: grid; gap: 6px; font-size: 14px; font-weight: 600; color: var(--texte-doux); }
 .probleme__boutons { display: flex; gap: 10px; }
 .probleme__boutons .btn { flex: 1; }
+
+/* ---------- Bilan du mois ---------- */
+.bilan__mois { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.bilan__titre { flex: 1; margin: 0; text-align: center; font-size: 32px; }
+.bilan__mois .btn-icone:disabled { opacity: 0.3; }
+.bilan__tuiles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0 16px; }
+.bilan__tuile {
+  display: flex; flex-direction: column; gap: 2px; padding: 16px;
+  background: var(--papier); border: 1px solid var(--bordure); border-radius: var(--rayon);
+}
+.bilan__tuile--zero { opacity: 0.55; }
+.bilan__emoji { font-size: 22px; line-height: 1; }
+.bilan__nombre { font-family: var(--serif); font-size: 40px; font-weight: 600; line-height: 1.1; color: var(--vert-fonce); }
+.bilan__texte { font-size: 14px; color: var(--texte-doux); }
+.bilan__notes { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.bilan__notes li { display: flex; gap: 12px; align-items: flex-start; }
+.bilan__notes li > span:first-child { font-size: 20px; line-height: 1.3; }
+.bilan__date { margin-left: 6px; font-size: 13px; color: var(--texte-doux); }
