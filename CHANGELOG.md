@@ -3,6 +3,10 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [1.7.2] - 2026-11-02
+### Corrigé
+- Fiche d'une plante : à la première ouverture après le lancement de l'appli, la photo ne disparaît plus un instant avant de réapparaître (la grande photo est préparée avant de remplacer la vignette).
+
 ## [1.7.1] - 2026-11-02
 ### Ajouté
 - Réglages > Stockage des photos : nombre de photos et place utilisée (estimation, sur 1 Go) avec une jauge.
