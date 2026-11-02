@@ -516,6 +516,14 @@ export async function verifierAppli(base, dossier, { version }) {
       "journal : on peut choisir l'icone a la main", "Le choix manuel de l'icone ne marche pas.");
     await page.fill('#journal textarea[name="note"]', '');
     await capturer(page, dossier, '12b-journal.png');
+    await page.click('#journal [data-modifier]');
+    await page.waitForSelector('#journal textarea[name="edition"]');
+    await page.fill('#journal textarea[name="edition"]', 'Note corrigee');
+    await page.click('#journal [data-icone-edition="🌸"]');
+    await page.click('#journal [data-edition] button[type="submit"]');
+    await page.waitForFunction(() => document.querySelector('#journal .journal__contenu')?.textContent.includes('Note corrigee'));
+    verifier((await page.textContent('#journal .journal__pastille')).trim() === '🌸', titre,
+      "journal : on peut modifier le texte et l'emoji d'une note", `Pastille : "${await page.textContent('#journal .journal__pastille')}".`);
     await page.click('#journal [data-supprimer]');
     await page.click('dialog button[value="ok"]');
     await page.waitForFunction(() => !document.querySelector('#journal .journal__note'));

@@ -3,6 +3,10 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [1.11.0] - 2026-11-02
+### Ajouté
+- Journal : un crayon sur chaque note permet de modifier son texte et son emoji sur place (Enregistrer / Annuler). Pas de nouveau script SQL.
+
 ## [1.10.2] - 2026-11-02
 ### Modifié
 - Choix de la plante mère : au lieu d'une liste de noms, une liste avec la photo, le nom, l'espèce et la pièce de chaque plante, plus une recherche. On distingue enfin deux plantes au même nom.
