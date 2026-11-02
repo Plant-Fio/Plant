@@ -3,6 +3,10 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [1.9.2] - 2026-11-02
+### Corrigé
+- Bilan du mois : une pression sur la flèche ne saute plus plusieurs mois (les écouteurs s'empilaient à chaque visite de l'écran). Le bilan repart toujours du mois en cours.
+
 ## [1.9.1] - 2026-11-02
 ### Modifié
 - Suivi des problèmes : avec « Autre » on peut préciser le problème, et « Autre durée… » permet de choisir librement le nombre de jours avant le prochain traitement.

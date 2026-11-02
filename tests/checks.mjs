@@ -782,6 +782,19 @@ export async function verifierAppli(base, dossier, { version }) {
     await page.waitForSelector('.bilan__tuiles, [data-mois]');
     verifier(await nombre('.bilan__tuile') === 6 || await nombre('.vide') === 1, titre, 'bilan : le bilan du mois s\'affiche',
       'Le bilan du mois ne s\'affiche pas.');
+    // Une pression sur la fleche = un seul mois (apres plusieurs visites de l'ecran)
+    await page.click('a.retour');
+    await page.waitForSelector('a[href="#/reglages/bilan"]');
+    await page.click('a[href="#/reglages/bilan"]');
+    await page.waitForSelector('[data-mois="-1"]');
+    const moisAvant = await page.textContent('.bilan__titre');
+    await page.click('[data-mois="-1"]');
+    const moisApres = await page.textContent('.bilan__titre');
+    const attendu = await page.evaluate(() => { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - 1);
+      const t = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' }).format(d); return t.charAt(0).toUpperCase() + t.slice(1); });
+    verifier(moisApres.trim() === attendu, titre, 'bilan : la fleche recule d\'un seul mois, meme apres plusieurs visites',
+      `Avant : "${moisAvant}", apres : "${moisApres}", attendu : "${attendu}".`);
+    await page.click('[data-mois="1"]');
     await capturer(page, dossier, '21-bilan.png');
     await page.click('a.retour');
     await page.waitForSelector('a[href="#/reglages/pieces"]');

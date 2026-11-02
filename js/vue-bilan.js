@@ -22,7 +22,7 @@ const pluriel = (n, un, plusieurs) => (n > 1 ? plusieurs : un);
 
 export function vueBilan(conteneur) {
   const courant = dateIsoLocale().slice(0, 7);
-  if (!moisAffiche || moisAffiche > courant) moisAffiche = courant;
+  moisAffiche = courant; // on repart toujours du mois en cours
 
   function dessiner() {
     const { plantes, arrosages, photos, journal, problemes } = lireEtat();
@@ -74,11 +74,13 @@ export function vueBilan(conteneur) {
         </section>` : ''}`}`;
   }
 
-  conteneur.addEventListener('click', (e) => {
+  // « onclick » (et non addEventListener) : le conteneur est le meme pour tous les ecrans, les ecouteurs
+  // s'empileraient a chaque visite et une seule pression decalerait de plusieurs mois.
+  conteneur.onclick = (e) => {
     const b = e.target.closest('[data-mois]');
     if (!b || b.disabled) return;
     moisAffiche = decaler(moisAffiche, Number(b.dataset.mois));
     dessiner();
-  });
+  };
   dessiner();
 }
