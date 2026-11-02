@@ -97,7 +97,10 @@ function initialiserNotifications(conteneur) {
 }
 
 export function vueReglages(conteneur, { email, version, deconnecter, chercherMiseAJour }) {
-  const { pieces } = lireEtat();
+  const { pieces, photos } = lireEtat();
+  // Estimation : une photo + sa vignette pesent environ 250 Ko apres compression ; l'offre gratuite de Supabase offre 1 Go
+  const tailleMo = Math.round(photos.length * 0.25);
+  const pourcent = Math.min(100, Math.round((tailleMo / 1024) * 100));
   const themeActuel = lireTheme();
   conteneur.innerHTML = `
     <p class="vue__legende">Mon compte</p>
@@ -137,6 +140,19 @@ export function vueReglages(conteneur, { email, version, deconnecter, chercherMi
       </div>
       <button class="btn btn--douce" id="notifs-test" type="button" hidden>Envoyer une notification test</button>
       <button class="btn-texte" id="notifs-stop" type="button" hidden>Désactiver sur cet appareil</button>
+    </section>
+    <section class="carte" id="stockage">
+      <h2 class="carte__titre">Stockage des photos</h2>
+      <div class="ligne">
+        <span class="ligne__label">Photos</span>
+        <span class="ligne__valeur" data-photos>${photos.length}</span>
+      </div>
+      <div class="ligne">
+        <span class="ligne__label">Place utilisée</span>
+        <span class="ligne__valeur" data-stockage>≈ ${tailleMo} Mo sur 1 Go</span>
+      </div>
+      <progress class="stockage__jauge" max="100" value="${pourcent}" aria-label="Place utilisée : ${pourcent} %"></progress>
+      <p class="stockage__aide">Estimation (environ 250 Ko par photo). L'offre gratuite de Supabase offre 1 Go.</p>
     </section>
     <section class="carte">
       <h2 class="carte__titre">Compte</h2>

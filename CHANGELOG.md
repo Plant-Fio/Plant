@@ -3,6 +3,12 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [1.7.1] - 2026-11-02
+### Ajouté
+- Réglages > Stockage des photos : nombre de photos et place utilisée (estimation, sur 1 Go) avec une jauge.
+### Corrigé
+- Réglages > Notifications : plus d'espace entre le bouton « Activer » et les heures de rappel.
+
 ## [1.7.0] - 2026-11-02
 ### Ajouté
 - Frise d'évolution : en haut de l'écran « Évolution » d'une plante (dès 2 photos), un curseur à faire glisser pour voir la plante grandir, de la première à la dernière photo, avec la date et le temps écoulé.
