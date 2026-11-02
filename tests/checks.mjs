@@ -174,7 +174,7 @@ export async function verifierConnexion(base, dossier, { version }) {
     // mais si une colonne manque, PostgREST repond 400.
     if (urlSupabase && cle) {
       try {
-        const reponse = await fetch(`${urlSupabase}/rest/v1/plantes?select=arrosage_jours,dernier_engrais,dernier_rempotage,en_vente,derniere_feuille,prochain_engrais&limit=1`, {
+        const reponse = await fetch(`${urlSupabase}/rest/v1/plantes?select=arrosage_jours,dernier_engrais,dernier_rempotage,en_vente,derniere_feuille,prochain_engrais,mere_id,etape_bouture,date_bouture&limit=1`, {
           headers: { apikey: cle, Authorization: `Bearer ${cle}` },
         });
         if (reponse.ok) ok('table plantes : colonnes de soins (arrosage, engrais, rempotage, feuille, en vente) presentes');
@@ -760,6 +760,42 @@ export async function verifierAppli(base, dossier, { version }) {
     await page.click('#problemes [data-resolu]');
     await page.waitForSelector('#problemes .probleme--resolu');
     ok('problemes : « Résolu » range le probleme dans les resolus');
+
+    // Petits : « Ajouter un petit » depuis la mere, bandeau + etapes sur la fiche du petit, retour vers la mere
+    const adresseMere = await page.evaluate(() => location.hash);
+    verifier((await page.textContent('#petits')).includes('Pas encore de petit'), titre,
+      'petits : une plante sans petit le dit', `Carte petits : "${await page.textContent('#petits')}".`);
+    await page.click('#petits a:has-text("Ajouter un petit")');
+    await page.waitForSelector('#form-plante');
+    verifier(await page.isVisible('#bloc-petit') && (await page.inputValue('select[name="mere_id"]')) !== '', titre,
+      'petits : le formulaire arrive avec la mere deja choisie', 'La mere n\'est pas preselectionnee.');
+    await page.fill('input[name="nom"]', 'Mini bouture');
+    await page.click('#form-ok');
+    await page.waitForSelector('.bandeau-petit');
+    verifier((await page.textContent('.bandeau-petit')).includes('Petit de'), titre,
+      'petits : la fiche du petit montre « Petit de … »', `Bandeau : "${await page.textContent('.bandeau-petit')}".`);
+    verifier(await page.getAttribute('[data-etape="preleve"]', 'aria-pressed') === 'true', titre,
+      'petits : un nouveau petit commence a l\'etape « Prelevé »', 'L\'etape de depart n\'est pas « Prelevé ».');
+    await page.click('[data-etape="eau"]');
+    await page.waitForFunction(() => document.querySelector('[data-etape="eau"]').getAttribute('aria-pressed') === 'true');
+    ok('petits : on touche une etape pour avancer (Dans l\'eau)');
+    await capturer(page, dossier, '22-petit-fiche.png');
+    await page.click('.bandeau-petit');
+    await page.waitForSelector('#petits .petit');
+    verifier((await page.textContent('#petits')).includes('Ses petits · 1') && (await page.textContent('#petits .petit')).includes('dans l\'eau'), titre,
+      'petits : la mere liste son petit avec son etape', `Carte petits : "${await page.textContent('#petits')}".`);
+    await capturer(page, dossier, '23-petits-mere.png');
+    // On supprime le petit pour ne pas fausser la suite
+    await page.click('#petits .petit');
+    await page.waitForSelector('.bandeau-petit');
+    await page.click('a:has-text("Modifier")');
+    await page.waitForSelector('#supprimer');
+    await page.click('#supprimer');
+    await page.click('dialog button[value="ok"]');
+    await page.waitForSelector('.vignette, .vide');
+    await page.evaluate((h) => { location.hash = h; }, adresseMere);
+    await page.waitForSelector('#petits');
+    ok('petits : le petit supprime, retour sur la mere');
 
     // --- Suppression (avec confirmation) ---
     await page.click('a:has-text("Modifier")');

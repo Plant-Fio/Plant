@@ -10,6 +10,7 @@ const valeursParDefaut = {
     espece: null, piece_id: null, date_acquisition: null, notes: null, photo_principale_id: null,
     arrosage_jours: null, dernier_engrais: null, dernier_rempotage: null,
     derniere_feuille: null, en_vente: false, prochain_engrais: null,
+    mere_id: null, etape_bouture: null, date_bouture: null,
   }),
   photos: () => ({ date_photo: new Date().toLocaleDateString('sv-SE') }),
   arrosages: () => ({}),

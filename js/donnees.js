@@ -196,6 +196,10 @@ function nettoyerPlante(champs) {
     ...(champs.derniere_feuille !== undefined ? { derniere_feuille: champs.derniere_feuille || null } : {}),
     prochain_engrais: champs.prochain_engrais || null,
     en_vente: champs.en_vente === true || champs.en_vente === 'on',
+    // Petit (bouture, bulbille) : plante mere + etape + jour du prelevement
+    mere_id: champs.mere_id || null,
+    etape_bouture: champs.mere_id ? (champs.etape_bouture || 'terre') : null,
+    date_bouture: champs.mere_id ? (champs.date_bouture || null) : null,
   };
 }
 
@@ -225,7 +229,7 @@ export async function supprimerPlante(id) {
   await supprimerFichiers(photosDe(id).map((p) => p.chemin));
   const { error } = await supabase.from('plantes').delete().eq('id', id);
   if (error) throw error;
-  etat.plantes = etat.plantes.filter((p) => p.id !== id);
+  etat.plantes = etat.plantes.filter((p) => p.id !== id).map((p) => (p.mere_id === id ? { ...p, mere_id: null } : p)); // la base fait pareil : les petits perdent juste le lien
   etat.photos = etat.photos.filter((p) => p.plante_id !== id);
   etat.arrosages = etat.arrosages.filter((a) => a.plante_id !== id); // supprimes aussi par la base
   etat.journal = etat.journal.filter((n) => n.plante_id !== id);
@@ -533,5 +537,13 @@ export async function supprimerProbleme(id) {
   const { error } = await supabase.from('problemes').delete().eq('id', id);
   if (error) throw error;
   etat.problemes = etat.problemes.filter((q) => q.id !== id);
+  sauvegarderCache();
+}
+
+// Etape d'une bouture : preleve, eau, terre, adopte, donne
+export async function definirEtapeBouture(idPlante, etape) {
+  const { data, error } = await supabase.from('plantes').update({ etape_bouture: etape }).eq('id', idPlante).select().single();
+  if (error) throw error;
+  etat.plantes = etat.plantes.map((p) => (p.id === idPlante ? data : p));
   sauvegarderCache();
 }
