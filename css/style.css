@@ -1300,3 +1300,5 @@ a.btn { text-decoration: none; }
 
 .journal__edition { display: grid; gap: 0; }
 .journal__note--edition .journal__actions { margin-top: 10px; }
+.petits__actions { display: grid; gap: 8px; margin-top: 12px; }
+.petits__actions .btn { margin: 0; }

@@ -773,7 +773,10 @@ export async function verifierAppli(base, dossier, { version }) {
     const adresseMere = await page.evaluate(() => location.hash);
     verifier((await page.textContent('#petits')).includes('Pas encore de petit'), titre,
       'petits : une plante sans petit le dit', `Carte petits : "${await page.textContent('#petits')}".`);
-    await page.click('#petits a:has-text("Ajouter un petit")');
+    await page.click('#petits [data-rattacher]');
+    verifier(await page.isVisible('#petits [data-rattacher-liste]'), titre,
+      'petits : « Rattacher une plante deja creee » ouvre la liste', 'La liste de rattachement ne s\'ouvre pas.');
+    await page.click('#petits a:has-text("Nouveau petit")');
     await page.waitForSelector('#form-plante');
     verifier(await page.isVisible('#bloc-petit') && (await page.inputValue('input[name="mere_id"]')) !== '', titre,
       'petits : le formulaire arrive avec la mere deja choisie', 'La mere n\'est pas preselectionnee.');
