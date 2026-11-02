@@ -3,6 +3,10 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [1.6.0] - 2026-11-02
+### Ajouté
+- Journal de la plante : dans la fiche, des notes datées (nouvelle feuille, cochenilles, rempotage…) avec une photo en option. La photo rejoint la galerie de la plante (même compression). Script SQL `10-journal.sql` (table `journal`).
+
 ## [1.5.0] - 2026-11-01
 ### Ajouté
 - Notifications de rappel (iPhone, appli installée sur l'écran d'accueil) : un rappel le matin (10 h par défaut) avec ce qu'il y a à faire aujourd'hui (arrosages, engrais, tâches) et un rappel le soir (20 h) pour le lendemain. Activation, heures et rappels réglables dans Réglages > Notifications, avec un bouton de test.

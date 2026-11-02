@@ -142,7 +142,7 @@ export async function verifierConnexion(base, dossier, { version }) {
     // On tente d'inserer une ligne : si la RLS est active, Postgres refuse (code 42501) AVANT
     // toute verification des champs, donc rien n'est jamais ajoute.
     if (urlSupabase && cle) {
-      for (const table of ['pieces', 'plantes', 'photos', 'arrosages', 'souhaits', 'taches', 'appareils_push', 'reglages_notifs']) {
+      for (const table of ['pieces', 'plantes', 'photos', 'arrosages', 'souhaits', 'taches', 'journal', 'appareils_push', 'reglages_notifs']) {
         try {
           const reponse = await fetch(`${urlSupabase}/rest/v1/${table}`, {
             method: 'POST',
@@ -152,7 +152,7 @@ export async function verifierConnexion(base, dossier, { version }) {
             },
             body: JSON.stringify(table === 'photos' ? { chemin: 'verification-ci' }
               : table === 'arrosages' ? { jour: '2000-01-01' }
-                : table === 'taches' ? { texte: 'verification-ci' }
+                : table === 'taches' || table === 'journal' ? { texte: 'verification-ci' }
                   : table === 'appareils_push' ? { endpoint: 'verification-ci', p256dh: 'x', auth: 'x' }
                     : table === 'reglages_notifs' ? { heure_matin: 10 } : { nom: 'verification-ci' }),
           });
@@ -472,6 +472,21 @@ export async function verifierAppli(base, dossier, { version }) {
     await verifierDebordement(page, 'Evolution');
     await page.click('a.retour');
     await page.waitForSelector('#galerie .bande__vignette');
+
+    // Journal de la plante : ajouter une note datee, la voir apparaitre, la supprimer
+    verifier(await nombre('#journal textarea[name="note"]') === 1 && await nombre('#journal .journal__note') === 0, titre,
+      'journal : la fiche a son journal, vide au depart', 'Le journal est absent ou deja rempli.');
+    await page.fill('#journal textarea[name="note"]', 'Nouvelle feuille sortie ce matin');
+    await page.click('#journal button[type="submit"]');
+    await page.waitForSelector('#journal .journal__note');
+    verifier((await page.textContent('#journal .journal__note')).includes('Nouvelle feuille sortie ce matin')
+      && (await page.textContent('#journal .journal__date')).includes("Aujourd'hui"), titre,
+    'journal : la note apparait avec la date du jour', `Note affichee : "${await page.textContent('#journal .journal__note')}".`);
+    await capturer(page, dossier, '12b-journal.png');
+    await page.click('#journal [data-supprimer]');
+    await page.click('dialog button[value="ok"]');
+    await page.waitForFunction(() => !document.querySelector('#journal .journal__note'));
+    ok('journal : la note peut etre supprimee');
 
     // Appareil photo d'evolution : seulement la derniere photo en transparence, pas de silhouette ni de ligne
     const avantCamera = (await page.evaluate(() => globalThis.__uploads)).length;

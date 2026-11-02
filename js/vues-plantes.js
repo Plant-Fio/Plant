@@ -10,6 +10,7 @@ import { echapper, icone, formaterDate, normaliser, dateRelative, dateIsoLocale,
 import { confirmer, demanderDate, message } from './dialogues.js';
 import { recadrer } from './recadrage.js';
 import { ouvrirCamera } from './camera.js';
+import { initialiserJournal } from './journal.js';
 
 // Ce que la liste garde en memoire quand on va voir une fiche puis qu'on revient
 let recherche = '';
@@ -196,6 +197,7 @@ export function vueFiche(conteneur, id) {
       </div>` : ''}
     </section>
     <section class="carte" id="soins" aria-label="Soins"></section>
+    <section class="carte" id="journal" aria-label="Journal"></section>
     ${plante.notes ? `
       <section class="carte">
         <h2 class="carte__titre">Notes</h2>
@@ -205,6 +207,7 @@ export function vueFiche(conteneur, id) {
 
   initialiserGalerie(conteneur.querySelector('#galerie'), plante.id);
   initialiserSoins(conteneur.querySelector('#soins'), plante.id);
+  initialiserJournal(conteneur.querySelector('#journal'), plante.id);
 }
 
 // Soins de la fiche : arrosage (frequence, prochain, historique), engrais, rempotage.

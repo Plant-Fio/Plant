@@ -18,6 +18,7 @@ const SQUELETTE = [
   './js/dialogues.js',
   './js/donnees.js',
   './js/photos.js',
+  './js/journal.js',
   './js/rappels.js',
   './js/vues-plantes.js',
   './js/vue-aujourdhui.js',

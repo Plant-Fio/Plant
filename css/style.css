@@ -840,6 +840,21 @@ a.btn { text-decoration: none; }
 }
 .historique__ligne + .historique__ligne { border-top: 1px solid var(--bordure); }
 
+/* ---------- Journal de la plante ---------- */
+.journal__form { margin-top: 4px; }
+.journal__texte { width: 100%; min-height: 64px; resize: vertical; font: inherit; }
+.journal__actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; }
+.journal__photo-bouton { position: relative; display: inline-flex; align-items: center; gap: 6px; overflow: hidden; }
+.journal__photo-bouton .icone { width: 18px; height: 18px; }
+.journal__ajout { width: auto; flex: none; }
+.journal { list-style: none; margin: 16px 0 0; padding: 0; }
+.journal__note { display: flex; align-items: flex-start; gap: 8px; padding: 12px 0; }
+.journal__note + .journal__note { border-top: 1px solid var(--bordure); }
+.journal__corps { flex: 1; min-width: 0; }
+.journal__date { font-size: 13px; font-weight: 700; color: var(--texte-doux); }
+.journal__contenu { margin: 2px 0 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+.journal__photo { display: block; width: 96px; height: 96px; margin-top: 8px; border-radius: 12px; object-fit: cover; background: var(--vert-clair); }
+
 /* ---------- Recadrage des photos ---------- */
 .recadrage {
   position: fixed;
