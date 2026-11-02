@@ -3,6 +3,10 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [1.9.1] - 2026-11-02
+### Modifié
+- Suivi des problèmes : avec « Autre » on peut préciser le problème, et « Autre durée… » permet de choisir librement le nombre de jours avant le prochain traitement.
+
 ## [1.9.0] - 2026-11-02
 ### Ajouté
 - Bilan du mois (Réglages > Bilan du mois) : arrosages, photos, notes, plantes ajoutées, problèmes signalés et résolus, avec les notes du mois ; navigation mois par mois.

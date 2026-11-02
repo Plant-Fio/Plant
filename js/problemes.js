@@ -49,6 +49,8 @@ export function initialiserProblemes(zone, idPlante) {
           <select class="champ__input" name="type" aria-label="Type de problème">
             ${TYPES_PROBLEMES.map((t) => `<option>${echapper(t)}</option>`).join('')}
           </select>
+          <input class="champ__input" name="type_autre" type="text" maxlength="40" hidden
+                 aria-label="Précise le problème" placeholder="Précise le problème (ex. thrips)">
           <textarea class="champ__input" name="note" rows="2" maxlength="500" aria-label="Note ou traitement appliqué"
             placeholder="Traitement appliqué, observations…"></textarea>
           <label class="probleme__label">Refaire le traitement
@@ -57,8 +59,11 @@ export function initialiserProblemes(zone, idPlante) {
               <option value="3">Dans 3 jours</option>
               <option value="7" selected>Dans 7 jours</option>
               <option value="14">Dans 14 jours</option>
+              <option value="autre">Autre durée…</option>
             </select>
           </label>
+          <input class="champ__input" name="relance_autre" type="number" inputmode="numeric" min="1" max="365" hidden
+                 aria-label="Nombre de jours avant le prochain traitement" placeholder="Nombre de jours (1 à 365)">
           <div class="probleme__boutons">
             <button class="btn btn--douce" type="button" data-annuler>Annuler</button>
             <button class="btn btn--primaire" type="submit">Enregistrer</button>
@@ -107,17 +112,39 @@ export function initialiserProblemes(zone, idPlante) {
     }
   });
 
+  // Les champs « précise » n'apparaissent que si on choisit Autre / Autre durée
+  zone.addEventListener('change', (e) => {
+    const f = e.target.form;
+    if (!f) return;
+    if (e.target.name === 'type') {
+      f.elements.type_autre.hidden = e.target.value !== 'Autre';
+      if (!f.elements.type_autre.hidden) f.elements.type_autre.focus();
+    } else if (e.target.name === 'relance') {
+      f.elements.relance_autre.hidden = e.target.value !== 'autre';
+      if (!f.elements.relance_autre.hidden) f.elements.relance_autre.focus();
+    }
+  });
+
   zone.addEventListener('submit', async (e) => {
     e.preventDefault();
     const formulaire = e.target;
+    const els = formulaire.elements;
+    let type = els.type.value;
+    if (type === 'Autre') {
+      type = els.type_autre.value.trim();
+      if (!type) { message('Précise le problème', 'erreur'); els.type_autre.focus(); return; }
+    }
+    let relanceJours = Number(els.relance.value) || null;
+    if (els.relance.value === 'autre') {
+      relanceJours = Math.round(Number(els.relance_autre.value));
+      if (!(relanceJours >= 1 && relanceJours <= 365)) {
+        message('Indique un nombre de jours entre 1 et 365', 'erreur'); els.relance_autre.focus(); return;
+      }
+    }
     const bouton = formulaire.querySelector('[type="submit"]');
     bouton.disabled = true;
     try {
-      await creerProbleme(idPlante, {
-        type: formulaire.elements.type.value,
-        note: formulaire.elements.note.value.trim(),
-        relanceJours: Number(formulaire.elements.relance.value) || null,
-      });
+      await creerProbleme(idPlante, { type, note: els.note.value.trim(), relanceJours });
       formulaireOuvert = false;
       message('Problème noté');
     } catch (erreur) {
