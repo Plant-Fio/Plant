@@ -250,6 +250,7 @@ function initialiserSoins(zone, idPlante) {
         </ul>` : ''}
       <h3 class="soins__sous-titre">Entretien</h3>
       ${ligne('Dernière dose d\'engrais', plante.dernier_engrais ? echapper(dateRelative(plante.dernier_engrais, aujourdhui)) : '—', 'data-soin="engrais"')}
+      ${plante.type_engrais ? ligne('Type d\'engrais', echapper(plante.type_engrais), 'data-soin="type-engrais"') : ''}
       ${ligne("Prochaine dose d'engrais", plante.prochain_engrais ? echapper(libelleEcheance(etatEngrais(plante, aujourdhui))) : '—', 'data-soin="prochain-engrais"')}
       ${ligne('Dernier rempotage', plante.dernier_rempotage ? echapper(dateRelative(plante.dernier_rempotage, aujourdhui)) : '—', 'data-soin="rempotage"')}
       <div class="soins__actions">
@@ -575,6 +576,14 @@ export function vueFormulaire(conteneur, id, idMereProposee = null) {
                placeholder="Ex. 7 (vide = pas de rappel)" value="${echapper(plante?.arrosage_jours)}">
       </label>
       ${champDate('Dernière dose d\'engrais', 'dernier_engrais', plante?.dernier_engrais)}
+      <label class="champ">
+        <span class="champ__label">Type d'engrais</span>
+        <input class="champ__input" name="type_engrais" type="text" list="liste-engrais" maxlength="60" autocomplete="off"
+               placeholder="Ex. Osmocote, engrais liquide…" value="${echapper(plante?.type_engrais)}">
+        <datalist id="liste-engrais">
+          ${[...new Set(lireEtat().plantes.map((p) => p.type_engrais).filter(Boolean))].map((t) => `<option value="${echapper(t)}">`).join('')}
+        </datalist>
+      </label>
       ${champDate("Prochaine dose d'engrais", 'prochain_engrais', plante?.prochain_engrais)}
       ${champDate('Dernier rempotage', 'dernier_rempotage', plante?.dernier_rempotage)}
       <label class="case">
