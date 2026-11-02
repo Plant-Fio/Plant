@@ -750,6 +750,13 @@ export async function verifierAppli(base, dossier, { version }) {
     await page.waitForFunction(() => [...document.querySelectorAll('#problemes .probleme')].some((l) => l.textContent.includes('Thrips') && l.textContent.includes('dans 10 jours')));
     ok('problemes : « Autre » precise (Thrips) et relance personnalisee (10 jours)');
     await capturer(page, dossier, '20b-probleme-autre.png');
+    // Regle generale : aucune zone de texte visible ne colle son texte au bord du haut
+    await page.click('#problemes [data-ouvrir]');
+    const zonesCollees = await page.$$eval('textarea', (zones) => zones.filter((z) => z.offsetParent !== null && parseFloat(getComputedStyle(z).paddingTop) < 10)
+      .map((z) => z.name || z.id || z.className));
+    verifier(zonesCollees.length === 0, titre, 'champs : aucune zone de texte n\'a son texte colle au bord du haut',
+      `Zones de texte sans espace en haut : ${zonesCollees.join(', ')}.`);
+    await page.click('#problemes [data-annuler]');
     await page.click('#problemes [data-resolu]');
     await page.waitForSelector('#problemes .probleme--resolu');
     ok('problemes : « Résolu » range le probleme dans les resolus');
