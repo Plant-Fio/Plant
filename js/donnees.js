@@ -15,6 +15,7 @@ const etat = {
   souhaits: [], // liste de souhaits
   taches: [], // petites taches libres (ecran Aujourd'hui)
   journal: [], // notes datees des plantes (fiche)
+  problemes: [], // parasites, maladies : en cours ou resolus
   charge: false,
   horsLigne: false, // true = on affiche la copie locale, la modification est impossible
   userId: null,
@@ -43,6 +44,7 @@ export const photoCouverture = (plante) => (plante
   : null);
 export const trouverSouhait = (id) => etat.souhaits.find((s) => s.id === id) || null;
 export const journalDe = (idPlante) => etat.journal.filter((n) => n.plante_id === idPlante);
+export const problemesDe = (idPlante) => etat.problemes.filter((q) => q.plante_id === idPlante);
 export const arrosagesDe = (idPlante) => etat.arrosages
   .filter((a) => a.plante_id === idPlante)
   .sort((a, b) => b.jour.localeCompare(a.jour));
@@ -69,7 +71,7 @@ function sauvegarderCache() {
   try {
     localStorage.setItem(CLE_CACHE, JSON.stringify({
       userId: etat.userId, pieces: etat.pieces, plantes: etat.plantes, photos: etat.photos,
-      arrosages: etat.arrosages, souhaits: etat.souhaits, taches: etat.taches, journal: etat.journal,
+      arrosages: etat.arrosages, souhaits: etat.souhaits, taches: etat.taches, journal: etat.journal, problemes: etat.problemes,
     }));
   } catch { /* stockage plein ou bloque : pas grave */ }
   // Previent l'appli (pastille de l'onglet "Aujourd'hui", etc.) que les donnees ont change
@@ -94,6 +96,7 @@ export function viderEtat() {
   etat.souhaits = [];
   etat.taches = [];
   etat.journal = [];
+  etat.problemes = [];
   etat.charge = false;
   etat.horsLigne = false;
   etat.userId = null;
@@ -124,7 +127,7 @@ export async function charger(session) {
   try {
     // On ne charge que les 180 derniers jours (et 1000 lignes au maximum, limite de Supabase)
     const depuis = ajouterJours(dateIsoLocale(), -180);
-    const [pieces, plantes, photos, arrosages, souhaits, taches, journal] = await Promise.all([
+    const [pieces, plantes, photos, arrosages, souhaits, taches, journal, problemes] = await Promise.all([
       supabase.from('pieces').select('*').order('position').order('nom'),
       supabase.from('plantes').select('*').order('nom'),
       supabase.from('photos').select('*').order('created_at'),
@@ -132,6 +135,7 @@ export async function charger(session) {
       supabase.from('souhaits').select('*').order('created_at', { ascending: false }),
       supabase.from('taches').select('*').order('created_at'),
       supabase.from('journal').select('*').order('date_note', { ascending: false }).order('created_at', { ascending: false }),
+      supabase.from('problemes').select('*').order('debut', { ascending: false }).order('created_at', { ascending: false }),
     ]);
     if (pieces.error) throw pieces.error;
     if (plantes.error) throw plantes.error;
@@ -146,6 +150,7 @@ export async function charger(session) {
     etat.souhaits = souhaits.data;
     etat.taches = taches.data;
     etat.journal = journal.error ? [] : journal.data; // le journal ne doit jamais bloquer le reste de l'appli
+    etat.problemes = problemes.error ? [] : problemes.data;
     etat.horsLigne = false;
     if (!etat.pieces.length && !session.user.user_metadata?.pieces_initialisees) {
       await creerPiecesParDefaut();
@@ -163,6 +168,7 @@ export async function charger(session) {
     etat.souhaits = cache.souhaits || [];
     etat.taches = cache.taches || [];
     etat.journal = cache.journal || [];
+    etat.problemes = cache.problemes || [];
     etat.horsLigne = true;
   }
   etat.charge = true;
@@ -186,7 +192,8 @@ function nettoyerPlante(champs) {
     arrosage_jours: entier(champs.arrosage_jours),
     dernier_engrais: champs.dernier_engrais || null,
     dernier_rempotage: champs.dernier_rempotage || null,
-    derniere_feuille: champs.derniere_feuille || null,
+    // L'ancien champ « derniere_feuille » n'est plus affiche (le journal le remplace) : on ne l'efface pas
+    ...(champs.derniere_feuille !== undefined ? { derniere_feuille: champs.derniere_feuille || null } : {}),
     prochain_engrais: champs.prochain_engrais || null,
     en_vente: champs.en_vente === true || champs.en_vente === 'on',
   };
@@ -222,6 +229,7 @@ export async function supprimerPlante(id) {
   etat.photos = etat.photos.filter((p) => p.plante_id !== id);
   etat.arrosages = etat.arrosages.filter((a) => a.plante_id !== id); // supprimes aussi par la base
   etat.journal = etat.journal.filter((n) => n.plante_id !== id);
+  etat.problemes = etat.problemes.filter((q) => q.plante_id !== id);
   sauvegarderCache();
 }
 
@@ -492,5 +500,38 @@ export async function supprimerNote(idNote) {
   const { error } = await supabase.from('journal').delete().eq('id', idNote);
   if (error) throw error;
   etat.journal = etat.journal.filter((n) => n.id !== idNote);
+  sauvegarderCache();
+}
+
+// ---------- Suivi des problemes (parasites, maladies) ----------
+// relanceJours : dans combien de jours refaire le traitement (null = pas de relance)
+export async function creerProbleme(idPlante, { type, note, relanceJours }) {
+  const aujourdhui = dateIsoLocale();
+  const { data, error } = await supabase.from('problemes').insert({
+    plante_id: idPlante, type, note: note || null, debut: aujourdhui,
+    relance_le: relanceJours ? ajouterJours(aujourdhui, relanceJours) : null,
+  }).select().single();
+  if (error) throw error;
+  etat.problemes = [data, ...etat.problemes];
+  sauvegarderCache();
+  return data;
+}
+
+async function majProbleme(id, champs) {
+  const { data, error } = await supabase.from('problemes').update(champs).eq('id', id).select().single();
+  if (error) throw error;
+  etat.problemes = etat.problemes.map((q) => (q.id === id ? data : q));
+  sauvegarderCache();
+}
+
+// "Traite" : le traitement vient d'etre fait, prochaine relance dans N jours
+export const traiterProbleme = (id, jours = 7) => majProbleme(id, { relance_le: ajouterJours(dateIsoLocale(), jours) });
+export const resoudreProbleme = (id) => majProbleme(id, { resolu_le: dateIsoLocale(), relance_le: null });
+export const rouvrirProbleme = (id) => majProbleme(id, { resolu_le: null });
+
+export async function supprimerProbleme(id) {
+  const { error } = await supabase.from('problemes').delete().eq('id', id);
+  if (error) throw error;
+  etat.problemes = etat.problemes.filter((q) => q.id !== id);
   sauvegarderCache();
 }

@@ -3,6 +3,12 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [1.8.0] - 2026-11-02
+### Ajouté
+- Suivi des problèmes : sur la fiche, « Signaler un problème » (cochenilles, araignées rouges, pucerons…) avec une note et une relance du traitement (3, 7 ou 14 jours). Les traitements à refaire apparaissent dans Aujourd'hui (section « Traitements », comptés dans la pastille) et dans la notification du matin. Boutons « Traité » et « Résolu ». Script SQL `11-problemes.sql`.
+### Modifié
+- « Dernière feuille » disparaît de la fiche et du formulaire (le journal le remplace) ; les dates déjà saisies restent en base.
+
 ## [1.7.2] - 2026-11-02
 ### Corrigé
 - Fiche d'une plante : à la première ouverture après le lancement de l'appli, la photo ne disparaît plus un instant avant de réapparaître (la grande photo est préparée avant de remplacer la vignette).

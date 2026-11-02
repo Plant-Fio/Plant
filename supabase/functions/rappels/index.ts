@@ -38,10 +38,11 @@ function maintenantDans(fuseau: string) {
 // ---------- Ce qu'il y a a faire (meme logique que js/rappels.js) ----------
 
 async function listeAFaire(userId: string, jourLimite: string, aujourdhui: string) {
-  const [plantes, arrosages, taches] = await Promise.all([
+  const [plantes, arrosages, taches, problemes] = await Promise.all([
     admin.from('plantes').select('id,nom,arrosage_jours,date_acquisition,created_at,prochain_engrais').eq('user_id', userId),
     admin.from('arrosages').select('plante_id,jour').eq('user_id', userId).gte('jour', ajouterJours(aujourdhui, -400)),
     admin.from('taches').select('texte,fait_le,pour_le').eq('user_id', userId).is('fait_le', null),
+    admin.from('problemes').select('plante_id,type,relance_le').eq('user_id', userId).is('resolu_le', null).not('relance_le', 'is', null),
   ]);
   const dernier = new Map<string, string>();
   for (const a of arrosages.data || []) if (!dernier.has(a.plante_id) || a.jour > dernier.get(a.plante_id)!) dernier.set(a.plante_id, a.jour);
@@ -58,15 +59,20 @@ async function listeAFaire(userId: string, jourLimite: string, aujourdhui: strin
     if (p.prochain_engrais && p.prochain_engrais <= jourLimite) engrais.push(p.nom);
   }
   const aFaire = (taches.data || []).filter((t) => !t.pour_le || t.pour_le <= jourLimite).map((t) => t.texte);
-  return { arroser, engrais, taches: aFaire };
+  const noms = new Map((plantes.data || []).map((p) => [p.id, p.nom]));
+  const traitements = (problemes.data || [])
+    .filter((q) => q.relance_le <= jourLimite && noms.has(q.plante_id))
+    .map((q) => `${q.type} (${noms.get(q.plante_id)})`);
+  return { arroser, engrais, taches: aFaire, traitements };
 }
 
 const liste = (noms: string[]) => (noms.length > 3 ? `${noms.slice(0, 3).join(', ')} +${noms.length - 3}` : noms.join(', '));
 
-function composer({ arroser, engrais, taches }: { arroser: string[]; engrais: string[]; taches: string[] }, titre: string) {
+function composer({ arroser, engrais, taches, traitements }: { arroser: string[]; engrais: string[]; taches: string[]; traitements: string[] }, titre: string) {
   const morceaux = [];
   if (arroser.length) morceaux.push(`À arroser : ${liste(arroser)}`);
   if (engrais.length) morceaux.push(`Engrais : ${liste(engrais)}`);
+  if (traitements.length) morceaux.push(`Traitements : ${liste(traitements)}`);
   if (taches.length) morceaux.push(`Tâches : ${liste(taches)}`);
   return morceaux.length ? { titre, corps: morceaux.join(' · '), url: '#/aujourdhui' } : null;
 }
