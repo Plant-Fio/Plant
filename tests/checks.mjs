@@ -738,6 +738,18 @@ export async function verifierAppli(base, dossier, { version }) {
       && (await page.textContent('#problemes .probleme__relance')).includes('dans 3 jours'), titre,
     'problemes : un probleme signale apparait avec sa relance', `Probleme : "${await page.textContent('#problemes .probleme')}".`);
     await capturer(page, dossier, '20-probleme-fiche.png');
+    // « Autre » : on precise le probleme ; « Autre duree » : on choisit le nombre de jours
+    await page.click('#problemes [data-ouvrir]');
+    verifier(await page.isHidden('#problemes input[name="type_autre"]') && await page.isHidden('#problemes input[name="relance_autre"]'), titre,
+      'problemes : les champs « preciser » sont caches par defaut', 'Les champs de precision sont visibles trop tot.');
+    await page.selectOption('#problemes select[name="type"]', 'Autre');
+    await page.fill('#problemes input[name="type_autre"]', 'Thrips');
+    await page.selectOption('#problemes select[name="relance"]', 'autre');
+    await page.fill('#problemes input[name="relance_autre"]', '10');
+    await page.click('#problemes button[type="submit"]');
+    await page.waitForFunction(() => [...document.querySelectorAll('#problemes .probleme')].some((l) => l.textContent.includes('Thrips') && l.textContent.includes('dans 10 jours')));
+    ok('problemes : « Autre » precise (Thrips) et relance personnalisee (10 jours)');
+    await capturer(page, dossier, '20b-probleme-autre.png');
     await page.click('#problemes [data-resolu]');
     await page.waitForSelector('#problemes .probleme--resolu');
     ok('problemes : « Résolu » range le probleme dans les resolus');
