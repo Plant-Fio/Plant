@@ -996,7 +996,7 @@ a.btn { text-decoration: none; }
 .frise__cadre {
   position: relative;
   aspect-ratio: 3 / 4;
-  max-height: 70vh;
+  width: min(100%, 42vh); /* assez petit pour que le curseur reste visible sans defiler */
   margin: 0 auto;
   overflow: hidden;
   border-radius: var(--rayon);
