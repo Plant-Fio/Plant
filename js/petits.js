@@ -1,7 +1,7 @@
 // Petits : boutures et bulbilles rattachees a leur plante mere (fiche de la mere, fiche du petit).
-import { lireEtat, trouverPlante, definirEtapeBouture, expliquerErreur } from './donnees.js';
+import { lireEtat, trouverPlante, nomPiece, definirEtapeBouture, rattacherPetit, expliquerErreur } from './donnees.js';
 import { photoVignetteHtml, remplirPhotos } from './vues-plantes.js';
-import { echapper, formaterDate, dateIsoLocale, joursEntre } from './outils.js';
+import { echapper, normaliser, formaterDate, dateIsoLocale, joursEntre } from './outils.js';
 import { message } from './dialogues.js';
 
 export const ETAPES = [
@@ -42,8 +42,49 @@ export function initialiserPetits(zone, idMere) {
         ${etape ? `<span class="etape etape--${etape.id}">${etape.emoji} ${echapper(etape.libelle.toLowerCase())}</span>` : ''}
       </a>`;
   }).join('')}</div>` : '<p class="probleme__vide">Pas encore de petit.</p>'}
-    <a class="btn btn--douce btn--espace" href="#/plantes/nouvelle/${idMere}">＋ Ajouter un petit</a>`;
+    <div class="petits__actions">
+      <a class="btn btn--douce btn--espace" href="#/plantes/nouvelle/${idMere}">＋ Nouveau petit</a>
+      <button class="btn btn--douce btn--espace" type="button" data-rattacher>🔗 Rattacher une plante déjà créée</button>
+    </div>
+    <div class="mere-liste" data-rattacher-liste hidden>
+      <input class="champ__input" type="search" data-rattacher-recherche placeholder="Chercher une plante…" autocomplete="off">
+      <div class="mere-liste__lignes" data-rattacher-lignes></div>
+    </div>`;
   remplirPhotos(zone);
+
+  // Rattacher une plante existante : on choisit dans la liste (photo, nom, espece, piece)
+  const mere = trouverPlante(idMere);
+  const liste = zone.querySelector('[data-rattacher-liste]');
+  const lignes = zone.querySelector('[data-rattacher-lignes]');
+  const recherche = zone.querySelector('[data-rattacher-recherche]');
+  const detail = (p) => [p.espece, p.piece_id ? nomPiece(p.piece_id) : ''].filter(Boolean).join(' · ');
+  function afficher() {
+    const q = normaliser(recherche.value);
+    const candidates = lireEtat().plantes.filter((p) => p.id !== idMere && p.id !== mere?.mere_id && p.mere_id !== idMere
+      && (!q || normaliser(`${p.nom} ${p.espece || ''}`).includes(q)));
+    lignes.innerHTML = candidates.length ? candidates.map((p) => `
+      <button class="mere-ligne" type="button" data-petit-id="${p.id}">
+        ${photoVignetteHtml(p, 'mere-ligne__photo')}
+        <span class="mere-ligne__texte"><strong>${echapper(p.nom)}</strong><small>${echapper(detail(p))}</small></span>
+      </button>`).join('') : '<p class="aide">Aucune plante trouvée.</p>';
+    remplirPhotos(lignes);
+  }
+  recherche.addEventListener('input', afficher);
+  zone.querySelector('[data-rattacher]').addEventListener('click', () => {
+    liste.hidden = !liste.hidden;
+    if (!liste.hidden) { recherche.value = ''; afficher(); }
+  });
+  lignes.addEventListener('click', async (e) => {
+    const ligne = e.target.closest('[data-petit-id]');
+    if (!ligne) return;
+    try {
+      await rattacherPetit(ligne.dataset.petitId, idMere);
+      message('Plante rattachée');
+      initialiserPetits(zone, idMere);
+    } catch (erreur) {
+      message(expliquerErreur(erreur), 'erreur');
+    }
+  });
 }
 
 // Bandeau « Petit de ... » en haut de la fiche du petit

@@ -550,6 +550,16 @@ export async function supprimerProbleme(id) {
 }
 
 // Etape d'une bouture : preleve, eau, terre, adopte, donne
+// Rattache une plante deja creee a sa mere (sans rien creer de nouveau)
+export async function rattacherPetit(idPetit, idMere) {
+  const petit = trouverPlante(idPetit);
+  const { data, error } = await supabase.from('plantes')
+    .update({ mere_id: idMere, etape_bouture: petit?.etape_bouture || 'terre' }).eq('id', idPetit).select().single();
+  if (error) throw error;
+  etat.plantes = etat.plantes.map((p) => (p.id === idPetit ? data : p));
+  sauvegarderCache();
+}
+
 export async function definirEtapeBouture(idPlante, etape) {
   const { data, error } = await supabase.from('plantes').update({ etape_bouture: etape }).eq('id', idPlante).select().single();
   if (error) throw error;

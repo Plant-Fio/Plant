@@ -3,6 +3,10 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [1.11.1] - 2026-11-02
+### Ajouté
+- Petits : sur la fiche de la mère, « Rattacher une plante déjà créée » (liste avec photos et recherche) pour lier une plante qui existe déjà, au lieu d'en créer une nouvelle. « Ajouter un petit » devient « Nouveau petit ».
+
 ## [1.11.0] - 2026-11-02
 ### Ajouté
 - Journal : un crayon sur chaque note permet de modifier son texte et son emoji sur place (Enregistrer / Annuler). Pas de nouveau script SQL.
