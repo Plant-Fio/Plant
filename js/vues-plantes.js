@@ -206,7 +206,7 @@ export function vueFiche(conteneur, id) {
     </section>
     <section class="carte" id="soins" aria-label="Soins"></section>
     ${plante.mere_id ? '<section class="carte" id="croissance" aria-label="Croissance"></section>' : ''}
-    <section class="carte" id="petits" aria-label="Petits"></section>
+    <section class="carte" id="petits" aria-label="Babies"></section>
     <section class="carte" id="problemes" aria-label="Problèmes"></section>
     <section class="carte" id="journal" aria-label="Journal"></section>
     ${plante.notes ? `
@@ -555,7 +555,7 @@ export function vueFormulaire(conteneur, id, idMereProposee = null) {
   const plante = id ? trouvee(id) : null;
   if (id && !plante) return introuvable(conteneur);
   const { pieces, plantes } = lireEtat();
-  // Nouveau petit : on arrive depuis la fiche de la mere (#/plantes/nouvelle/<id de la mere>)
+  // Nouveau baby : on arrive depuis la fiche de la mere (#/plantes/nouvelle/<id de la mere>)
   const mereProposee = !plante && idMereProposee ? trouvee(idMereProposee) : null;
   const idMere = plante ? plante.mere_id : mereProposee?.id ?? null;
   // Nouvelle plante : on propose d'office la piece ou elle en met le plus
@@ -564,8 +564,8 @@ export function vueFormulaire(conteneur, id, idMereProposee = null) {
   conteneur.innerHTML = `
     <a class="retour" href="${plante ? `#/plantes/${plante.id}` : '#/plantes'}">
       ${icone('retour')} ${plante ? 'Annuler' : 'Mes plantes'}</a>
-    <h1 class="vue__titre">${plante ? 'Modifier la plante' : mereProposee ? 'Nouveau petit' : 'Nouvelle plante'}</h1>
-    ${mereProposee ? `<p class="aide-quarantaine">Petit de ${echapper(mereProposee.nom)}</p>` : ''}
+    <h1 class="vue__titre">${plante ? 'Modifier la plante' : mereProposee ? 'Nouveau baby' : 'Nouvelle plante'}</h1>
+    ${mereProposee ? `<p class="aide-quarantaine">Baby de ${echapper(mereProposee.nom)}</p>` : ''}
     <form id="form-plante" novalidate>
       <div class="onglets-form" role="tablist" aria-label="Sections du formulaire">
         <button class="onglets-form__onglet" type="button" role="tab" data-onglet="infos" aria-selected="true"><i>🪴</i>Infos</button>
@@ -622,7 +622,7 @@ export function vueFormulaire(conteneur, id, idMereProposee = null) {
       </div>
       <div class="panneau-form" data-panneau="baby" hidden>
       <div class="champ" id="champ-mere">
-        <span class="champ__label">Plante mère (si c'est un petit)</span>
+        <span class="champ__label">Plante mère (si c'est un baby)</span>
         <input type="hidden" name="mere_id" value="${echapper(idMere || '')}">
         <div class="mere-choix" id="mere-choix"></div>
         <div class="mere-liste" id="mere-liste" hidden>
@@ -632,7 +632,7 @@ export function vueFormulaire(conteneur, id, idMereProposee = null) {
       </div>
       <div id="bloc-petit" ${idMere ? '' : 'hidden'}>
         <label class="champ">
-          <span class="champ__label">Étape du petit</span>
+          <span class="champ__label">Étape du baby</span>
           <select class="champ__input champ__select" name="etape_bouture">
             ${ETAPES.map((e) => `<option value="${e.id}"${e.id === (plante?.etape_bouture || (mereProposee ? 'preleve' : 'terre')) ? ' selected' : ''}>${e.emoji} ${echapper(e.libelle)}</option>`).join('')}
           </select>

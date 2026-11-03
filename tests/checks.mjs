@@ -783,14 +783,14 @@ export async function verifierAppli(base, dossier, { version }) {
     await page.waitForSelector('#problemes .probleme--resolu');
     ok('problemes : « Résolu » range le probleme dans les resolus');
 
-    // Petits : « Ajouter un petit » depuis la mere, bandeau + etapes sur la fiche du petit, retour vers la mere
+    // Petits : « Ajouter un baby » depuis la mere, bandeau + etapes sur la fiche du petit, retour vers la mere
     const adresseMere = await page.evaluate(() => location.hash);
-    verifier((await page.textContent('#petits')).includes('Pas encore de petit'), titre,
+    verifier((await page.textContent('#petits')).includes('Pas encore de baby'), titre,
       'petits : une plante sans petit le dit', `Carte petits : "${await page.textContent('#petits')}".`);
     await page.click('#petits [data-rattacher]');
     verifier(await page.isVisible('#petits [data-rattacher-liste]'), titre,
       'petits : « Rattacher une plante deja creee » ouvre la liste', 'La liste de rattachement ne s\'ouvre pas.');
-    await page.click('#petits a:has-text("Nouveau petit")');
+    await page.click('#petits a:has-text("Nouveau baby")');
     await page.waitForSelector('#form-plante');
     await page.click('[data-onglet="baby"]');
     verifier(await page.isVisible('#bloc-petit') && (await page.inputValue('input[name="mere_id"]')) !== '', titre,
@@ -807,17 +807,17 @@ export async function verifierAppli(base, dossier, { version }) {
     await page.fill('input[name="nom"]', 'Mini bouture');
     await page.click('#form-ok');
     await page.waitForSelector('.bandeau-petit');
-    verifier((await page.textContent('.bandeau-petit')).includes('Petit de'), titre,
-      'petits : la fiche du petit montre « Petit de … »', `Bandeau : "${await page.textContent('.bandeau-petit')}".`);
+    verifier((await page.textContent('.bandeau-petit')).includes('Baby de'), titre,
+      'petits : la fiche du petit montre « Baby de … »', `Bandeau : "${await page.textContent('.bandeau-petit')}".`);
     verifier(await page.getAttribute('[data-etape="preleve"]', 'aria-pressed') === 'true', titre,
-      'petits : un nouveau petit commence a l\'etape « Prelevé »', 'L\'etape de depart n\'est pas « Prelevé ».');
+      'petits : un nouveau baby commence a l\'etape « Prelevé »', 'L\'etape de depart n\'est pas « Prelevé ».');
     await page.click('[data-etape="eau"]');
     await page.waitForFunction(() => document.querySelector('[data-etape="eau"]').getAttribute('aria-pressed') === 'true');
     ok('petits : on touche une etape pour avancer (Dans l\'eau)');
     await capturer(page, dossier, '22-petit-fiche.png');
     await page.click('.bandeau-petit');
     await page.waitForSelector('#petits .petit');
-    verifier((await page.textContent('#petits')).includes('Ses petits · 1') && (await page.textContent('#petits .petit')).includes('dans l\'eau'), titre,
+    verifier((await page.textContent('#petits')).includes('Ses babies · 1') && (await page.textContent('#petits .petit')).includes('dans l\'eau'), titre,
       'petits : la mere liste son petit avec son etape', `Carte petits : "${await page.textContent('#petits')}".`);
     await capturer(page, dossier, '23-petits-mere.png');
     // On supprime le petit pour ne pas fausser la suite

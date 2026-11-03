@@ -27,11 +27,11 @@ function ageCourt(iso) {
 }
 const naissance = (p) => p.date_bouture || String(p.created_at || '').slice(0, 10) || dateIsoLocale();
 
-// Carte « Ses petits » (fiche de la mere)
+// Carte « Ses babies » (fiche de la mere)
 export function initialiserPetits(zone, idMere) {
   const petits = petitsDe(idMere).sort((a, b) => naissance(b).localeCompare(naissance(a)));
   zone.innerHTML = `
-    <h2 class="carte__titre">Ses petits${petits.length ? ` · ${petits.length}` : ''}</h2>
+    <h2 class="carte__titre">Ses babies${petits.length ? ` · ${petits.length}` : ''}</h2>
     ${petits.length ? `<div class="petits">${petits.map((p) => {
     const etape = etapeDe(p.etape_bouture);
     return `
@@ -41,9 +41,9 @@ export function initialiserPetits(zone, idMere) {
         <small>née ${echapper(ageCourt(naissance(p)))}</small>
         ${etape ? `<span class="etape etape--${etape.id}">${etape.emoji} ${echapper(etape.libelle.toLowerCase())}</span>` : ''}
       </a>`;
-  }).join('')}</div>` : '<p class="probleme__vide">Pas encore de petit.</p>'}
+  }).join('')}</div>` : '<p class="probleme__vide">Pas encore de baby.</p>'}
     <div class="petits__actions">
-      <a class="btn btn--douce btn--espace" href="#/plantes/nouvelle/${idMere}">＋ Nouveau petit</a>
+      <a class="btn btn--douce btn--espace" href="#/plantes/nouvelle/${idMere}">＋ Nouveau baby</a>
       <button class="btn btn--douce btn--espace" type="button" data-rattacher>🔗 Rattacher une plante déjà créée</button>
     </div>
     <div class="mere-liste" data-rattacher-liste hidden>
@@ -95,7 +95,7 @@ export function bandeauPetit(plante) {
     <a class="bandeau-petit" href="#/plantes/${mere.id}">
       ${photoVignetteHtml(mere, 'bandeau-petit__photo')}
       <span class="bandeau-petit__texte">
-        <small>Petit de</small>
+        <small>Baby de</small>
         <b>🌿 ${echapper(mere.nom)}</b>
         <small class="bandeau-petit__lien">Voir la maman ›</small>
       </span>

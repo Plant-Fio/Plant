@@ -5,6 +5,7 @@ Toutes les evolutions notables de l'appli. Le numero de version visible dans l'a
 
 ## [1.12.0] - 2026-11-03
 ### Ajouté
+- Dans toute l'appli, « petit » devient « baby » (Ses babies, Nouveau baby, Baby de…).
 - Formulaire d'une plante en 4 onglets avec emoji : 🪴 Infos, 💧 Soins (arrosage, engrais, rempotage), ✂️ Baby (plante mère, étape), 🏷️ Vente. Moins de défilement.
 - Statut « Aucun / En vente / Vendu » directement sur la fiche (en un geste), et dans l'onglet Vente avec la date de vente. Les plantes vendues sont rangées dans « Vendues » et n'ont plus de rappels. Script SQL `15-vendu.sql`. La fonction `rappels` est mise à jour dans le dépôt (à redéployer).
 
