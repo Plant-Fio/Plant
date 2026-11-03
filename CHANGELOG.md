@@ -3,6 +3,11 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [1.12.0] - 2026-11-03
+### Ajouté
+- Formulaire d'une plante en 4 onglets avec emoji : 🪴 Infos, 💧 Soins (arrosage, engrais, rempotage), ✂️ Baby (plante mère, étape), 🏷️ Vente. Moins de défilement.
+- Statut « Aucun / En vente / Vendu » directement sur la fiche (en un geste), et dans l'onglet Vente avec la date de vente. Les plantes vendues sont rangées dans « Vendues » et n'ont plus de rappels. Script SQL `15-vendu.sql`. La fonction `rappels` est mise à jour dans le dépôt (à redéployer).
+
 ## [1.11.1] - 2026-11-02
 ### Ajouté
 - Petits : sur la fiche de la mère, « Rattacher une plante déjà créée » (liste avec photos et recherche) pour lier une plante qui existe déjà, au lieu d'en créer une nouvelle. « Ajouter un petit » devient « Nouveau petit ».

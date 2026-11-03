@@ -39,7 +39,7 @@ function maintenantDans(fuseau: string) {
 
 async function listeAFaire(userId: string, jourLimite: string, aujourdhui: string) {
   const [plantes, arrosages, taches, problemes] = await Promise.all([
-    admin.from('plantes').select('id,nom,arrosage_jours,date_acquisition,created_at,prochain_engrais').eq('user_id', userId),
+    admin.from('plantes').select('id,nom,arrosage_jours,date_acquisition,created_at,prochain_engrais,vendu_le').eq('user_id', userId),
     admin.from('arrosages').select('plante_id,jour').eq('user_id', userId).gte('jour', ajouterJours(aujourdhui, -400)),
     admin.from('taches').select('texte,fait_le,pour_le').eq('user_id', userId).is('fait_le', null),
     admin.from('problemes').select('plante_id,type,relance_le').eq('user_id', userId).is('resolu_le', null).not('relance_le', 'is', null),
@@ -50,6 +50,7 @@ async function listeAFaire(userId: string, jourLimite: string, aujourdhui: strin
   const arroser: string[] = [];
   const engrais: string[] = [];
   for (const p of plantes.data || []) {
+    if (p.vendu_le) continue; // plante vendue : pas de rappel
     if (p.arrosage_jours) {
       const dernierJour = dernier.get(p.id);
       const depart = dernierJour || p.date_acquisition || versIso(new Date(p.created_at));

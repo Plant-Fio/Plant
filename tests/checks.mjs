@@ -174,7 +174,7 @@ export async function verifierConnexion(base, dossier, { version }) {
     // mais si une colonne manque, PostgREST repond 400.
     if (urlSupabase && cle) {
       try {
-        const reponse = await fetch(`${urlSupabase}/rest/v1/plantes?select=arrosage_jours,dernier_engrais,dernier_rempotage,en_vente,derniere_feuille,prochain_engrais,mere_id,etape_bouture,date_bouture,type_engrais&limit=1`, {
+        const reponse = await fetch(`${urlSupabase}/rest/v1/plantes?select=arrosage_jours,dernier_engrais,dernier_rempotage,en_vente,derniere_feuille,prochain_engrais,mere_id,etape_bouture,date_bouture,type_engrais,vendu_le&limit=1`, {
           headers: { apikey: cle, Authorization: `Bearer ${cle}` },
         });
         if (reponse.ok) ok('table plantes : colonnes de soins (arrosage, engrais, rempotage, feuille, en vente) presentes');
@@ -288,8 +288,11 @@ async function remplirPlante(page, { nom, espece = '', piece = '', date = '', no
   await page.fill('[name="espece"]', espece);
   if (piece) await page.selectOption('#piece', { label: piece });
   if (date) await page.fill('[name="date_acquisition"]', date);
-  if (arrosage) await page.fill('[name="arrosage_jours"]', String(arrosage));
   await page.fill('[name="notes"]', notes);
+  if (arrosage) {
+    await page.click('[data-onglet="soins"]'); // l'arrosage est dans l'onglet « Soins »
+    await page.fill('[name="arrosage_jours"]', String(arrosage));
+  }
 }
 
 async function ajouterPlante(page, champs) {
@@ -649,10 +652,19 @@ export async function verifierAppli(base, dossier, { version }) {
     // --- En vente : etiquette, pastille sur la vignette, filtre ---
     await page.click('a:has-text("Modifier")');
     await page.waitForSelector('#form-plante');
-    await page.check('[name="en_vente"]');
+    await page.click('[data-onglet="vente"]');
+    await page.check('[name="statut"][value="vente"]');
     await page.click('#form-ok');
-    await page.waitForSelector('.pastille-vente--fiche');
-    ok('en vente : etiquette sur la fiche');
+    await page.waitForSelector('[data-statut="vente"][aria-pressed="true"]');
+    ok('en vente : statut « En vente » sur la fiche');
+    // Statut en un geste depuis la fiche : Vendu (avec la date), puis retour a En vente
+    await page.click('[data-statut="vendu"]');
+    await page.waitForSelector('.statut__date');
+    verifier((await page.textContent('.statut__date')).includes('Vendue le'), titre,
+      'vendu : la fiche affiche la date de vente', `Date : "${await page.textContent('.statut__date')}".`);
+    await page.click('[data-statut="vente"]');
+    await page.waitForFunction(() => !document.querySelector('.statut__date'));
+    ok('vendu : repasser a « En vente » efface la date');
     await ouvrirListe(page);
     await page.waitForSelector('#puces');
     verifier(await nombre('.vignette .pastille-vente') === 1, titre, 'en vente : pastille sur la vignette',
@@ -678,6 +690,8 @@ export async function verifierAppli(base, dossier, { version }) {
     // Frequence invalide : refusee avec un message
     await page.click('a:has-text("Modifier")');
     await page.waitForSelector('#form-plante');
+    await page.click('[data-onglet="soins"]');
+    await capturer(page, dossier, '25-form-onglets.png');
     await page.fill('[name="arrosage_jours"]', '400');
     await page.click('#form-ok');
     await page.waitForSelector('#form-erreur:not([hidden])');
@@ -778,6 +792,7 @@ export async function verifierAppli(base, dossier, { version }) {
       'petits : « Rattacher une plante deja creee » ouvre la liste', 'La liste de rattachement ne s\'ouvre pas.');
     await page.click('#petits a:has-text("Nouveau petit")');
     await page.waitForSelector('#form-plante');
+    await page.click('[data-onglet="baby"]');
     verifier(await page.isVisible('#bloc-petit') && (await page.inputValue('input[name="mere_id"]')) !== '', titre,
       'petits : le formulaire arrive avec la mere deja choisie', 'La mere n\'est pas preselectionnee.');
     await page.click('#mere-choix [data-mere-ouvrir]');
@@ -788,6 +803,7 @@ export async function verifierAppli(base, dossier, { version }) {
     verifier(await page.isHidden('#mere-liste') && (await page.inputValue('input[name="mere_id"]')) !== '', titre,
       'petits : choisir une mere dans la liste la selectionne', 'La mere choisie n\'est pas retenue.');
     await capturer(page, dossier, '24-choix-mere.png');
+    await page.click('[data-onglet="infos"]');
     await page.fill('input[name="nom"]', 'Mini bouture');
     await page.click('#form-ok');
     await page.waitForSelector('.bandeau-petit');
@@ -1094,6 +1110,7 @@ export async function verifierAppli(base, dossier, { version }) {
     await page.waitForSelector('#soins');
     await page.click('a:has-text("Modifier")');
     await page.waitForSelector('#form-plante');
+    await page.click('[data-onglet="soins"]');
     await page.fill('[name="prochain_engrais"]', await jourRelatif(page, 0));
     await page.click('#form-ok');
     await page.waitForSelector('#soins');
