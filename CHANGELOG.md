@@ -3,6 +3,10 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [1.12.1] - 2026-11-03
+### Modifié
+- Bouton « Rattacher un baby » (texte raccourci pour tenir sur une ligne).
+
 ## [1.12.0] - 2026-11-03
 ### Ajouté
 - Dans toute l'appli, « petit » devient « baby » (Ses babies, Nouveau baby, Baby de…).
