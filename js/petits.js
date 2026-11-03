@@ -44,7 +44,7 @@ export function initialiserPetits(zone, idMere) {
   }).join('')}</div>` : '<p class="probleme__vide">Pas encore de baby.</p>'}
     <div class="petits__actions">
       <a class="btn btn--douce btn--espace" href="#/plantes/nouvelle/${idMere}">＋ Nouveau baby</a>
-      <button class="btn btn--douce btn--espace" type="button" data-rattacher>🔗 Rattacher une plante déjà créée</button>
+      <button class="btn btn--douce btn--espace" type="button" data-rattacher>🔗 Rattacher un baby</button>
     </div>
     <div class="mere-liste" data-rattacher-liste hidden>
       <input class="champ__input" type="search" data-rattacher-recherche placeholder="Chercher une plante…" autocomplete="off">
