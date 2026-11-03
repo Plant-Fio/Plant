@@ -2,7 +2,7 @@
 import {
   lireEtat, trouverPlante, nomPiece, teintePiece, pieceLaPlusUtilisee, creerPlante, modifierPlante, supprimerPlante, expliquerErreur,
   photosDe, photoCouverture, ajouterPhoto, supprimerPhoto, definirCouverture,
-  arrosagesDe, arroserPlante, annulerArrosage, marquerFait, datePhoto, modifierDatePhoto,
+  arrosagesDe, arroserPlante, definirStatut, annulerArrosage, marquerFait, datePhoto, modifierDatePhoto,
 } from './donnees.js';
 import { etatArrosage, etatEngrais, libelleEcheance, quarantaine, libelleQuarantaine } from './rappels.js';
 import { chargerUrls, urlEnCache, cheminVignette } from './photos.js';
@@ -98,11 +98,13 @@ export function vueListe(conteneur) {
 
   function dessinerPuces() {
     const sansPiece = plantes.filter((p) => !p.piece_id).length;
-    const enVente = plantes.filter((p) => p.en_vente).length;
-    const puces = [{ id: 'toutes', libelle: 'Toutes', nombre: plantes.length }];
+    const enVente = plantes.filter((p) => p.en_vente && !p.vendu_le).length;
+    const vendues = plantes.filter((p) => p.vendu_le).length;
+    const puces = [{ id: 'toutes', libelle: 'Toutes', nombre: plantes.length - vendues }];
     const enQuarantaine = plantes.filter((p) => quarantaine(p.date_acquisition)).length;
     if (enQuarantaine) puces.push({ id: 'quarantaine', libelle: 'Quarantaine', nombre: enQuarantaine });
     if (enVente) puces.push({ id: 'vente', libelle: 'En vente', nombre: enVente });
+    if (vendues) puces.push({ id: 'vendues', libelle: 'Vendues', nombre: vendues });
     for (const piece of pieces) {
       const nombre = plantes.filter((p) => p.piece_id === piece.id).length;
       if (nombre) puces.push({ id: piece.id, libelle: piece.nom, nombre, teinte: teintePiece(piece.id) });
@@ -119,8 +121,11 @@ export function vueListe(conteneur) {
   function dessinerResultats() {
     const mots = normaliser(recherche).split(/\s+/).filter(Boolean);
     const trouvees = plantes.filter((p) => {
+      if (filtrePiece === 'vendues') { if (!p.vendu_le) return false; }
+      else if (p.vendu_le) return false; // les plantes vendues n'apparaissent que dans « Vendues »
       if (filtrePiece === 'quarantaine') { if (!quarantaine(p.date_acquisition)) return false; }
       else if (filtrePiece === 'vente') { if (!p.en_vente) return false; }
+      else if (filtrePiece === 'vendues') { /* deja filtre */ }
       else if (filtrePiece === 'aucune' && p.piece_id) return false;
       else if (filtrePiece !== 'toutes' && filtrePiece !== 'aucune' && p.piece_id !== filtrePiece) return false;
       const texte = normaliser(`${p.nom} ${p.espece || ''} ${nomPiece(p.piece_id)}`);
@@ -132,7 +137,7 @@ export function vueListe(conteneur) {
           <a class="vignette" href="#/plantes/${p.id}"${p.piece_id ? ` data-teinte="${teintePiece(p.piece_id)}"` : ''}>
             ${photoVignetteHtml(p)}
             ${quar ? `<span class="pastille-quarantaine">${echapper(libelleQuarantaine(quar))}</span>` : ''}
-            ${p.en_vente ? '<span class="pastille-vente">En vente</span>' : ''}
+            ${p.vendu_le ? '<span class="pastille-vente pastille-vente--vendu">Vendue</span>' : p.en_vente ? '<span class="pastille-vente">En vente</span>' : ''}
             <span class="vignette__nom">${echapper(p.nom)}</span>
             ${p.espece ? `<span class="vignette__espece">${echapper(p.espece)}</span>` : ''}
             ${p.piece_id ? `<span class="vignette__piece">${echapper(nomPiece(p.piece_id))}</span>` : ''}
@@ -182,7 +187,7 @@ export function vueFiche(conteneur, id) {
     <div id="galerie"></div>
     <h1 class="fiche__nom">${echapper(plante.nom)}</h1>
     ${quar ? `<p class="fiche__vente"><span class="pastille-quarantaine pastille-quarantaine--fiche">${echapper(libelleQuarantaine(quar))}</span></p>` : ''}
-    ${plante.en_vente ? '<p class="fiche__vente"><span class="pastille-vente pastille-vente--fiche">En vente</span></p>' : ''}
+    <div id="statut"></div>
     ${plante.espece ? `<p class="fiche__espece">${echapper(plante.espece)}</p>` : '<div class="fiche__espace"></div>'}
     ${bandeauPetit(plante)}
     <section class="carte">
@@ -201,7 +206,7 @@ export function vueFiche(conteneur, id) {
     </section>
     <section class="carte" id="soins" aria-label="Soins"></section>
     ${plante.mere_id ? '<section class="carte" id="croissance" aria-label="Croissance"></section>' : ''}
-    <section class="carte" id="petits" aria-label="Petits"></section>
+    <section class="carte" id="petits" aria-label="Babies"></section>
     <section class="carte" id="problemes" aria-label="Problèmes"></section>
     <section class="carte" id="journal" aria-label="Journal"></section>
     ${plante.notes ? `
@@ -211,12 +216,39 @@ export function vueFiche(conteneur, id) {
       </section>` : ''}
     <a class="btn btn--douce btn--espace" href="#/plantes/${plante.id}/modifier">Modifier</a>`;
 
+  initialiserStatut(conteneur.querySelector('#statut'), plante.id);
   initialiserGalerie(conteneur.querySelector('#galerie'), plante.id);
   initialiserSoins(conteneur.querySelector('#soins'), plante.id);
   if (plante.mere_id) { initialiserCroissance(conteneur.querySelector('#croissance'), plante.id); remplirPhotos(conteneur); }
   initialiserPetits(conteneur.querySelector('#petits'), plante.id);
   initialiserProblemes(conteneur.querySelector('#problemes'), plante.id);
   initialiserJournal(conteneur.querySelector('#journal'), plante.id);
+}
+
+// Statut de la plante sur la fiche : Aucun / En vente / Vendu, en un geste
+function initialiserStatut(zone, idPlante) {
+  function dessiner() {
+    const plante = trouverPlante(idPlante);
+    if (!plante) return;
+    const actuel = plante.vendu_le ? 'vendu' : plante.en_vente ? 'vente' : 'aucun';
+    const choix = [['aucun', 'Aucun'], ['vente', '🏷️ En vente'], ['vendu', '✓ Vendu']];
+    zone.innerHTML = `
+      <div class="statut statut--fiche" role="group" aria-label="Statut de la plante">
+        ${choix.map(([id, libelle]) => `<button class="statut__bouton statut__bouton--${id}" type="button" data-statut="${id}" aria-pressed="${id === actuel}">${libelle}</button>`).join('')}
+      </div>
+      ${plante.vendu_le ? `<p class="statut__date">Vendue le ${echapper(formaterDate(plante.vendu_le))}</p>` : ''}`;
+  }
+  zone.addEventListener('click', async (e) => {
+    const bouton = e.target.closest('[data-statut]');
+    if (!bouton) return;
+    try {
+      await definirStatut(idPlante, bouton.dataset.statut);
+      dessiner();
+    } catch (erreur) {
+      message(expliquerErreur(erreur), 'erreur');
+    }
+  });
+  dessiner();
 }
 
 // Soins de la fiche : arrosage (frequence, prochain, historique), engrais, rempotage.
@@ -523,7 +555,7 @@ export function vueFormulaire(conteneur, id, idMereProposee = null) {
   const plante = id ? trouvee(id) : null;
   if (id && !plante) return introuvable(conteneur);
   const { pieces, plantes } = lireEtat();
-  // Nouveau petit : on arrive depuis la fiche de la mere (#/plantes/nouvelle/<id de la mere>)
+  // Nouveau baby : on arrive depuis la fiche de la mere (#/plantes/nouvelle/<id de la mere>)
   const mereProposee = !plante && idMereProposee ? trouvee(idMereProposee) : null;
   const idMere = plante ? plante.mere_id : mereProposee?.id ?? null;
   // Nouvelle plante : on propose d'office la piece ou elle en met le plus
@@ -532,9 +564,16 @@ export function vueFormulaire(conteneur, id, idMereProposee = null) {
   conteneur.innerHTML = `
     <a class="retour" href="${plante ? `#/plantes/${plante.id}` : '#/plantes'}">
       ${icone('retour')} ${plante ? 'Annuler' : 'Mes plantes'}</a>
-    <h1 class="vue__titre">${plante ? 'Modifier la plante' : mereProposee ? 'Nouveau petit' : 'Nouvelle plante'}</h1>
-    ${mereProposee ? `<p class="aide-quarantaine">Petit de ${echapper(mereProposee.nom)}</p>` : ''}
+    <h1 class="vue__titre">${plante ? 'Modifier la plante' : mereProposee ? 'Nouveau baby' : 'Nouvelle plante'}</h1>
+    ${mereProposee ? `<p class="aide-quarantaine">Baby de ${echapper(mereProposee.nom)}</p>` : ''}
     <form id="form-plante" novalidate>
+      <div class="onglets-form" role="tablist" aria-label="Sections du formulaire">
+        <button class="onglets-form__onglet" type="button" role="tab" data-onglet="infos" aria-selected="true"><i>🪴</i>Infos</button>
+        <button class="onglets-form__onglet" type="button" role="tab" data-onglet="soins" aria-selected="false"><i>💧</i>Soins</button>
+        <button class="onglets-form__onglet" type="button" role="tab" data-onglet="baby" aria-selected="false"><i>✂️</i>Baby</button>
+        <button class="onglets-form__onglet" type="button" role="tab" data-onglet="vente" aria-selected="false"><i>🏷️</i>Vente</button>
+      </div>
+      <div class="panneau-form" data-panneau="infos">
       <label class="champ">
         <span class="champ__label">Nom *</span>
         <input class="champ__input" name="nom" type="text" maxlength="100" required
@@ -552,31 +591,22 @@ export function vueFormulaire(conteneur, id, idMereProposee = null) {
           ${pieces.map((p) => `<option value="${p.id}"${p.id === pieceProposee ? ' selected' : ''}>${echapper(p.nom)}</option>`).join('')}
         </select>
       </label>
-      <div class="champ" id="champ-mere">
-        <span class="champ__label">Plante mère (si c'est un petit)</span>
-        <input type="hidden" name="mere_id" value="${echapper(idMere || '')}">
-        <div class="mere-choix" id="mere-choix"></div>
-        <div class="mere-liste" id="mere-liste" hidden>
-          <input class="champ__input" id="mere-recherche" type="search" placeholder="Chercher une plante…" autocomplete="off">
-          <div class="mere-liste__lignes" id="mere-lignes"></div>
-        </div>
-      </div>
-      <div id="bloc-petit" ${idMere ? '' : 'hidden'}>
-        <label class="champ">
-          <span class="champ__label">Étape du petit</span>
-          <select class="champ__input champ__select" name="etape_bouture">
-            ${ETAPES.map((e) => `<option value="${e.id}"${e.id === (plante?.etape_bouture || (mereProposee ? 'preleve' : 'terre')) ? ' selected' : ''}>${e.emoji} ${echapper(e.libelle)}</option>`).join('')}
-          </select>
-        </label>
-        ${champDate('Date du prélèvement', 'date_bouture', plante?.date_bouture || (mereProposee ? dateIsoLocale() : ''))}
-      </div>
       ${champDate("Date d'acquisition", 'date_acquisition', plante?.date_acquisition)}
       <p class="aide-quarantaine" id="quarantaine-info" role="status" hidden></p>
+      <label class="champ">
+        <span class="champ__label">Notes</span>
+        <textarea class="champ__input champ__zone" name="notes" rows="5" maxlength="5000"
+                  placeholder="Lumière, arrosage, astuces…">${echapper(plante?.notes)}</textarea>
+      </label>
+      </div>
+      <div class="panneau-form" data-panneau="soins" hidden>
+        <h2 class="panneau-form__titre">💧 Arrosage</h2>
       <label class="champ">
         <span class="champ__label">Arroser tous les (jours)</span>
         <input class="champ__input" name="arrosage_jours" type="number" inputmode="numeric" min="1" max="365"
                placeholder="Ex. 7 (vide = pas de rappel)" value="${echapper(plante?.arrosage_jours)}">
       </label>
+        <h2 class="panneau-form__titre">🌿 Engrais</h2>
       ${champDate('Dernière dose d\'engrais', 'dernier_engrais', plante?.dernier_engrais)}
       <label class="champ">
         <span class="champ__label">Type d'engrais</span>
@@ -587,22 +617,61 @@ export function vueFormulaire(conteneur, id, idMereProposee = null) {
         </datalist>
       </label>
       ${champDate("Prochaine dose d'engrais", 'prochain_engrais', plante?.prochain_engrais)}
+        <h2 class="panneau-form__titre">🪣 Rempotage</h2>
       ${champDate('Dernier rempotage', 'dernier_rempotage', plante?.dernier_rempotage)}
-      <label class="case">
-        <input type="checkbox" name="en_vente"${plante?.en_vente ? ' checked' : ''}>
-        <span>En vente</span>
-      </label>
-      <label class="champ">
-        <span class="champ__label">Notes</span>
-        <textarea class="champ__input champ__zone" name="notes" rows="5" maxlength="5000"
-                  placeholder="Lumière, arrosage, astuces…">${echapper(plante?.notes)}</textarea>
-      </label>
+      </div>
+      <div class="panneau-form" data-panneau="baby" hidden>
+      <div class="champ" id="champ-mere">
+        <span class="champ__label">Plante mère (si c'est un baby)</span>
+        <input type="hidden" name="mere_id" value="${echapper(idMere || '')}">
+        <div class="mere-choix" id="mere-choix"></div>
+        <div class="mere-liste" id="mere-liste" hidden>
+          <input class="champ__input" id="mere-recherche" type="search" placeholder="Chercher une plante…" autocomplete="off">
+          <div class="mere-liste__lignes" id="mere-lignes"></div>
+        </div>
+      </div>
+      <div id="bloc-petit" ${idMere ? '' : 'hidden'}>
+        <label class="champ">
+          <span class="champ__label">Étape du baby</span>
+          <select class="champ__input champ__select" name="etape_bouture">
+            ${ETAPES.map((e) => `<option value="${e.id}"${e.id === (plante?.etape_bouture || (mereProposee ? 'preleve' : 'terre')) ? ' selected' : ''}>${e.emoji} ${echapper(e.libelle)}</option>`).join('')}
+          </select>
+        </label>
+        ${champDate('Date du prélèvement', 'date_bouture', plante?.date_bouture || (mereProposee ? dateIsoLocale() : ''))}
+      </div>
+      </div>
+      <div class="panneau-form" data-panneau="vente" hidden>
+        <div class="champ">
+          <span class="champ__label">Statut</span>
+          <div class="statut" role="radiogroup" aria-label="Statut de la plante">
+            <label class="statut__choix"><input type="radio" name="statut" value="aucun"${!plante?.en_vente && !plante?.vendu_le ? ' checked' : ''}><span>Aucun</span></label>
+            <label class="statut__choix statut__choix--vente"><input type="radio" name="statut" value="vente"${plante?.en_vente ? ' checked' : ''}><span>🏷️ En vente</span></label>
+            <label class="statut__choix statut__choix--vendu"><input type="radio" name="statut" value="vendu"${plante?.vendu_le ? ' checked' : ''}><span>✓ Vendu</span></label>
+          </div>
+        </div>
+        <div id="bloc-vendu" ${plante?.vendu_le ? '' : 'hidden'}>
+          ${champDate('Vendue le', 'vendu_le', plante?.vendu_le || dateIsoLocale())}
+        </div>
+      </div>
       <p class="erreur-form" id="form-erreur" role="alert" hidden></p>
       <button class="btn btn--primaire" id="form-ok" type="submit">Enregistrer</button>
       ${plante ? '<button class="btn btn--danger btn--espace" id="supprimer" type="button">Supprimer la plante</button>' : ''}
     </form>`;
 
   const formulaire = conteneur.querySelector('#form-plante');
+  // Onglets du formulaire : un seul panneau visible, mais tous restent dans le meme formulaire
+  function ouvrirOnglet(nom) {
+    formulaire.querySelectorAll('[data-onglet]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.onglet === nom)));
+    formulaire.querySelectorAll('[data-panneau]').forEach((d) => { d.hidden = d.dataset.panneau !== nom; });
+  }
+  formulaire.addEventListener('click', (e) => {
+    const onglet = e.target.closest('[data-onglet]');
+    if (onglet) ouvrirOnglet(onglet.dataset.onglet);
+  });
+  // Date de vente visible seulement si « Vendu »
+  formulaire.addEventListener('change', (e) => {
+    if (e.target.name === 'statut') conteneur.querySelector('#bloc-vendu').hidden = e.target.value !== 'vendu';
+  });
   // Corbeille des champs date : efface la valeur, puis se cache
   const majCorbeille = (nom) => {
     const bouton = formulaire.querySelector(`[data-vider="${nom}"]`);
@@ -683,6 +752,7 @@ export function vueFormulaire(conteneur, id, idMereProposee = null) {
     if (!String(champs.nom || '').trim()) {
       zoneErreur.textContent = 'Donne un nom à ta plante.';
       zoneErreur.hidden = false;
+      ouvrirOnglet('infos');
       formulaire.elements.nom.focus();
       return;
     }
@@ -690,6 +760,7 @@ export function vueFormulaire(conteneur, id, idMereProposee = null) {
     if (frequence && !(/^\d+$/.test(frequence) && +frequence >= 1 && +frequence <= 365)) {
       zoneErreur.textContent = "La fréquence d'arrosage doit être un nombre de jours entre 1 et 365.";
       zoneErreur.hidden = false;
+      ouvrirOnglet('soins');
       formulaire.elements.arrosage_jours.focus();
       return;
     }

@@ -196,7 +196,9 @@ function nettoyerPlante(champs) {
     // L'ancien champ « derniere_feuille » n'est plus affiche (le journal le remplace) : on ne l'efface pas
     ...(champs.derniere_feuille !== undefined ? { derniere_feuille: champs.derniere_feuille || null } : {}),
     prochain_engrais: champs.prochain_engrais || null,
-    en_vente: champs.en_vente === true || champs.en_vente === 'on',
+    // Statut : « aucun », « vente » ou « vendu » (la date de vente n'existe que si vendu)
+    en_vente: champs.statut ? champs.statut === 'vente' : (champs.en_vente === true || champs.en_vente === 'on'),
+    vendu_le: champs.statut === 'vendu' ? (champs.vendu_le || dateIsoLocale()) : null,
     // Petit (bouture, bulbille) : plante mere + etape + jour du prelevement
     mere_id: champs.mere_id || null,
     etape_bouture: champs.mere_id ? (champs.etape_bouture || 'terre') : null,
@@ -550,6 +552,14 @@ export async function supprimerProbleme(id) {
 }
 
 // Etape d'une bouture : preleve, eau, terre, adopte, donne
+export async function definirStatut(idPlante, statut) {
+  const modifs = { en_vente: statut === 'vente', vendu_le: statut === 'vendu' ? dateIsoLocale() : null };
+  const { data, error } = await supabase.from('plantes').update(modifs).eq('id', idPlante).select().single();
+  if (error) throw error;
+  etat.plantes = etat.plantes.map((p) => (p.id === idPlante ? data : p));
+  sauvegarderCache();
+}
+
 // Rattache une plante deja creee a sa mere (sans rien creer de nouveau)
 export async function rattacherPetit(idPetit, idMere) {
   const petit = trouverPlante(idPetit);

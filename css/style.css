@@ -1302,3 +1302,26 @@ a.btn { text-decoration: none; }
 .journal__note--edition .journal__actions { margin-top: 10px; }
 .petits__actions { display: grid; gap: 8px; margin-top: 12px; }
 .petits__actions .btn { margin: 0; }
+
+/* Onglets du formulaire plante */
+.onglets-form { display: flex; gap: 2px; padding: 4px; background: var(--vert-clair); border-radius: 16px; margin-bottom: 14px; }
+.onglets-form__onglet { flex: 1; min-width: 0; display: grid; justify-items: center; gap: 1px; padding: 7px 0; border: 0; border-radius: 12px;
+  background: transparent; color: var(--texte-doux); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.onglets-form__onglet i { font-style: normal; font-size: 20px; line-height: 1.2; }
+.onglets-form__onglet[aria-selected="true"] { background: var(--vert); color: var(--on-primaire); }
+.panneau-form { display: grid; gap: 14px; }
+.panneau-form[hidden] { display: none; }
+.panneau-form__titre { margin: 6px 0 0; font: 700 16px var(--sans, inherit); color: var(--texte); }
+/* Statut : Aucun / En vente / Vendu */
+.statut { display: flex; gap: 8px; }
+.statut__choix { flex: 1; position: relative; }
+.statut__choix input { position: absolute; opacity: 0; inset: 0; }
+.statut__choix span, .statut__bouton { display: block; width: 100%; text-align: center; padding: 12px 4px; min-height: 44px; border-radius: 12px;
+  border: 1px solid var(--bordure); background: var(--papier); color: var(--texte); font: inherit; font-weight: 700; cursor: pointer; }
+.statut__choix input:checked + span, .statut__bouton[aria-pressed="true"] { background: var(--vert); border-color: var(--vert); color: var(--on-primaire); }
+.statut__choix--vente input:checked + span, .statut__bouton--vente[aria-pressed="true"] { background: var(--vente-fond); border-color: var(--vente-texte); color: var(--vente-texte); }
+.statut__choix input:focus-visible + span { outline: 3px solid var(--vert); outline-offset: 2px; }
+.statut--fiche { margin: 10px 0 4px; }
+.statut--fiche .statut__bouton { flex: 1; }
+.statut__date { margin: 4px 0 0; color: var(--texte-doux); font-size: 14px; }
+.pastille-vente--vendu { background: var(--vert); color: var(--on-primaire); }

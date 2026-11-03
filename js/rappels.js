@@ -76,6 +76,7 @@ export function planifier(plantes, arrosages, aujourdhui = dateIsoLocale()) {
   const engraisBientot = [];
   let avecRappel = 0;
   for (const plante of plantes) {
+    if (plante.vendu_le) continue; // plante vendue : plus de rappel
     const engrais = { plante, ...etatEngrais(plante, aujourdhui) };
     if (engrais.statut !== 'aucun') avecRappel++;
     if (engrais.statut === 'retard' || engrais.statut === 'aujourdhui') engraisAFaire.push(engrais);
