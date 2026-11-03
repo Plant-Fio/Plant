@@ -292,6 +292,7 @@ async function remplirPlante(page, { nom, espece = '', piece = '', date = '', no
   if (arrosage) {
     await page.click('[data-onglet="soins"]'); // l'arrosage est dans l'onglet « Soins »
     await page.fill('[name="arrosage_jours"]', String(arrosage));
+    await page.click('[data-onglet="infos"]'); // retour sur l'onglet de depart
   }
 }
 
