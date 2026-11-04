@@ -1139,8 +1139,8 @@ export async function verifierAppli(base, dossier, { version }) {
     await capturer(page, dossier, '19-aujourdhui-a-jour.png');
 
     // --- Taches libres ---
-    verifier(await page.getAttribute('#form-tache [name="texte"]', 'placeholder') === null, titre,
-      'taches : le champ est vide, sans exemple', 'Le champ de tache affiche encore un exemple.');
+    verifier((await page.getAttribute('#form-tache [name="texte"]', 'placeholder')) === 'Nouvelle tâche…', titre,
+      'taches : le champ a juste une invitation (« Nouvelle tâche… »), pas d\'exemple', 'Le champ de tache n\'a pas la bonne invitation.');
     await page.click('[data-quand="aujourdhui"]');
     await page.fill('#form-tache [name="texte"]', 'Vaporiser les plantes du salon');
     await page.click('#form-tache button[type="submit"]');
@@ -1158,9 +1158,12 @@ export async function verifierAppli(base, dossier, { version }) {
     await page.click('[data-tache-annuler]');
     await page.waitForSelector('[data-tache-fait]');
     ok('taches : on peut annuler le « fait »');
+    verifier((await page.textContent('[data-tache] .tache__pastille')).trim() === '💧', titre,
+      'taches : la pastille emoji est devinee d\'apres le texte (vaporiser = 💧)', `Pastille : "${await page.textContent('[data-tache] .tache__pastille')}".`);
+    await page.click('[data-tache-menu]');
     await page.click('[data-tache-suppr]');
     await page.waitForFunction(() => !document.querySelector('[data-tache]'));
-    ok('taches : la tache peut etre supprimee');
+    ok('taches : la tache peut etre supprimee (en touchant son texte)');
     // Tache prevue pour demain (on la saisit le soir) : section « A venir », pas encore dans la pastille
     await page.click('[data-quand="demain"]');
     await page.fill('#form-tache [name="texte"]', 'Vaporiser demain');
@@ -1173,6 +1176,7 @@ export async function verifierAppli(base, dossier, { version }) {
     await page.waitForSelector('#tache-date');
     ok('taches : le choix « Autre date » affiche un calendrier');
     await capturer(page, dossier, '19-aujourdhui-a-venir.png');
+    await page.click('[data-tache-menu]');
     await page.click('[data-tache-suppr]');
     await page.waitForFunction(() => !document.querySelector('[data-tache]'));
     await page.click('[data-tab="reglages"]');

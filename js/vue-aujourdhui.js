@@ -5,10 +5,27 @@ import {
   creerTache, marquerTache, supprimerTache, traiterProbleme, resoudreProbleme, trouverPlante,
 } from './donnees.js';
 import { libelleRelance } from './problemes.js';
+import { iconeTache } from './journal.js';
 import { planifier, libelleEcheance } from './rappels.js';
 import { photoVignetteHtml, remplirPhotos } from './vues-plantes.js';
 import { echapper, icone, dateDuJour, dateIsoLocale, ajouterJours, joursEntre, formaterDate } from './outils.js';
 import { message } from './dialogues.js';
+
+// Une tache libre : pastille emoji, texte (on le touche pour ouvrir « Supprimer »), bouton rond
+function ligneTache(t, { faite = false, quand = '', ouvert = false } = {}) {
+  const rond = faite
+    ? `<button class="tache__rond tache__rond--fait" type="button" data-tache-annuler aria-label="Annuler : ${echapper(t.texte)}">✓</button>`
+    : quand ? ''
+      : `<button class="tache__rond" type="button" data-tache-fait aria-label="Fait : ${echapper(t.texte)}">✓</button>`;
+  return `
+          <article class="tache tache--libre${faite ? ' tache--faite' : ''}" data-tache="${t.id}">
+            <span class="tache__pastille" aria-hidden="true">${iconeTache(t.texte)}</span>
+            <button class="tache__libre-texte" type="button" data-tache-menu aria-expanded="${ouvert}">${echapper(t.texte)}${quand ? `
+              <span class="tache__quand">${quand}</span>` : ''}</button>
+            ${rond}
+            ${ouvert ? `<div class="tache__actions"><button class="btn-texte btn-texte--danger" type="button" data-tache-suppr>Supprimer la tâche</button></div>` : ''}
+          </article>`;
+}
 
 function carte(etat, bouton) {
   const { plante } = etat;
@@ -35,6 +52,7 @@ export function vueAujourdhui(page) {
   // Pour quand est la nouvelle tache ? Le soir (apres 18 h), on propose d'office « Demain ».
   let quand = new Date().getHours() >= 18 ? 'demain' : 'aujourdhui';
   let dateAutre = ajouterJours(jour, 2);
+  let tacheOuverte = null; // tache dont le menu « Supprimer » est ouvert
 
   function dessiner() {
     const brouillon = conteneur.querySelector('#form-tache [name="texte"]')?.value || '';
@@ -99,22 +117,13 @@ export function vueAujourdhui(page) {
   }).join('')}</div>` : ''}
       <h2 class="section__titre">Mes tâches${tachesAFaire.length ? ` <span class="puce__nombre">${tachesAFaire.length}</span>` : ''}</h2>
       <div class="taches" data-liste="mes-taches">
-        ${tachesAFaire.map((t) => `
-          <article class="tache tache--libre" data-tache="${t.id}">
-            <span class="tache__libre-texte">${echapper(t.texte)}</span>
-            <button class="tache__bouton" type="button" data-tache-fait>${icone('feuille')} Fait</button>
-            <button class="btn-icone" type="button" data-tache-suppr aria-label="Supprimer la tâche : ${echapper(t.texte)}">${icone('corbeille')}</button>
-          </article>`).join('')}
-        ${tachesFaites.map((t) => `
-          <article class="tache tache--libre tache--faite" data-tache="${t.id}">
-            <span class="tache__libre-texte">${echapper(t.texte)}</span>
-            <button class="btn-texte" type="button" data-tache-annuler>Annuler</button>
-          </article>`).join('')}
+        ${tachesAFaire.map((t) => ligneTache(t, { ouvert: tacheOuverte === t.id })).join('')}
+        ${tachesFaites.map((t) => ligneTache(t, { faite: true, ouvert: tacheOuverte === t.id })).join('')}
       </div>
       <form class="ajout-tache" id="form-tache" novalidate>
         <div class="ajout-tache__ligne">
-          <input class="champ__input" name="texte" type="text" maxlength="120" autocomplete="off" aria-label="Nouvelle tâche">
-          <button class="btn btn--douce" type="submit">Ajouter</button>
+          <input class="champ__input" name="texte" type="text" maxlength="120" autocomplete="off" placeholder="Nouvelle tâche…" aria-label="Nouvelle tâche">
+          <button class="tache__rond" type="submit" aria-label="Ajouter la tâche">＋</button>
         </div>
         <div class="puces ajout-tache__quand" role="group" aria-label="Pour quand ?">
           ${[['aujourdhui', "Aujourd'hui"], ['demain', 'Demain'], ['autre', 'Autre date']].map(([id, libelle]) =>
@@ -125,12 +134,7 @@ export function vueAujourdhui(page) {
       ${tachesAVenir.length ? `
         <h2 class="section__titre">À venir <span class="puce__nombre">${tachesAVenir.length}</span></h2>
         <div class="taches" data-liste="a-venir">
-          ${tachesAVenir.map((t) => `
-            <article class="tache tache--libre" data-tache="${t.id}">
-              <span class="tache__libre-texte">${echapper(t.texte)}
-                <span class="tache__quand">${joursEntre(jour, t.pour_le) === 1 ? 'Demain' : echapper(formaterDate(t.pour_le))}</span></span>
-              <button class="btn-icone" type="button" data-tache-suppr aria-label="Supprimer la tâche : ${echapper(t.texte)}">${icone('corbeille')}</button>
-            </article>`).join('')}
+          ${tachesAVenir.map((t) => ligneTache(t, { quand: joursEntre(jour, t.pour_le) === 1 ? 'Demain' : echapper(formaterDate(t.pour_le)), ouvert: tacheOuverte === t.id })).join('')}
         </div>` : ''}
       ${faites.length ? `
         <h2 class="section__titre">Arrosées aujourd'hui <span class="puce__nombre">${faites.length}</span></h2>
@@ -188,9 +192,17 @@ export function vueAujourdhui(page) {
 
   // Taches libres : cocher, annuler, supprimer
   conteneur.addEventListener('click', async (evenement) => {
+    const menu = evenement.target.closest('[data-tache-menu]');
+    if (menu) {
+      const id = menu.closest('[data-tache]')?.dataset.tache;
+      tacheOuverte = tacheOuverte === id ? null : id;
+      dessiner();
+      return;
+    }
     const boutonTache = evenement.target.closest('[data-tache-fait], [data-tache-annuler], [data-tache-suppr]');
     if (!boutonTache || boutonTache.disabled) return;
     const idTache = boutonTache.closest('[data-tache]')?.dataset.tache;
+    tacheOuverte = null;
     boutonTache.disabled = true;
     try {
       if (boutonTache.hasAttribute('data-tache-fait')) await marquerTache(idTache, jour);

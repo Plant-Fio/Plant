@@ -1325,3 +1325,21 @@ a.btn { text-decoration: none; }
 .statut--fiche .statut__bouton { flex: 1; }
 .statut__date { margin: 4px 0 0; color: var(--texte-doux); font-size: 14px; }
 .pastille-vente--vendu { background: var(--vert); color: var(--on-primaire); }
+
+/* Taches libres : pastille emoji + bouton rond */
+.tache--libre { flex-wrap: wrap; min-height: 64px; padding: 10px 10px 10px 12px; gap: 12px; }
+.tache__pastille { flex: none; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%;
+  background: var(--vert-clair); font-size: 20px; line-height: 1; }
+button.tache__libre-texte { flex: 1; min-width: 0; min-height: 44px; padding: 0; border: 0; background: none; color: inherit;
+  font: inherit; font-weight: 500; text-align: left; cursor: pointer; overflow-wrap: anywhere; }
+.tache__rond { flex: none; width: 44px; height: 44px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%;
+  background: var(--vert); color: var(--on-primaire); font: inherit; font-size: 20px; font-weight: 700; cursor: pointer; }
+.tache__rond:disabled { opacity: 0.6; }
+.tache__rond--fait { background: transparent; border: 2px solid var(--vert); color: var(--vert); }
+.tache__actions { flex-basis: 100%; display: flex; justify-content: flex-end; padding-left: 54px; }
+.ajout-tache__ligne { align-items: center; padding: 4px 4px 4px 0; }
+.ajout-tache__ligne .tache__rond { width: 48px; height: 48px; }
+.section__titre .puce__nombre { font-family: var(--sans); font-variant-numeric: lining-nums; font-size: 0.7em; vertical-align: middle; }
+/* Liste des plantes : la piece est toujours alignee en bas de la carte */
+.vignette__piece { margin-top: auto; }
+.vignette__nom:has(+ .vignette__piece), .vignette__espece:has(+ .vignette__piece) { margin-bottom: 8px; }

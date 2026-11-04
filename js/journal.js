@@ -18,6 +18,19 @@ export function detecterIcone(texte) {
   const t = normaliser(texte || '');
   return MOTS_ICONES.find(([, mots]) => mots.test(t))?.[0] ?? '📝';
 }
+// Emoji d'une tache libre, devine d'apres ses mots (meme principe que le journal)
+const MOTS_TACHES = [
+  ['🛒', /acheter|racheter|commander|courses|magasin/],
+  ['🪴', /rempot|nouveau pot/],
+  ['🌿', /engrais|osmocote|fertili/],
+  ['💧', /arros|vaporis|brum|tremp/],
+  ['🐛', /traitement|cochenille|puceron|parasite|savon/],
+  ['✂️', /bouture|tailler|couper|elaguer/],
+];
+export function iconeTache(texte) {
+  const t = normaliser(texte || '');
+  return MOTS_TACHES.find(([, mots]) => mots.test(t))?.[0] ?? '📝';
+}
 export const iconeNote = (note) => note.icone || detecterIcone(note.texte);
 const classeIcone = (e) => ({ '🌱': 'vert', '🌸': 'rose', '🐛': 'rouge', '🪴': 'sable', '💧': 'bleu' })[e] || 'neutre';
 
