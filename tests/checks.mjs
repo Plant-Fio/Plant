@@ -1158,8 +1158,8 @@ export async function verifierAppli(base, dossier, { version }) {
     await page.click('[data-tache-annuler]');
     await page.waitForSelector('[data-tache-fait]');
     ok('taches : on peut annuler le « fait »');
-    verifier((await page.textContent('[data-tache] .tache__pastille')).trim() === '🪴' || (await page.textContent('[data-tache] .tache__pastille')).trim() === '📝', titre,
-      'taches : chaque tache a sa pastille emoji', 'La pastille emoji de la tache est absente.');
+    verifier((await page.textContent('[data-tache] .tache__pastille')).trim() === '💧', titre,
+      'taches : la pastille emoji est devinee d\'apres le texte (vaporiser = 💧)', `Pastille : "${await page.textContent('[data-tache] .tache__pastille')}".`);
     await page.click('[data-tache-menu]');
     await page.click('[data-tache-suppr]');
     await page.waitForFunction(() => !document.querySelector('[data-tache]'));
