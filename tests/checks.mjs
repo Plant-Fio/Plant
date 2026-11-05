@@ -5,6 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { chromium, devices } from 'playwright';
+import jsQR from 'jsqr';
 import { annoter, ok, bilan } from './helpers.mjs';
 
 const { defaultBrowserType, ...iphone } = devices['iPhone 14'];
@@ -832,6 +833,35 @@ export async function verifierAppli(base, dossier, { version }) {
     await page.evaluate((h) => { location.hash = h; }, adresseMere);
     await page.waitForSelector('#petits');
     ok('petits : le petit supprime, retour sur la mere');
+
+    // --- Etiquettes QR : lisibles (meme reduites a la finesse de l'imprimante), a la bonne taille, et le QR rouvre la fiche ---
+    const idMereEtiquette = adresseMere.split('/')[2];
+    const codeAttendu = await page.evaluate(async (id) => (await import('./js/etiquette.js')).idVersCode(id), idMereEtiquette);
+    await page.click('a:has-text("Étiquette QR")');
+    await page.waitForSelector('#etiquette-canvas');
+    for (const [id, largeur, hauteur] of [['transparente', 480, 224], ['blanche', 640, 224], ['verte', 640, 192]]) {
+      await page.click(`[data-format="${id}"]`);
+      await page.waitForFunction(([l, h]) => { const c = document.querySelector('#etiquette-canvas'); return c.width === l && c.height === h; }, [largeur, hauteur]);
+      // Lecture a taille d'impression : l'image est reduite de moitie (8 points/mm), comme sur l'imprimante
+      const image = await page.evaluate(() => {
+        const c = document.querySelector('#etiquette-canvas');
+        const reduit = document.createElement('canvas');
+        reduit.width = c.width / 2; reduit.height = c.height / 2;
+        const ctx = reduit.getContext('2d');
+        ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, reduit.width, reduit.height);
+        ctx.drawImage(c, 0, 0, reduit.width, reduit.height);
+        const d = ctx.getImageData(0, 0, reduit.width, reduit.height);
+        return { l: reduit.width, h: reduit.height, data: Array.from(d.data) };
+      });
+      const lu = jsQR(Uint8ClampedArray.from(image.data), image.l, image.h);
+      verifier(lu && lu.data.endsWith(`#/q/${codeAttendu}`), titre,
+        `etiquette ${id} : le QR est lisible a la finesse de l'imprimante et contient la bonne plante`, `QR illisible ou faux (lu : ${lu ? lu.data : 'rien'}).`);
+    }
+    await capturer(page, dossier, '26-etiquette.png');
+    await page.evaluate((c) => { location.hash = `#/q/${c}`; }, codeAttendu);
+    await page.waitForFunction((h) => location.hash === h, adresseMere);
+    await page.waitForSelector('#petits');
+    ok('etiquette : le lien du QR (#/q/...) ouvre la fiche de la plante');
 
     // --- Suppression (avec confirmation) ---
     await page.click('a:has-text("Modifier")');
