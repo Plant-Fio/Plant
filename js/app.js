@@ -3,6 +3,7 @@ import { supabase } from './client.js';
 import { echapper, icone, dateIsoLocale } from './outils.js';
 import { charger, viderEtat, lireEtat } from './donnees.js';
 import { vueListe, vueFiche, vueFormulaire, vueEvolution } from './vues-plantes.js';
+import { vueEtiquette, ouvrirDepuisCode } from './etiquette.js';
 import { vueReglages, vuePieces } from './vues-reglages.js';
 import { vueSouhaits, vueSouhait, vueFormulaireSouhait } from './vues-souhaits.js';
 import { vueAujourdhui } from './vue-aujourdhui.js';
@@ -161,6 +162,9 @@ let jourAffiche = dateIsoLocale();
 
 function afficherVue() {
   if (!session || !lireEtat().charge) return;
+  // Etiquette QR scannee : on ouvre la fiche de la plante correspondante
+  const code = location.hash.match(/^#\/q\/([^/]+)/)?.[1];
+  if (code) { ouvrirDepuisCode(code); return; }
   const { onglet, reste } = lireAdresse();
   const conteneur = document.getElementById('vue');
 
@@ -175,6 +179,7 @@ function afficherVue() {
     else if (premier === 'nouvelle') vueFormulaire(conteneur, null, second);
     else if (second === 'modifier') vueFormulaire(conteneur, premier);
     else if (second === 'evolution') vueEvolution(conteneur, premier);
+    else if (second === 'etiquette') vueEtiquette(conteneur, premier);
     else vueFiche(conteneur, premier);
   } else if (onglet === 'aujourdhui') {
     vueAujourdhui(conteneur);

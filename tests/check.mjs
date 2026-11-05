@@ -86,7 +86,7 @@ ok('syntaxe JavaScript correcte');
 
 // 6. Le service worker ne doit lister que des fichiers qui existent (ou que la CI fabrique)
 for (const [, chemin] of lire('sw.js').matchAll(/'\.\/([^']*)'/g)) {
-  if (chemin && chemin !== 'vendor/supabase.js' && !chemin.startsWith('fonts/') && !fs.existsSync(chemin)) {
+  if (chemin && chemin !== 'vendor/supabase.js' && chemin !== 'vendor/qr.js' && !chemin.startsWith('fonts/') && !fs.existsSync(chemin)) {
     erreur('Service worker', `Le squelette met en cache "${chemin}" qui n'existe pas.`, 'sw.js');
   }
 }

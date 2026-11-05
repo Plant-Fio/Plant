@@ -1343,3 +1343,14 @@ button.tache__libre-texte { flex: 1; min-width: 0; min-height: 44px; padding: 0;
 /* Liste des plantes : la piece est toujours alignee en bas de la carte */
 .vignette__piece { margin-top: auto; }
 .vignette__nom:has(+ .vignette__piece), .vignette__espece:has(+ .vignette__piece) { margin-bottom: 8px; }
+
+/* Etiquette QR */
+.etiquette__formats { display: flex; gap: 8px; margin-bottom: 14px; }
+.etiquette__format { flex: 1; min-width: 0; min-height: 56px; display: grid; gap: 1px; justify-items: center; align-content: center; padding: 6px 2px;
+  border: 1px solid var(--bordure); border-radius: 14px; background: var(--papier); color: var(--texte); font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+.etiquette__format small { font-size: 12px; font-weight: 500; color: var(--texte-doux); }
+.etiquette__format[aria-pressed="true"] { background: var(--vert); border-color: var(--vert); color: var(--on-primaire); }
+.etiquette__format[aria-pressed="true"] small { color: var(--on-primaire); opacity: 0.85; }
+.etiquette__cadre { display: grid; place-items: center; padding: 18px; border-radius: var(--rayon); background: var(--vert-clair); }
+.etiquette__cadre canvas { width: 100%; max-width: 420px; height: auto; background: #fff; border-radius: 4px; box-shadow: 0 1px 6px rgba(0, 0, 0, 0.25); }
+.etiquette__aide { margin: 10px 0 14px; color: var(--texte-doux); font-size: 14px; }

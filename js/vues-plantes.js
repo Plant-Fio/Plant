@@ -214,6 +214,7 @@ export function vueFiche(conteneur, id) {
         <h2 class="carte__titre">Notes</h2>
         <p class="notes">${echapper(plante.notes)}</p>
       </section>` : ''}
+    <a class="btn btn--douce btn--espace" href="#/plantes/${plante.id}/etiquette">🏷️ Étiquette QR</a>
     <a class="btn btn--douce btn--espace" href="#/plantes/${plante.id}/modifier">Modifier</a>`;
 
   initialiserStatut(conteneur.querySelector('#statut'), plante.id);

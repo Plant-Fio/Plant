@@ -14,6 +14,10 @@ cp -r index.html manifest.webmanifest sw.js css js icons _site/
 npx esbuild scripts/supabase-entry.js --bundle --format=esm --minify \
   --target=es2020,safari15 --outfile=_site/vendor/supabase.js
 
+# Generateur de QR codes (charge seulement quand on ouvre une etiquette)
+npx esbuild scripts/qr-entry.js --bundle --format=esm --minify \
+  --target=es2020,safari15 --outfile=_site/vendor/qr.js
+
 # Polices des themes : copiees depuis les paquets @fontsource (alphabet latin, formats woff2)
 mkdir -p _site/fonts
 for police in cormorant-garamond bodoni-moda jost young-serif dm-sans; do
