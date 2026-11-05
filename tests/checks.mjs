@@ -839,10 +839,10 @@ export async function verifierAppli(base, dossier, { version }) {
     const codeAttendu = await page.evaluate(async (id) => (await import('./js/etiquette.js')).idVersCode(id), idMereEtiquette);
     await page.click('a:has-text("Étiquette QR")');
     await page.waitForSelector('#etiquette-canvas');
-    for (const [id, largeur, hauteur] of [['transparente', 480, 224], ['blanche', 640, 224], ['verte', 640, 192]]) {
+    for (const [id, largeur, hauteur] of [['transparente', 720, 336], ['blanche', 960, 336], ['verte', 960, 288]]) {
       await page.click(`[data-format="${id}"]`);
       await page.waitForFunction(([l, h]) => { const c = document.querySelector('#etiquette-canvas'); return c.width === l && c.height === h; }, [largeur, hauteur]);
-      // Lecture a taille d'impression : l'image est reduite de moitie (8 points/mm), comme sur l'imprimante
+      // Lecture a taille d'impression : l'image est reduite de moitie (12 points/mm, la finesse de la Niimbot D11-H)
       const image = await page.evaluate(() => {
         const c = document.querySelector('#etiquette-canvas');
         const reduit = document.createElement('canvas');
@@ -855,7 +855,7 @@ export async function verifierAppli(base, dossier, { version }) {
       });
       const lu = jsQR(Uint8ClampedArray.from(image.data), image.l, image.h);
       verifier(lu && lu.data.endsWith(`#/q/${codeAttendu}`), titre,
-        `etiquette ${id} : le QR est lisible a la finesse de l'imprimante et contient la bonne plante`, `QR illisible ou faux (lu : ${lu ? lu.data : 'rien'}).`);
+        `etiquette ${id} : le QR est lisible a la finesse de la D11-H et contient la bonne plante`, `QR illisible ou faux (lu : ${lu ? lu.data : 'rien'}).`);
     }
     await capturer(page, dossier, '26-etiquette.png');
     await page.evaluate((c) => { location.hash = `#/q/${c}`; }, codeAttendu);

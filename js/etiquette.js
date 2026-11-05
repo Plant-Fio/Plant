@@ -10,8 +10,8 @@ export const FORMATS = [
   { id: 'blanche', libelle: 'Blanche', longueur: 40, hauteur: 14 },
   { id: 'verte', libelle: 'Verte', longueur: 40, hauteur: 12 },
 ];
-const PX_PAR_MM = 16; // 2 fois la finesse de l'imprimante (8 points/mm) : image nette, mise a l'echelle par l'app Niimbot
-const MARGE_MM = 0.9;
+const PX_PAR_MM = 24; // 2 fois la finesse de la D11-H (environ 12 points/mm, 300 dpi) : image nette, mise a l'echelle par l'app Niimbot
+const MARGE_MM = 0.6;
 const CLE_FORMAT = 'plantes-etiquette-format';
 
 // ---- Code court d'une plante : son identifiant (uuid) en base64url, 22 caracteres (QR plus petit = plus lisible)
@@ -77,7 +77,7 @@ export async function dessinerEtiquette(canvas, plante, format) {
   }
 
   // Nom : a droite du QR, 1 a 3 lignes, police reduite jusqu'a ce que tout tienne
-  const xTexte = marge + cote + Math.round(0.8 * PX_PAR_MM);
+  const xTexte = marge + cote + Math.round(0.7 * PX_PAR_MM);
   const largeurTexte = largeur - xTexte - marge;
   const nom = String(plante.nom || '').trim();
   ctx.textBaseline = 'middle';
