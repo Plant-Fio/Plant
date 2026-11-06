@@ -13,6 +13,7 @@ export const FORMATS = [
 const PX_PAR_MM = 24; // 2 fois la finesse de la D11-H (environ 12 points/mm, 300 dpi) : image nette, mise a l'echelle par l'app Niimbot
 const MARGE_MM = 0.6;
 const CLE_FORMAT = 'plantes-etiquette-format';
+const CLE_MODE = 'plantes-etiquette-mode'; // 'nom' (QR + nom) ou 'seul' (QR seul)
 
 // ---- Code court d'une plante : son identifiant (uuid) en base64url, 22 caracteres (QR plus petit = plus lisible)
 export function idVersCode(id) {
@@ -49,7 +50,7 @@ function couper(ctx, texte, largeur, maxLignes) {
 }
 
 // Dessine l'etiquette dans un <canvas> (noir sur blanc, QR a modules entiers pour rester net)
-export async function dessinerEtiquette(canvas, plante, format) {
+export async function dessinerEtiquette(canvas, plante, format, avecNom = true) {
   const { default: qrcode } = await import('../vendor/qr.js');
   const qr = qrcode(0, 'M');
   qr.addData(adresseQr(plante.id));
@@ -69,12 +70,15 @@ export async function dessinerEtiquette(canvas, plante, format) {
   const cote = hauteur - 2 * marge;
   const module = Math.floor(cote / (n + 2)); // +2 = marge de silence d'un module de chaque cote
   const tailleQr = module * n;
-  const x0 = marge + Math.floor((cote - tailleQr) / 2);
+  // QR seul : centre sur l'etiquette ; avec nom : a gauche
+  const x0 = avecNom ? marge + Math.floor((cote - tailleQr) / 2) : Math.floor((largeur - tailleQr) / 2);
   const y0 = Math.floor((hauteur - tailleQr) / 2);
   ctx.fillStyle = '#000';
   for (let r = 0; r < n; r++) {
     for (let c = 0; c < n; c++) if (qr.isDark(r, c)) ctx.fillRect(x0 + c * module, y0 + r * module, module, module);
   }
+
+  if (!avecNom) return { modules: n, module };
 
   // Nom : a droite du QR, 1 a 3 lignes, police reduite jusqu'a ce que tout tienne
   const xTexte = marge + cote + Math.round(0.7 * PX_PAR_MM);
@@ -103,6 +107,9 @@ export async function dessinerEtiquette(canvas, plante, format) {
   return { modules: n, module };
 }
 
+const modeRetenu = () => {
+  try { return localStorage.getItem(CLE_MODE) === 'seul' ? 'seul' : 'nom'; } catch { return 'nom'; }
+};
 const formatRetenu = () => {
   try { return FORMATS.find((f) => f.id === localStorage.getItem(CLE_FORMAT)) || FORMATS[1]; } catch { return FORMATS[1]; }
 };
@@ -114,6 +121,7 @@ export function vueEtiquette(conteneur, idPlante) {
     return;
   }
   let format = formatRetenu();
+  let mode = modeRetenu();
   conteneur.innerHTML = `
     <a class="retour" href="#/plantes/${plante.id}">${icone('retour')} ${echapper(plante.nom)}</a>
     <h1 class="vue__titre">Étiquette</h1>
@@ -121,17 +129,23 @@ export function vueEtiquette(conteneur, idPlante) {
       ${FORMATS.map((f) => `<button class="etiquette__format" type="button" data-format="${f.id}" aria-pressed="${f.id === format.id}">
         ${f.libelle}<small>${f.longueur} × ${f.hauteur} mm</small></button>`).join('')}
     </div>
+    <div class="etiquette__formats etiquette__formats--mode" role="group" aria-label="Contenu de l'étiquette">
+      <button class="etiquette__format etiquette__format--mode" type="button" data-mode="nom" aria-pressed="${mode === 'nom'}">QR + nom</button>
+      <button class="etiquette__format etiquette__format--mode" type="button" data-mode="seul" aria-pressed="${mode === 'seul'}">QR seul</button>
+    </div>
     <div class="etiquette__cadre"><canvas id="etiquette-canvas" aria-label="Aperçu de l'étiquette"></canvas></div>
     <p class="etiquette__aide" id="etiquette-aide"></p>
     <button class="btn btn--primaire" id="etiquette-partager" type="button">Enregistrer / partager l'image</button>
+    <button class="btn" id="etiquette-copier-nom" type="button">Copier le nom « ${echapper(plante.nom)} »</button>
     <p class="etiquette__aide">Dans l'app Niimbot : nouvelle étiquette, puis <b>Image</b>, et choisis cette image. Règle le rouleau sur le même format.</p>`;
 
   const canvas = conteneur.querySelector('#etiquette-canvas');
   async function dessiner() {
-    await dessinerEtiquette(canvas, plante, format);
+    await dessinerEtiquette(canvas, plante, format, mode === 'nom');
     canvas.style.aspectRatio = `${format.longueur} / ${format.hauteur}`;
     conteneur.querySelector('#etiquette-aide').textContent = `Taille réelle : ${format.longueur} × ${format.hauteur} mm`;
     conteneur.querySelectorAll('[data-format]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.format === format.id)));
+    conteneur.querySelectorAll('[data-mode]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === mode)));
   }
 
   conteneur.onclick = async (e) => {
@@ -142,8 +156,30 @@ export function vueEtiquette(conteneur, idPlante) {
       dessiner();
       return;
     }
+    const choixMode = e.target.closest('[data-mode]');
+    if (choixMode) {
+      mode = choixMode.dataset.mode === 'seul' ? 'seul' : 'nom';
+      try { localStorage.setItem(CLE_MODE, mode); } catch { /* pas grave */ }
+      dessiner();
+      return;
+    }
+    if (e.target.closest('#etiquette-copier-nom')) {
+      let copie = false;
+      try { await navigator.clipboard.writeText(String(plante.nom)); copie = true; } catch { /* repli ci-dessous */ }
+      if (!copie) { // repli pour les navigateurs qui refusent le presse-papiers
+        const zone = document.createElement('textarea');
+        zone.value = String(plante.nom);
+        zone.style.cssText = 'position:fixed;opacity:0';
+        document.body.append(zone);
+        zone.select();
+        try { copie = document.execCommand('copy'); } catch { /* rien */ }
+        zone.remove();
+      }
+      message(copie ? 'Nom copié' : 'Copie impossible', copie ? undefined : 'erreur');
+      return;
+    }
     if (!e.target.closest('#etiquette-partager')) return;
-    const nomFichier = `etiquette-${String(plante.nom).toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'plante'}-${format.longueur}x${format.hauteur}.png`;
+    const nomFichier = `etiquette${mode === 'seul' ? '-qr' : ''}-${String(plante.nom).toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'plante'}-${format.longueur}x${format.hauteur}.png`;
     const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
     if (!blob) { message("Impossible de créer l'image", 'erreur'); return; }
     const fichier = new File([blob], nomFichier, { type: 'image/png' });
