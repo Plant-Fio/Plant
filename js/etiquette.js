@@ -10,6 +10,30 @@ export const FORMATS = [
   { id: 'blanche', libelle: 'Blanche', longueur: 40, hauteur: 14 },
   { id: 'verte', libelle: 'Verte', longueur: 40, hauteur: 12 },
 ];
+export const POLICES = [
+  { id: 'standard', libelle: 'Standard', famille: null, poids: 700 },
+  { id: 'pacifico', libelle: 'Pacifico', famille: 'Etq Pacifico', fichier: 'pacifico-latin-400-normal.woff2', poids: 400 },
+  { id: 'lobster', libelle: 'Lobster Two', famille: 'Etq Lobster Two', fichier: 'lobster-two-latin-700-normal.woff2', poids: 700 },
+  { id: 'cormorant', libelle: 'Cormorant SC', famille: 'Etq Cormorant SC', fichier: 'cormorant-sc-latin-600-normal.woff2', poids: 600 },
+  { id: 'jost', libelle: 'Jost léger', famille: 'Etq Jost léger', fichier: 'jost-latin-300-normal.woff2', poids: 300 },
+  { id: 'raleway', libelle: 'Raleway léger', famille: 'Etq Raleway léger', fichier: 'raleway-latin-300-normal.woff2', poids: 300 },
+  { id: 'quicksand', libelle: 'Quicksand', famille: 'Etq Quicksand', fichier: 'quicksand-latin-500-normal.woff2', poids: 500 },
+  { id: 'patrick', libelle: 'Patrick Hand', famille: 'Etq Patrick Hand', fichier: 'patrick-hand-latin-400-normal.woff2', poids: 400 },
+  { id: 'gloock', libelle: 'Gloock', famille: 'Etq Gloock', fichier: 'gloock-latin-400-normal.woff2', poids: 400 },
+];
+const CLE_POLICE = 'plantes-etiquette-police';
+const PILE_STANDARD = '-apple-system, system-ui, "Helvetica Neue", sans-serif';
+const pileDe = (police) => (police.famille ? `"${police.famille}", ${PILE_STANDARD}` : PILE_STANDARD);
+const chargees = new Map();
+// Charge une police (une seule fois) pour que le canvas et les boutons puissent l'utiliser
+export function chargerPolice(police) {
+  if (!police.famille) return Promise.resolve();
+  if (!chargees.has(police.id)) {
+    const face = new FontFace(police.famille, `url(fonts/${police.fichier})`, { weight: String(police.poids) });
+    chargees.set(police.id, face.load().then((f) => { document.fonts.add(f); }).catch(() => { /* police absente : repli sur la police standard */ }));
+  }
+  return chargees.get(police.id);
+}
 const PX_PAR_MM = 24; // 2 fois la finesse de la D11-H (environ 12 points/mm, 300 dpi) : image nette, mise a l'echelle par l'app Niimbot
 const MARGE_MM = 0.6;
 const CLE_FORMAT = 'plantes-etiquette-format';
@@ -50,7 +74,8 @@ function couper(ctx, texte, largeur, maxLignes) {
 }
 
 // Dessine l'etiquette dans un <canvas> (noir sur blanc, QR a modules entiers pour rester net)
-export async function dessinerEtiquette(canvas, plante, format, avecNom = true) {
+export async function dessinerEtiquette(canvas, plante, format, avecNom = true, police = POLICES[0]) {
+  await chargerPolice(police);
   const { default: qrcode } = await import('../vendor/qr.js');
   const qr = qrcode(0, 'M');
   qr.addData(adresseQr(plante.id));
@@ -89,14 +114,14 @@ export async function dessinerEtiquette(canvas, plante, format, avecNom = true) 
   ctx.fillStyle = '#000';
   let choix = null;
   for (let taille = Math.round(hauteur * 0.34); taille >= Math.round(hauteur * 0.17) && !choix; taille -= 2) {
-    ctx.font = `700 ${taille}px -apple-system, system-ui, "Helvetica Neue", sans-serif`;
+    ctx.font = `${police.poids} ${taille}px ${pileDe(police)}`;
     const maxLignes = taille > hauteur * 0.26 ? 2 : 3;
     const lignes = couper(ctx, nom, largeurTexte, maxLignes);
     if (lignes && lignes.length * taille * 1.12 <= hauteur - 2 * marge) choix = { taille, lignes };
   }
   if (!choix) { // nom tres long : on coupe avec « … » a la plus petite taille
     const taille = Math.round(hauteur * 0.17);
-    ctx.font = `700 ${taille}px -apple-system, system-ui, "Helvetica Neue", sans-serif`;
+    ctx.font = `${police.poids} ${taille}px ${pileDe(police)}`;
     let texte = nom;
     while (texte.length > 1 && ctx.measureText(`${texte}…`).width > largeurTexte) texte = texte.slice(0, -1);
     choix = { taille, lignes: [`${texte.trimEnd()}…`] };
@@ -110,6 +135,9 @@ export async function dessinerEtiquette(canvas, plante, format, avecNom = true) 
 const modeRetenu = () => {
   try { return localStorage.getItem(CLE_MODE) === 'seul' ? 'seul' : 'nom'; } catch { return 'nom'; }
 };
+const policeRetenue = () => {
+  try { return POLICES.find((p) => p.id === localStorage.getItem(CLE_POLICE)) || POLICES[0]; } catch { return POLICES[0]; }
+};
 const formatRetenu = () => {
   try { return FORMATS.find((f) => f.id === localStorage.getItem(CLE_FORMAT)) || FORMATS[1]; } catch { return FORMATS[1]; }
 };
@@ -122,6 +150,7 @@ export function vueEtiquette(conteneur, idPlante) {
   }
   let format = formatRetenu();
   let mode = modeRetenu();
+  let police = policeRetenue();
   conteneur.innerHTML = `
     <a class="retour" href="#/plantes/${plante.id}">${icone('retour')} ${echapper(plante.nom)}</a>
     <h1 class="vue__titre">Étiquette</h1>
@@ -133,6 +162,10 @@ export function vueEtiquette(conteneur, idPlante) {
       <button class="etiquette__format etiquette__format--mode" type="button" data-mode="nom" aria-pressed="${mode === 'nom'}">QR + nom</button>
       <button class="etiquette__format etiquette__format--mode" type="button" data-mode="seul" aria-pressed="${mode === 'seul'}">QR seul</button>
     </div>
+    <div class="etiquette__polices" id="etiquette-polices" role="group" aria-label="Style du nom"${mode === 'seul' ? ' hidden' : ''}>
+      ${POLICES.map((p) => `<button class="etiquette__police" type="button" data-police="${p.id}" aria-pressed="${p.id === police.id}"
+        style="font-family:${pileDe(p)};font-weight:${p.poids}">${echapper(plante.nom)}</button>`).join('')}
+    </div>
     <div class="etiquette__cadre"><canvas id="etiquette-canvas" aria-label="Aperçu de l'étiquette"></canvas></div>
     <p class="etiquette__aide" id="etiquette-aide"></p>
     <button class="btn btn--primaire" id="etiquette-partager" type="button">Enregistrer / partager l'image</button>
@@ -141,10 +174,12 @@ export function vueEtiquette(conteneur, idPlante) {
 
   const canvas = conteneur.querySelector('#etiquette-canvas');
   async function dessiner() {
-    await dessinerEtiquette(canvas, plante, format, mode === 'nom');
+    await dessinerEtiquette(canvas, plante, format, mode === 'nom', police);
     canvas.style.aspectRatio = `${format.longueur} / ${format.hauteur}`;
     conteneur.querySelector('#etiquette-aide').textContent = `Taille réelle : ${format.longueur} × ${format.hauteur} mm`;
     conteneur.querySelectorAll('[data-format]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.format === format.id)));
+    conteneur.querySelector('#etiquette-polices').hidden = mode === 'seul';
+    conteneur.querySelectorAll('[data-police]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.police === police.id)));
     conteneur.querySelectorAll('[data-mode]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === mode)));
   }
 
@@ -153,6 +188,13 @@ export function vueEtiquette(conteneur, idPlante) {
     if (choix) {
       format = FORMATS.find((f) => f.id === choix.dataset.format) || format;
       try { localStorage.setItem(CLE_FORMAT, format.id); } catch { /* pas grave */ }
+      dessiner();
+      return;
+    }
+    const choixPolice = e.target.closest('[data-police]');
+    if (choixPolice) {
+      police = POLICES.find((p) => p.id === choixPolice.dataset.police) || police;
+      try { localStorage.setItem(CLE_POLICE, police.id); } catch { /* pas grave */ }
       dessiner();
       return;
     }
@@ -202,6 +244,8 @@ export function vueEtiquette(conteneur, idPlante) {
     message('Image enregistrée');
   };
   dessiner();
+  // Les boutons de style s'affichent dans leur police : on les charge toutes, puis on redessine
+  Promise.all(POLICES.map(chargerPolice)).then(() => { if (conteneur.querySelector('#etiquette-canvas') === canvas) dessiner(); });
 }
 
 // « #/q/<code> » (lu par l'appareil photo de l'iPhone) : ouvre la fiche de la plante
