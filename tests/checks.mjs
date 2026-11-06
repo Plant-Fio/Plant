@@ -877,6 +877,13 @@ export async function verifierAppli(base, dossier, { version }) {
     verifier(await page.locator('#etiquette-copier-nom').count() === 1, titre, 'etiquette : bouton Copier le nom present', 'Bouton Copier le nom absent.');
     await page.click('#etiquette-copier-nom');
     await page.click('[data-mode="nom"]');
+    // Styles du nom : choisir une police l'applique a l'etiquette (police chargee, QR toujours lisible)
+    await page.click('[data-police="pacifico"]');
+    await page.waitForFunction(() => document.querySelector('[data-police="pacifico"]').getAttribute('aria-pressed') === 'true'
+      && document.fonts.check('20px "Etq Pacifico"'));
+    ok("etiquette : une police au choix se charge et s'applique");
+    await capturer(page, dossier, '27-etiquette-police.png');
+    await page.click('[data-police="standard"]');
     // Scanner integre : la camera s'ouvre depuis la liste, et un QR d'etiquette ouvre la bonne fiche
     await page.evaluate(() => { location.hash = '#/plantes'; });
     await page.waitForSelector('#scanner-ouvrir');

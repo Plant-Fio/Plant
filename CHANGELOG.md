@@ -3,6 +3,10 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [1.15.1] - 2026-11-06
+### Ajouté
+- Étiquettes : choix du style du nom parmi 8 polices (script, petites capitales, sans-serif fin, manuscrite…), affichées avec le nom de la plante. Le choix est mémorisé et utilisé pour l'image exportée. Polices libres (Fontsource), disponibles hors ligne.
+
 ## [1.15.0] - 2026-11-06
 ### Ajouté
 - Scanner intégré : un bouton QR à côté de la recherche, dans « Mes plantes », ouvre l'appareil photo dans l'appli. En visant l'étiquette d'un pot, la fiche de la plante s'ouvre directement (plus besoin de passer par Safari ni de se reconnecter). Nouvelle bibliothèque : jsQR.

@@ -29,6 +29,12 @@ for police in cormorant-garamond bodoni-moda jost young-serif dm-sans; do
     [ -f "$fichier" ] && cp "$fichier" _site/fonts/
   done
 done
+# Polices des etiquettes (choix du style sur l'ecran d'etiquette)
+for police in pacifico:400 lobster-two:700 cormorant-sc:600 jost:300 raleway:300 quicksand:500 patrick-hand:400 gloock:400; do
+  nom="${police%%:*}"; poids="${police##*:}"
+  cp "node_modules/@fontsource/$nom/files/$nom-latin-$poids-normal.woff2" _site/fonts/
+done
+
 for attendu in $(grep -o "fonts/[a-z0-9-]*\\.woff2" sw.js | sort -u); do
   [ -f "_site/$attendu" ] || { echo "::error::Police manquante : $attendu"; exit 1; }
 done
