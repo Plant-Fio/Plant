@@ -10,6 +10,7 @@ import { echapper, icone, formaterDate, normaliser, dateRelative, dateIsoLocale,
 import { confirmer, demanderDate, message } from './dialogues.js';
 import { recadrer } from './recadrage.js';
 import { ouvrirCamera } from './camera.js';
+import { ouvrirScanner } from './scanner.js';
 import { initialiserJournal } from './journal.js';
 import { initialiserProblemes } from './problemes.js';
 import { initialiserPetits, initialiserCroissance, bandeauPetit, ETAPES } from './petits.js';
@@ -80,10 +81,13 @@ export function vueListe(conteneur) {
     <h1 class="vue__titre">Mes plantes</h1>
     ${horsLigne ? `<p class="bandeau">Hors ligne : tu consultes la dernière version enregistrée.</p>` : ''}
     ${plantes.length ? `
-      <div class="recherche">
-        ${icone('recherche')}
-        <input type="search" id="recherche" placeholder="Rechercher une plante" autocomplete="off"
-               enterkeyhint="search" aria-label="Rechercher une plante" value="${echapper(recherche)}">
+      <div class="recherche-ligne">
+        <div class="recherche">
+          ${icone('recherche')}
+          <input type="search" id="recherche" placeholder="Rechercher une plante" autocomplete="off"
+                 enterkeyhint="search" aria-label="Rechercher une plante" value="${echapper(recherche)}">
+        </div>
+        <button class="recherche__scanner" id="scanner-ouvrir" type="button" aria-label="Scanner une étiquette QR">${icone('qr')}</button>
       </div>
       <div class="puces" id="puces"></div>
       <div id="resultats"></div>`
@@ -92,6 +96,7 @@ export function vueListe(conteneur) {
     <a class="fab" href="#/plantes/nouvelle" aria-label="Ajouter une plante">${icone('plus')}</a>`;
 
   if (!plantes.length) return;
+  document.getElementById('scanner-ouvrir')?.addEventListener('click', ouvrirScanner);
 
   const zonePuces = conteneur.querySelector('#puces');
   const zoneResultats = conteneur.querySelector('#resultats');
