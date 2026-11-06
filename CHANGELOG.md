@@ -3,6 +3,10 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [1.14.1] - 2026-11-06
+### Ajouté
+- Étiquettes : choix « QR + nom » ou « QR seul » (QR centré sur l'étiquette), et bouton « Copier le nom » pour le coller dans l'app Niimbot.
+
 ## [1.14.0] - 2026-11-05
 ### Ajouté
 - Étiquettes QR : bouton « 🏷️ Étiquette QR » sur la fiche d'une plante. Aperçu à la taille réelle (rouleaux transparent 14 × 30, blanc 14 × 40, vert 12 × 40 mm) avec le QR code et le nom, à enregistrer ou partager en image pour l'imprimer avec l'app Niimbot (calé sur la D11-H). Le QR contient l'identifiant de la plante (pas son nom) : renommer ou déplacer une plante ne casse pas l'étiquette. Scanné avec l'appareil photo de l'iPhone, il ouvre la fiche (adresse `#/q/…`). Nouvelle bibliothèque : qrcode-generator.

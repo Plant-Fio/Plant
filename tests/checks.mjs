@@ -858,6 +858,25 @@ export async function verifierAppli(base, dossier, { version }) {
         `etiquette ${id} : le QR est lisible a la finesse de la D11-H et contient la bonne plante`, `QR illisible ou faux (lu : ${lu ? lu.data : 'rien'}).`);
     }
     await capturer(page, dossier, '26-etiquette.png');
+    // QR seul : meme taille, QR toujours lisible ; puis retour a « QR + nom »
+    await page.click('[data-mode="seul"]');
+    await page.waitForFunction(() => document.querySelector('[data-mode="seul"]').getAttribute('aria-pressed') === 'true');
+    const imageSeul = await page.evaluate(async () => {
+      await new Promise((r) => setTimeout(r, 300));
+      const c = document.querySelector('#etiquette-canvas');
+      const reduit = document.createElement('canvas');
+      reduit.width = c.width / 2; reduit.height = c.height / 2;
+      const ctx = reduit.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, reduit.width, reduit.height);
+      ctx.drawImage(c, 0, 0, reduit.width, reduit.height);
+      const d = ctx.getImageData(0, 0, reduit.width, reduit.height);
+      return { l: reduit.width, h: reduit.height, data: Array.from(d.data) };
+    });
+    const luSeul = jsQR(Uint8ClampedArray.from(imageSeul.data), imageSeul.l, imageSeul.h);
+    verifier(luSeul && luSeul.data.endsWith(`#/q/${codeAttendu}`), titre, 'etiquette QR seul : le QR est lisible', 'QR seul illisible.');
+    verifier(await page.locator('#etiquette-copier-nom').count() === 1, titre, 'etiquette : bouton Copier le nom present', 'Bouton Copier le nom absent.');
+    await page.click('#etiquette-copier-nom');
+    await page.click('[data-mode="nom"]');
     await page.evaluate((c) => { location.hash = `#/q/${c}`; }, codeAttendu);
     await page.waitForFunction((h) => location.hash === h, adresseMere);
     await page.waitForSelector('#petits');
