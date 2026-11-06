@@ -35,6 +35,8 @@ const SQUELETTE = [
   './js/app.js',
   './vendor/supabase.js',
   './vendor/qr.js',
+  './vendor/jsqr.js',
+  './js/scanner.js',
   './fonts/cormorant-garamond-latin-500-normal.woff2',
   './fonts/cormorant-garamond-latin-600-normal.woff2',
   './fonts/bodoni-moda-latin-500-normal.woff2',

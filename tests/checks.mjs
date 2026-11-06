@@ -877,6 +877,24 @@ export async function verifierAppli(base, dossier, { version }) {
     verifier(await page.locator('#etiquette-copier-nom').count() === 1, titre, 'etiquette : bouton Copier le nom present', 'Bouton Copier le nom absent.');
     await page.click('#etiquette-copier-nom');
     await page.click('[data-mode="nom"]');
+    // Scanner integre : la camera s'ouvre depuis la liste, et un QR d'etiquette ouvre la bonne fiche
+    await page.evaluate(() => { location.hash = '#/plantes'; });
+    await page.waitForSelector('#scanner-ouvrir');
+    await page.click('#scanner-ouvrir');
+    await page.waitForSelector('#scanner video');
+    await page.waitForFunction(() => document.querySelector('#scanner video').videoWidth > 0);
+    ok("scanner : la camera s'ouvre depuis la liste des plantes");
+    await page.click('#scanner [data-act="fermer"]');
+    verifier(await page.locator('#scanner').count() === 0, titre, 'scanner : se ferme avec Fermer', 'Le scanner reste ouvert.');
+    const lecture = await page.evaluate(async ({ adresse, id }) => {
+      const m = await import('./js/scanner.js');
+      const inconnu = m.planteDepuisTexte('https://exemple.fr/#/q/AAAAAAAAAAAAAAAAAAAAAA');
+      const etranger = m.planteDepuisTexte('https://autre-site.fr/page');
+      const bon = m.planteDepuisTexte(adresse);
+      return { inconnu: !!inconnu, etranger: !!etranger, bon: bon?.id === id };
+    }, { adresse: `https://x.fr/Plant/#/q/${codeAttendu}`, id: idMereEtiquette });
+    verifier(lecture.bon && !lecture.inconnu && !lecture.etranger, titre,
+      "scanner : reconnait l'etiquette d'une plante, refuse les autres QR", `Lecture du texte du QR incorrecte : ${JSON.stringify(lecture)}`);
     await page.evaluate((c) => { location.hash = `#/q/${c}`; }, codeAttendu);
     await page.waitForFunction((h) => location.hash === h, adresseMere);
     await page.waitForSelector('#petits');

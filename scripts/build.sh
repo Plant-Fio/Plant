@@ -18,6 +18,10 @@ npx esbuild scripts/supabase-entry.js --bundle --format=esm --minify \
 npx esbuild scripts/qr-entry.js --bundle --format=esm --minify \
   --target=es2020,safari15 --outfile=_site/vendor/qr.js
 
+# Lecteur de QR codes (charge seulement quand on ouvre le scanner)
+npx esbuild scripts/jsqr-entry.js --bundle --format=esm --minify \
+  --target=es2020,safari15 --outfile=_site/vendor/jsqr.js
+
 # Polices des themes : copiees depuis les paquets @fontsource (alphabet latin, formats woff2)
 mkdir -p _site/fonts
 for police in cormorant-garamond bodoni-moda jost young-serif dm-sans; do
