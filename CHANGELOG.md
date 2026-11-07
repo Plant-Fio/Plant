@@ -3,6 +3,10 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [1.16.0] - 2026-11-07
+### Modifié
+- Scanner : quand une étiquette est lue, une feuille d'actions s'ouvre au lieu d'aller sur la fiche. On y voit la plante et son état d'arrosage, avec de gros boutons « 💧 Arrosée », « 🌿 Engrais fait » et « 📝 Note », puis « Voir la fiche » ou « Scanner une autre » pour enchaîner les pots sans quitter la caméra.
+
 ## [1.15.1] - 2026-11-06
 ### Ajouté
 - Étiquettes : choix du style du nom parmi 8 polices (script, petites capitales, sans-serif fin, manuscrite…), affichées avec le nom de la plante. Le choix est mémorisé et utilisé pour l'image exportée. Polices libres (Fontsource), disponibles hors ligne.

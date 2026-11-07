@@ -1378,3 +1378,18 @@ button.tache__libre-texte { flex: 1; min-width: 0; min-height: 44px; padding: 0;
 .etiquette__police { flex: none; max-width: 70vw; min-height: 48px; padding: 0 16px; border: 1px solid var(--bordure); border-radius: 14px; background: var(--papier);
   color: var(--texte); font-size: 20px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
 .etiquette__police[aria-pressed="true"] { background: var(--vert); border-color: var(--vert); color: var(--on-primaire); }
+
+/* Scanner : feuille d'actions rapides apres la lecture d'une etiquette */
+.scanner__feuille { flex: none; display: flex; flex-direction: column; gap: 10px; padding: 14px 16px 16px; background: var(--papier); color: var(--texte);
+  border-radius: 22px 22px 0 0; }
+.scanner__feuille[hidden] { display: none; }
+.scanner__entete { display: flex; align-items: center; gap: 12px; }
+.scanner__photo { flex: none; width: 52px; height: 52px; border-radius: 14px; overflow: hidden; display: grid; place-items: center; background: var(--vert-clair); font-size: 24px; }
+.scanner__photo img { width: 100%; height: 100%; object-fit: cover; }
+.scanner__identite { display: flex; flex-direction: column; min-width: 0; }
+.scanner__identite strong { font-size: 18px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scanner__identite span { font-size: 14px; color: var(--texte-doux); }
+.scanner__gros { min-height: 56px; font-size: 17px; width: 100%; }
+.scanner__rang { display: flex; gap: 10px; }
+.scanner__rang > * { flex: 1; min-width: 0; }
+.scanner__note { width: 100%; box-sizing: border-box; padding: 12px; border: 1px solid var(--bordure); border-radius: 14px; background: var(--papier); color: var(--texte); font: inherit; font-size: 16px; resize: none; }

@@ -891,6 +891,19 @@ export async function verifierAppli(base, dossier, { version }) {
     await page.waitForSelector('#scanner video');
     await page.waitForFunction(() => document.querySelector('#scanner video').videoWidth > 0);
     ok("scanner : la camera s'ouvre depuis la liste des plantes");
+    // Feuille d'actions rapides (affichee quand un QR de plante est lu) : on l'ouvre sans passer par la camera
+    await page.evaluate((id) => { document.querySelector('#scanner').__afficherFeuille(id); }, idMereEtiquette);
+    await page.waitForSelector('#scanner-feuille:not([hidden]) [data-sc="arroser"]');
+    await page.click('[data-sc="arroser"]');
+    await page.waitForSelector('[data-sc="arroser"][disabled]');
+    ok("scanner : « Arrosée » depuis la feuille d'actions note l'arrosage");
+    await page.click('[data-sc="engrais"]');
+    await page.waitForFunction(() => document.querySelector('[data-sc="engrais"]')?.textContent.includes('✓'));
+    await page.click('[data-sc="note"]');
+    await page.fill('#scanner-note', 'Note ajoutee depuis le scanner');
+    await page.click('[data-sc="note-ok"]');
+    await page.waitForSelector('[data-sc="fiche"]');
+    ok('scanner : engrais et note depuis la feuille d\'actions');
     await page.click('#scanner [data-act="fermer"]');
     verifier(await page.locator('#scanner').count() === 0, titre, 'scanner : se ferme avec Fermer', 'Le scanner reste ouvert.');
     const lecture = await page.evaluate(async ({ adresse, id }) => {
