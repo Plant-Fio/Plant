@@ -37,12 +37,12 @@ export async function confirmer({ titre, texte = '', action = 'Confirmer', dange
 }
 
 // Renvoie le texte saisi, ou null si annule.
-export async function demanderTexte({ titre, valeur = '', action = 'Enregistrer', placeholder = '' }) {
+export async function demanderTexte({ titre, valeur = '', action = 'Enregistrer', placeholder = '', max = 60 }) {
   if (!dialogueDisponible()) return window.prompt(titre, valeur);
   const resultat = await ouvrirDialogue(`
     <form method="dialog">
       <h2 class="dialogue__titre">${echapper(titre)}</h2>
-      <input class="champ__input dialogue__champ" type="text" maxlength="60" required
+      <input class="champ__input dialogue__champ" type="text" maxlength="${Number(max) || 60}" required
              value="${echapper(valeur)}" placeholder="${echapper(placeholder)}" aria-label="${echapper(titre)}">
       <button class="btn btn--primaire" value="ok">${echapper(action)}</button>
       <button class="btn btn--douce" value="annuler" formnovalidate>Annuler</button>

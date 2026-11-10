@@ -345,6 +345,14 @@ export async function deplacerPhoto(idPlante, idPhoto, sens) {
   sauvegarderCache();
 }
 
+// Petite description d'une photo (texte vide = on l'efface)
+export async function modifierDescriptionPhoto(idPhoto, texte) {
+  const { data, error } = await supabase.from('photos').update({ description: String(texte || '').trim() || null }).eq('id', idPhoto).select().single();
+  if (error) throw error;
+  etat.photos = etat.photos.map((p) => (p.id === idPhoto ? data : p));
+  sauvegarderCache();
+}
+
 export async function supprimerPhoto(idPhoto) {
   const photo = etat.photos.find((p) => p.id === idPhoto);
   if (!photo) return;

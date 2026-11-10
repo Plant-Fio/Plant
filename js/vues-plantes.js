@@ -2,12 +2,12 @@
 import {
   lireEtat, trouverPlante, nomPiece, teintePiece, pieceLaPlusUtilisee, creerPlante, modifierPlante, supprimerPlante, expliquerErreur,
   photosDe, photosParDate, deplacerPhoto, photoCouverture, ajouterPhoto, supprimerPhoto, definirCouverture,
-  arrosagesDe, arroserPlante, definirStatut, annulerArrosage, marquerFait, datePhoto, modifierDatePhoto,
+  arrosagesDe, arroserPlante, definirStatut, annulerArrosage, marquerFait, datePhoto, modifierDatePhoto, modifierDescriptionPhoto,
 } from './donnees.js';
 import { etatArrosage, etatEngrais, libelleEcheance, quarantaine, quarantaineDe, libelleQuarantaine } from './rappels.js';
 import { chargerUrls, urlEnCache, cheminVignette } from './photos.js';
 import { echapper, icone, formaterDate, normaliser, dateRelative, dateIsoLocale, joursEntre, libelleEcart } from './outils.js';
-import { confirmer, demanderDate, message } from './dialogues.js';
+import { confirmer, demanderDate, demanderTexte, message } from './dialogues.js';
 import { recadrer } from './recadrage.js';
 import { ouvrirCamera } from './camera.js';
 import { ouvrirScanner } from './scanner.js';
@@ -366,11 +366,13 @@ function initialiserGalerie(galerie, idPlante) {
           <label class="bande__ajout" aria-label="Ajouter des photos">${icone('plus')}${champFichier}</label>
         </div>
         <p class="photo-date" data-photo-date>Photo du ${echapper(formaterDate(datePhoto(actuelle)))}</p>
+        ${actuelle.description ? `<p class="photo-description" data-photo-description>${echapper(actuelle.description)}</p>` : ''}
         <div class="actions-photo">
           ${couverture?.id === actuelle.id
             ? '<span class="couverture">Photo de couverture</span>'
             : '<button class="btn-texte" type="button" data-action="couverture">Choisir comme couverture</button>'}
           <button class="btn-texte" type="button" data-action="date">Modifier la date</button>
+          <button class="btn-texte" type="button" data-action="description">${actuelle.description ? 'Modifier la description' : 'Ajouter une description'}</button>
           ${photos.length > 1 ? `<span class="ordre-photo">Ordre
             <button class="btn-icone" type="button" data-action="gauche" aria-label="Déplacer la photo vers la gauche"${photos[0].id === actuelle.id ? ' disabled' : ''}>◀</button>
             <button class="btn-icone" type="button" data-action="droite" aria-label="Déplacer la photo vers la droite"${photos.at(-1).id === actuelle.id ? ' disabled' : ''}>▶</button>
@@ -445,6 +447,14 @@ function initialiserGalerie(galerie, idPlante) {
         if (!date || date === datePhoto(photo)) return;
         await modifierDatePhoto(selection, date);
         message('Date modifiée');
+        dessiner();
+      } else if (bouton.dataset.action === 'description') {
+        const photo = photosDe(idPlante).find((p) => p.id === selection);
+        const texte = await demanderTexte({ titre: 'Description de la photo', valeur: photo.description || '', placeholder: 'Ex. première feuille percée', max: 200 });
+        if (texte === null && !photo.description) return; // annule
+        if (texte === (photo.description || '')) return;
+        await modifierDescriptionPhoto(selection, texte);
+        message('Description enregistrée');
         dessiner();
       } else if (bouton.dataset.action === 'gauche' || bouton.dataset.action === 'droite') {
         await deplacerPhoto(idPlante, selection, bouton.dataset.action === 'gauche' ? -1 : 1);
@@ -521,6 +531,7 @@ export function vueEvolution(conteneur, id) {
         <div class="evol__photo" data-photo="${echapper(p.chemin)}">${url ? imageHtml(url, `${plante.nom}, ${formaterDate(datePhoto(p))}`) : icone('feuille')}</div>
         <figcaption class="evol__legende">
           <strong>${echapper(formaterDate(datePhoto(p)))}</strong>
+          ${p.description ? `<span class="evol__description">${echapper(p.description)}</span>` : ''}
           ${precedente ? `<span>${libelleEcart(joursEntre(datePhoto(precedente), datePhoto(p)))}</span>` : '<span>Première photo</span>'}
         </figcaption>
       </figure>`;

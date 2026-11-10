@@ -3,6 +3,10 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [1.22.0] - 2026-11-10
+### Ajouté
+- Photos : une petite description (200 caractères) peut être ajoutée à chaque photo, affichée sous la date et dans la frise d'évolution. Nécessite supabase/18-photo-description.sql.
+
 ## [1.21.0] - 2026-11-10
 ### Ajouté
 - Journal : toucher la photo d'une note l'affiche en grand (toucher pour fermer).
