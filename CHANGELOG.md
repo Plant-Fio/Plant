@@ -3,6 +3,10 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [1.24.0] - 2026-11-10
+### Modifié
+- Dates : le calendrier du téléphone est remplacé par trois menus Jour / Mois / Année (fiche plante, fenêtres de date, date d'une tâche). Fini le détour par le mois et l'année avant de pouvoir choisir le jour.
+
 ## [1.23.0] - 2026-11-10
 ### Modifié
 - Étapes d'un baby : « Prélevé » est retiré ; on ajoute « En germination », « En vermiculite » et « En pon » (ordre : germination, eau, vermiculite, pon, terre, adopté). Un nouveau baby démarre « Dans l'eau ». Les babies qui étaient « Prélevé » passent à « Dans l'eau ». Nécessite supabase/19-etapes.sql.
