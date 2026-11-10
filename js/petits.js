@@ -7,7 +7,7 @@ import { message } from './dialogues.js';
 export const ETAPES = [
   { id: 'germination', emoji: '🌰', libelle: 'En germination' },
   { id: 'eau', emoji: '💧', libelle: "Dans l'eau" },
-  { id: 'vermiculite', emoji: '🧪', libelle: 'En vermiculite' },
+  { id: 'vermiculite', emoji: '🧪', libelle: 'En permiculite' },
   { id: 'pon', emoji: '🪨', libelle: 'En pon' },
   { id: 'terre', emoji: '🌱', libelle: 'En terre' },
   { id: 'adopte', emoji: '🪴', libelle: 'Adopté' },
