@@ -3,6 +3,11 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [1.21.0] - 2026-11-10
+### Ajouté
+- Journal : toucher la photo d'une note l'affiche en grand (toucher pour fermer).
+- Journal : en modifiant une note, on peut maintenant ajouter une photo, la changer ou la retirer (elle reste alors dans la galerie).
+
 ## [1.20.0] - 2026-11-10
 ### Ajouté
 - Animation d'ouverture : une pousse grandit et deux feuilles s'ouvrent (environ 1,5 seconde) avant l'écran d'accueil. Un toucher la fait passer ; elle est raccourcie si « réduire les animations » est activé sur l'iPhone.

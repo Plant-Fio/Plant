@@ -531,8 +531,8 @@ export async function ajouterNote(idPlante, texte, fichier = null, icone = null,
   return data;
 }
 
-export async function modifierNote(idNote, texte, icone, dateNote = null) {
-  const { data, error } = await supabase.from('journal').update({ texte, icone, ...(dateNote ? { date_note: dateNote } : {}) }).eq('id', idNote).select().single();
+export async function modifierNote(idNote, texte, icone, dateNote = null, photoId = undefined) {
+  const { data, error } = await supabase.from('journal').update({ texte, icone, ...(dateNote ? { date_note: dateNote } : {}), ...(photoId !== undefined ? { photo_id: photoId } : {}) }).eq('id', idNote).select().single();
   if (error) throw error;
   etat.journal = etat.journal.map((n) => (n.id === idNote ? data : n));
   sauvegarderCache();

@@ -1,5 +1,5 @@
 // Journal de la fiche d'une plante : notes datees, photo en option.
-import { journalDe, photosDe, ajouterNote, modifierNote, supprimerNote, expliquerErreur } from './donnees.js';
+import { journalDe, photosDe, ajouterNote, ajouterPhoto, modifierNote, supprimerNote, expliquerErreur } from './donnees.js';
 import { chargerUrls, urlEnCache, cheminVignette } from './photos.js';
 import { echapper, icone, dateRelative, dateIsoLocale, normaliser } from './outils.js';
 import { confirmer, demanderDate, message } from './dialogues.js';
@@ -50,7 +50,7 @@ export function initialiserJournal(zone, idPlante) {
     const photo = note.photo_id ? photosDe(idPlante).find((p) => p.id === note.photo_id) : null;
     if (!photo) return '';
     const url = urlEnCache(cheminVignette(photo.chemin));
-    return url ? `<img class="journal__photo" src="${echapper(url)}" alt="Photo de la note" loading="lazy">` : '';
+    return url ? `<button class="journal__photo-btn" type="button" data-agrandir="${photo.id}" aria-label="Agrandir la photo"><img class="journal__photo" src="${echapper(url)}" alt="Photo de la note" loading="lazy"></button>` : '';
   }
 
   // Une note en cours de modification : texte et icone modifiables sur place
@@ -63,6 +63,7 @@ export function initialiserJournal(zone, idPlante) {
               <div class="journal__icones" role="group" aria-label="Icône de la note">
                 ${ICONES_NOTE.map((e) => `<button class="journal__icone" type="button" data-icone-edition="${e}" aria-pressed="${e === enEdition.icone}">${e}</button>`).join('')}
               </div>
+              ${photoEdition(n)}
               <div class="journal__actions">
                 ${boutonDate(enEdition.date, 'data-date-edition')}
                 <button class="btn-texte" type="button" data-annuler-edition>Annuler</button>
@@ -70,6 +71,21 @@ export function initialiserJournal(zone, idPlante) {
               </div>
             </form>
           </li>`;
+  }
+
+  // Photo d'une note en cours de modification : ajouter, changer ou retirer
+  function photoEdition(n) {
+    const aPhoto = enEdition.fichier || (enEdition.photoId && !enEdition.retirer);
+    const vignette = !enEdition.fichier && !enEdition.retirer ? vignetteDe({ photo_id: enEdition.photoId }) : '';
+    return `
+              ${vignette}
+              <div class="journal__photo-edition">
+                <label class="btn-texte journal__photo-bouton">
+                  ${icone('appareil')} ${enEdition.fichier ? 'Nouvelle photo ✓' : aPhoto ? 'Changer la photo' : 'Ajouter une photo'}
+                  <input class="fichier" type="file" accept="image/*" aria-label="Photo de la note">
+                </label>
+                ${aPhoto ? '<button class="btn-texte btn-texte--danger" type="button" data-retirer-photo>Retirer la photo</button>' : ''}
+              </div>`;
   }
 
   function dessiner() {
@@ -124,7 +140,12 @@ export function initialiserJournal(zone, idPlante) {
 
   zone.addEventListener('change', (e) => {
     if (!e.target.matches('input.fichier')) return;
-    photoChoisie = e.target.files[0] || null;
+    if (e.target.closest('[data-edition]')) { // photo d'une note qu'on modifie
+      enEdition.fichier = e.target.files[0] || null;
+      enEdition.retirer = false;
+    } else {
+      photoChoisie = e.target.files[0] || null;
+    }
     dessiner();
   });
 
@@ -134,7 +155,13 @@ export function initialiserJournal(zone, idPlante) {
       const texte = e.target.elements.edition.value.trim();
       if (!texte) { e.target.elements.edition.focus(); return; }
       try {
-        await modifierNote(e.target.dataset.edition, texte, enEdition.icone, enEdition.date);
+        // photoId : undefined = inchangee, null = retiree (elle reste dans la galerie), sinon la nouvelle
+        let photoId;
+        if (enEdition.fichier) photoId = (await ajouterPhoto(idPlante, enEdition.fichier)).id;
+        else if (enEdition.retirer) photoId = null;
+        const note = await modifierNote(e.target.dataset.edition, texte, enEdition.icone, enEdition.date, photoId);
+        const photo = photosDe(idPlante).find((p) => p.id === note.photo_id);
+        if (photo) await chargerUrls([photo.chemin, cheminVignette(photo.chemin)]).catch(() => {});
         message('Note modifiée');
         enEdition = null;
       } catch (erreur) {
@@ -181,11 +208,14 @@ export function initialiserJournal(zone, idPlante) {
       dessiner();
       return;
     }
+    if (e.target.closest('[data-retirer-photo]')) { enEdition.fichier = null; enEdition.retirer = true; dessiner(); return; }
+    const agrandir = e.target.closest('[data-agrandir]');
+    if (agrandir) { await ouvrirVisionneuse(photosDe(idPlante).find((p) => p.id === agrandir.dataset.agrandir)); return; }
     if (e.target.closest('[data-annuler-edition]')) { enEdition = null; dessiner(); return; }
     const crayon = e.target.closest('[data-modifier]');
     if (crayon) {
       const note = journalDe(idPlante).find((n) => n.id === crayon.dataset.modifier);
-      if (note) { enEdition = { id: note.id, icone: iconeNote(note), date: note.date_note }; dessiner(); zone.querySelector('[name="edition"]')?.focus(); }
+      if (note) { enEdition = { id: note.id, icone: iconeNote(note), date: note.date_note, photoId: note.photo_id, fichier: null, retirer: false }; dessiner(); zone.querySelector('[name="edition"]')?.focus(); }
       return;
     }
     const bouton = e.target.closest('[data-supprimer]');
@@ -211,4 +241,24 @@ export function initialiserJournal(zone, idPlante) {
   const chemins = journalDe(idPlante).map((n) => photosDe(idPlante).find((p) => p.id === n.photo_id))
     .filter(Boolean).map((p) => cheminVignette(p.chemin));
   if (chemins.length) chargerUrls(chemins).then(() => { if (zone.isConnected) dessiner(); });
+}
+
+// Photo en grand, par-dessus l'ecran : un toucher (ou Echap) la ferme
+async function ouvrirVisionneuse(photo) {
+  if (!photo) return;
+  await chargerUrls([photo.chemin]).catch(() => {});
+  const url = urlEnCache(photo.chemin) || urlEnCache(cheminVignette(photo.chemin));
+  if (!url) return;
+  const fond = document.createElement('div');
+  fond.className = 'visionneuse';
+  fond.setAttribute('role', 'dialog');
+  fond.setAttribute('aria-modal', 'true');
+  fond.setAttribute('aria-label', 'Photo en grand');
+  fond.innerHTML = `<img src="${echapper(url)}" alt="Photo de la note"><button class="visionneuse__fermer" type="button" aria-label="Fermer">✕</button>`;
+  const fermer = () => { document.removeEventListener('keydown', surTouche); fond.remove(); };
+  const surTouche = (e) => { if (e.key === 'Escape') fermer(); };
+  fond.addEventListener('click', fermer);
+  document.addEventListener('keydown', surTouche);
+  document.body.appendChild(fond);
+  fond.querySelector('button').focus();
 }

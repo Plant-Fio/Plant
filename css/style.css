@@ -1306,7 +1306,7 @@ a.btn { text-decoration: none; }
 .mere-ligne__texte small { color: var(--texte-doux); }
 .mere-ligne__action { color: var(--vert); font-weight: 600; font-size: 14px; }
 
-.journal__edition { display: grid; gap: 0; }
+.journal__edition { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; }
 .journal__note--edition .journal__actions { margin-top: 10px; }
 .petits__actions { display: grid; gap: 8px; margin-top: 12px; }
 .petits__actions .btn { margin: 0; }
@@ -1419,3 +1419,12 @@ button.tache__libre-texte { flex: 1; min-width: 0; min-height: 44px; padding: 0;
   #ouverture { animation-duration: 0.4s; animation-delay: 0.1s; }
   .ouv-tige, .ouv-f { animation-duration: 0.01s; animation-delay: 0s; }
 }
+
+/* Journal : photo cliquable, photo d'une note en modification, photo en grand */
+.journal__photo-btn { display: block; justify-self: start; padding: 0; border: 0; background: none; cursor: zoom-in; }
+.journal__photo-edition { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 4px 16px; margin-top: 8px; min-width: 0; }
+.visionneuse { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; background: rgba(0, 0, 0, 0.92);
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); cursor: zoom-out; }
+.visionneuse img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.visionneuse__fermer { position: absolute; top: calc(env(safe-area-inset-top) + 10px); right: calc(env(safe-area-inset-right) + 10px);
+  width: 44px; height: 44px; border: 0; border-radius: 50%; background: rgba(255, 255, 255, 0.2); color: #fff; font-size: 20px; cursor: pointer; }
