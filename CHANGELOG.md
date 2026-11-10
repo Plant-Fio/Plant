@@ -3,6 +3,10 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [1.20.0] - 2026-11-10
+### Ajouté
+- Animation d'ouverture : une pousse grandit et deux feuilles s'ouvrent (environ 1,5 seconde) avant l'écran d'accueil. Un toucher la fait passer ; elle est raccourcie si « réduire les animations » est activé sur l'iPhone.
+
 ## [1.19.0] - 2026-11-10
 ### Ajouté
 - Quarantaine au choix : une case « Mettre en quarantaine (1 mois) » dans le formulaire d'une plante (cochée par défaut). Décochée, la plante n'est pas mise à part. Nécessite supabase/17-quarantaine.sql.

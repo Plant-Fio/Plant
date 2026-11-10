@@ -66,6 +66,7 @@ for (const [motif, explication] of [
   ['lang="fr"', 'la page doit etre declaree en francais (lang="fr")'],
   ['viewport-fit=cover', 'viewport-fit=cover est necessaire pour les zones sures (encoche)'],
   ['rel="manifest"', 'le lien vers le manifest manque'],
+  ['id="ouverture"', "l'animation d'ouverture (#ouverture) manque"],
   ['rel="apple-touch-icon"', "l'icone pour l'ecran d'accueil iPhone manque"],
 ]) {
   if (!html.includes(motif)) erreur('index.html', explication, 'index.html');
