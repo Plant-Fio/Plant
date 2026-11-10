@@ -1435,3 +1435,14 @@ button.tache__libre-texte { flex: 1; min-width: 0; min-height: 44px; padding: 0;
 
 .photo-description { margin: 2px 0 6px; font-size: 15px; color: var(--texte); overflow-wrap: anywhere; }
 .evol__description { font-style: italic; }
+
+/* Fiche : « Modifier » en haut, a droite du lien retour */
+.fiche__haut { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.fiche__haut .retour { margin-bottom: 8px; }
+.fiche__modifier { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; margin: -8px 0 8px; padding: 0 14px; border-radius: 999px;
+  background: var(--vert-clair); color: var(--vert-fonce); font-weight: 700; text-decoration: none; }
+.fiche__modifier .icone { width: 18px; height: 18px; }
+/* Statut « Bientot en vente » */
+.statut__choix--bientot input:checked + span, .statut__bouton--bientot[aria-pressed="true"] { background: var(--vente-fond); border-color: var(--vente-texte); color: var(--vente-texte); }
+.pastille-vente--bientot { background: var(--vert-clair); color: var(--vert-fonce); }
+.statut__choix span, .statut__bouton { font-size: 14px; }

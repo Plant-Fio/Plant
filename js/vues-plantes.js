@@ -104,10 +104,12 @@ export function vueListe(conteneur) {
   function dessinerPuces() {
     const sansPiece = plantes.filter((p) => !p.piece_id).length;
     const enVente = plantes.filter((p) => p.en_vente && !p.vendu_le).length;
+    const bientot = plantes.filter((p) => p.bientot_en_vente && !p.en_vente && !p.vendu_le).length;
     const vendues = plantes.filter((p) => p.vendu_le).length;
     const puces = [{ id: 'toutes', libelle: 'Toutes', nombre: plantes.length - vendues }];
     const enQuarantaine = plantes.filter((p) => quarantaineDe(p)).length;
     if (enQuarantaine) puces.push({ id: 'quarantaine', libelle: 'Quarantaine', nombre: enQuarantaine });
+    if (bientot) puces.push({ id: 'bientot', libelle: 'Bientôt en vente', nombre: bientot });
     if (enVente) puces.push({ id: 'vente', libelle: 'En vente', nombre: enVente });
     if (vendues) puces.push({ id: 'vendues', libelle: 'Vendues', nombre: vendues });
     for (const piece of pieces) {
@@ -129,6 +131,7 @@ export function vueListe(conteneur) {
       if (filtrePiece === 'vendues') { if (!p.vendu_le) return false; }
       else if (p.vendu_le) return false; // les plantes vendues n'apparaissent que dans « Vendues »
       if (filtrePiece === 'quarantaine') { if (!quarantaineDe(p)) return false; }
+      else if (filtrePiece === 'bientot') { if (!p.bientot_en_vente || p.en_vente) return false; }
       else if (filtrePiece === 'vente') { if (!p.en_vente) return false; }
       else if (filtrePiece === 'vendues') { /* deja filtre */ }
       else if (filtrePiece === 'aucune' && p.piece_id) return false;
@@ -142,7 +145,7 @@ export function vueListe(conteneur) {
           <a class="vignette" href="#/plantes/${p.id}"${p.piece_id ? ` data-teinte="${teintePiece(p.piece_id)}"` : ''}>
             ${photoVignetteHtml(p)}
             ${quar ? `<span class="pastille-quarantaine">${echapper(libelleQuarantaine(quar))}</span>` : ''}
-            ${p.vendu_le ? '<span class="pastille-vente pastille-vente--vendu">Vendue</span>' : p.en_vente ? '<span class="pastille-vente">En vente</span>' : ''}
+            ${p.vendu_le ? '<span class="pastille-vente pastille-vente--vendu">Vendue</span>' : p.en_vente ? '<span class="pastille-vente">En vente</span>' : p.bientot_en_vente ? '<span class="pastille-vente pastille-vente--bientot">Bientôt</span>' : ''}
             <span class="vignette__nom">${echapper(p.nom)}</span>
             ${p.espece ? `<span class="vignette__espece">${echapper(p.espece)}</span>` : ''}
             ${p.piece_id ? `<span class="vignette__piece">${echapper(nomPiece(p.piece_id))}</span>` : ''}
@@ -188,7 +191,10 @@ export function vueFiche(conteneur, id) {
   const quar = quarantaineDe(plante);
 
   conteneur.innerHTML = `
-    <a class="retour" href="#/plantes">${icone('retour')} Mes plantes</a>
+    <div class="fiche__haut">
+      <a class="retour" href="#/plantes">${icone('retour')} Mes plantes</a>
+      <a class="fiche__modifier" href="#/plantes/${plante.id}/modifier">${icone('crayon')} Modifier</a>
+    </div>
     <div id="galerie"></div>
     <h1 class="fiche__nom">${echapper(plante.nom)}</h1>
     ${quar ? `<p class="fiche__vente"><span class="pastille-quarantaine pastille-quarantaine--fiche">${echapper(libelleQuarantaine(quar))}</span></p>` : ''}
@@ -219,8 +225,7 @@ export function vueFiche(conteneur, id) {
         <h2 class="carte__titre">Notes</h2>
         <p class="notes">${echapper(plante.notes)}</p>
       </section>` : ''}
-    <a class="btn btn--douce btn--espace" href="#/plantes/${plante.id}/etiquette">🏷️ Étiquette QR</a>
-    <a class="btn btn--douce btn--espace" href="#/plantes/${plante.id}/modifier">Modifier</a>`;
+    <a class="btn btn--douce btn--espace" href="#/plantes/${plante.id}/etiquette">🏷️ Étiquette QR</a>`;
 
   initialiserStatut(conteneur.querySelector('#statut'), plante.id);
   initialiserGalerie(conteneur.querySelector('#galerie'), plante.id);
@@ -236,8 +241,8 @@ function initialiserStatut(zone, idPlante) {
   function dessiner() {
     const plante = trouverPlante(idPlante);
     if (!plante) return;
-    const actuel = plante.vendu_le ? 'vendu' : plante.en_vente ? 'vente' : 'aucun';
-    const choix = [['aucun', 'Aucun'], ['vente', '🏷️ En vente'], ['vendu', '✓ Vendu']];
+    const actuel = plante.vendu_le ? 'vendu' : plante.en_vente ? 'vente' : plante.bientot_en_vente ? 'bientot' : 'aucun';
+    const choix = [['aucun', 'Aucun'], ['bientot', '⏳ Bientôt'], ['vente', '🏷️ En vente'], ['vendu', '✓ Vendu']];
     zone.innerHTML = `
       <div class="statut statut--fiche" role="group" aria-label="Statut de la plante">
         ${choix.map(([id, libelle]) => `<button class="statut__bouton statut__bouton--${id}" type="button" data-statut="${id}" aria-pressed="${id === actuel}">${libelle}</button>`).join('')}
@@ -672,7 +677,8 @@ export function vueFormulaire(conteneur, id, idMereProposee = null) {
         <div class="champ">
           <span class="champ__label">Statut</span>
           <div class="statut" role="radiogroup" aria-label="Statut de la plante">
-            <label class="statut__choix"><input type="radio" name="statut" value="aucun"${!plante?.en_vente && !plante?.vendu_le ? ' checked' : ''}><span>Aucun</span></label>
+            <label class="statut__choix"><input type="radio" name="statut" value="aucun"${!plante?.en_vente && !plante?.vendu_le && !plante?.bientot_en_vente ? ' checked' : ''}><span>Aucun</span></label>
+            <label class="statut__choix statut__choix--bientot"><input type="radio" name="statut" value="bientot"${plante?.bientot_en_vente && !plante?.en_vente && !plante?.vendu_le ? ' checked' : ''}><span>⏳ Bientôt</span></label>
             <label class="statut__choix statut__choix--vente"><input type="radio" name="statut" value="vente"${plante?.en_vente ? ' checked' : ''}><span>🏷️ En vente</span></label>
             <label class="statut__choix statut__choix--vendu"><input type="radio" name="statut" value="vendu"${plante?.vendu_le ? ' checked' : ''}><span>✓ Vendu</span></label>
           </div>

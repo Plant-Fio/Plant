@@ -175,7 +175,7 @@ export async function verifierConnexion(base, dossier, { version }) {
     // mais si une colonne manque, PostgREST repond 400.
     if (urlSupabase && cle) {
       try {
-        const reponse = await fetch(`${urlSupabase}/rest/v1/plantes?select=arrosage_jours,dernier_engrais,dernier_rempotage,en_vente,derniere_feuille,prochain_engrais,mere_id,etape_bouture,date_bouture,type_engrais,vendu_le&limit=1`, {
+        const reponse = await fetch(`${urlSupabase}/rest/v1/plantes?select=arrosage_jours,dernier_engrais,dernier_rempotage,en_vente,bientot_en_vente,derniere_feuille,prochain_engrais,mere_id,etape_bouture,date_bouture,type_engrais,vendu_le&limit=1`, {
           headers: { apikey: cle, Authorization: `Bearer ${cle}` },
         });
         if (reponse.ok) ok('table plantes : colonnes de soins (arrosage, engrais, rempotage, feuille, en vente) presentes');
@@ -734,6 +734,9 @@ export async function verifierAppli(base, dossier, { version }) {
     await page.waitForSelector('.statut__date');
     verifier((await page.textContent('.statut__date')).includes('Vendue le'), titre,
       'vendu : la fiche affiche la date de vente', `Date : "${await page.textContent('.statut__date')}".`);
+    await page.click('[data-statut="bientot"]');
+    await page.waitForSelector('[data-statut="bientot"][aria-pressed="true"]');
+    ok('statut « Bientôt » choisi depuis la fiche');
     await page.click('[data-statut="vente"]');
     await page.waitForFunction(() => !document.querySelector('.statut__date'));
     ok('vendu : repasser a « En vente » efface la date');
