@@ -3,6 +3,13 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [1.26.0] - 2026-11-10
+### Ajouté
+- Nouveau statut « ⏳ Bientôt » (prochainement en vente), avec sa pastille et son filtre dans la liste. Nécessite supabase/20-bientot-en-vente.sql.
+### Modifié
+- Fiche plante : le bouton « Modifier » est maintenant en haut, à droite du lien retour.
+- Babies : les étapes sont des choix indépendants (seule l'étape choisie est mise en avant, plus de « progression »).
+
 ## [1.25.0] - 2026-11-10
 ### Modifié
 - Dates : retour au sélecteur de date du téléphone (les trois menus Jour / Mois / Année étaient moins pratiques).
