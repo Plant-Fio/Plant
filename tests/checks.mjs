@@ -887,14 +887,14 @@ export async function verifierAppli(base, dossier, { version }) {
     verifier(await page.getAttribute('[data-etape="eau"]', 'aria-pressed') === 'true' && await nombre('[data-etape="preleve"]') === 0, titre,
       'petits : un nouveau baby commence a l\'etape « Dans l\'eau » (plus de « Prelevé »)', 'L\'etape de depart n\'est pas « Dans l\'eau ».');
     verifier(await nombre('[data-etape="germination"]') === 1 && await nombre('[data-etape="vermiculite"]') === 1 && await nombre('[data-etape="pon"]') === 1, titre,
-      'petits : les etapes « En germination », « En vermiculite » et « En pon » existent', 'Il manque une des nouvelles etapes.');
+      'petits : les etapes « En germination », « En permiculite » et « En pon » existent', 'Il manque une des nouvelles etapes.');
     await page.click('[data-etape="vermiculite"]');
     await page.waitForFunction(() => document.querySelector('[data-etape="vermiculite"]').getAttribute('aria-pressed') === 'true');
-    ok('petits : on touche une etape pour avancer (En vermiculite)');
+    ok('petits : on touche une etape pour avancer (En permiculite)');
     await capturer(page, dossier, '22-petit-fiche.png');
     await page.click('.bandeau-petit');
     await page.waitForSelector('#petits .petit');
-    verifier((await page.textContent('#petits')).includes('Ses babies · 1') && (await page.textContent('#petits .petit')).includes('en vermiculite'), titre,
+    verifier((await page.textContent('#petits')).includes('Ses babies · 1') && (await page.textContent('#petits .petit')).includes('en permiculite'), titre,
       'petits : la mere liste son petit avec son etape', `Carte petits : "${await page.textContent('#petits')}".`);
     await capturer(page, dossier, '23-petits-mere.png');
     // On supprime le petit pour ne pas fausser la suite
