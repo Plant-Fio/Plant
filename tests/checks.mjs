@@ -284,11 +284,20 @@ const jourRelatif = (page, n) => page.evaluate((decalage) => {
   return `${d.getFullYear()}-${deux(d.getMonth() + 1)}-${deux(d.getDate())}`;
 }, n);
 
+// Choisit une date (AAAA-MM-JJ) dans un champ de date en trois menus, ou dans celui d'une fenetre de dialogue
+async function remplirDate(page, nom, iso) {
+  const [a, m, j] = iso.split('-').map(Number);
+  const racine = page.locator(`[data-date3]:has(input[name="${nom}"])`);
+  await racine.locator('select[data-part="a"]').selectOption(String(a));
+  await racine.locator('select[data-part="m"]').selectOption(String(m));
+  await racine.locator('select[data-part="j"]').selectOption(String(j));
+}
+
 async function remplirPlante(page, { nom, espece = '', piece = '', date = '', notes = '', arrosage = '' }) {
   await page.fill('[name="nom"]', nom);
   await page.fill('[name="espece"]', espece);
   if (piece) await page.selectOption('#piece', { label: piece });
-  if (date) await page.fill('[name="date_acquisition"]', date);
+  if (date) await remplirDate(page, 'date_acquisition', date);
   await page.fill('[name="notes"]', notes);
   if (arrosage) {
     await page.click('[data-onglet="soins"]'); // l'arrosage est dans l'onglet « Soins »
@@ -351,13 +360,13 @@ export async function verifierAppli(base, dossier, { version }) {
     verifier(await page.inputValue('[name="date_acquisition"]') === ''
       && await page.locator('[data-vider="date_acquisition"]').isHidden(), titre,
     'dates : la corbeille efface la valeur (et se cache)', "La corbeille n'efface pas la date.");
-    await page.fill('[name="date_acquisition"]', '2024-03-12');
+    await remplirDate(page, 'date_acquisition', '2024-03-12');
     verifier(await page.locator('[data-vider="date_acquisition"]').isVisible(), titre,
       'dates : la corbeille reapparait quand une date est choisie', 'La corbeille ne reapparait pas.');
     // Quarantaine automatique : l'info apparait des que la date d'acquisition est recente
     verifier(await page.locator('#quarantaine-info').isHidden(), titre,
       'quarantaine : pas de message pour une plante acquise en 2024', 'Le message de quarantaine apparait a tort.');
-    await page.fill('[name="date_acquisition"]', await jourRelatif(page, 0));
+    await remplirDate(page, 'date_acquisition', await jourRelatif(page, 0));
     verifier(await page.locator('#quarantaine-info').isVisible()
       && (await page.textContent('#quarantaine-info')).includes('Quarantaine'), titre,
     'quarantaine : le formulaire annonce la quarantaine pour une plante acquise aujourd\'hui', 'Pas de message de quarantaine.');
@@ -369,7 +378,7 @@ export async function verifierAppli(base, dossier, { version }) {
     verifier(await page.locator('#quarantaine-info').isHidden(), titre,
       'quarantaine : decochee, le message disparait', 'Le message reste affiche malgre la case decochee.');
     await page.check('input[name="quarantaine"]');
-    await page.fill('[name="date_acquisition"]', '2024-03-12');
+    await remplirDate(page, 'date_acquisition', '2024-03-12');
     await capturer(page, dossier, '11-formulaire.png');
     await verifierDebordement(page, 'Formulaire');
     await verifierZonesTactiles(page, 'Formulaire');
@@ -476,8 +485,8 @@ export async function verifierAppli(base, dossier, { version }) {
     verifier((await page.textContent('[data-photo-date]')).includes(aujourdhuiTexte), titre,
       "photos : la photo porte la date du jour par defaut", `Date affichee : "${await page.textContent('[data-photo-date]')}".`);
     await page.click('[data-action="date"]');
-    await page.waitForSelector('dialog[open] input[type="date"]');
-    await page.fill('dialog input[type="date"]', '2025-01-15');
+    await page.waitForSelector('dialog[open] [data-date3]');
+    await remplirDate(page, 'date', '2025-01-15');
     await page.click('dialog button[value="ok"]');
     await page.waitForFunction(() => document.querySelector('[data-photo-date]').textContent.includes('15 janvier 2025'));
     ok('photos : la date de la photo se modifie');
@@ -554,7 +563,7 @@ export async function verifierAppli(base, dossier, { version }) {
     // Note pour un jour passe (hier) : le bouton de date, puis la note arrive apres celle d'aujourd'hui
     const hier = await page.evaluate(() => { const d = new Date(); d.setDate(d.getDate() - 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; });
     await page.click('#journal [data-date-note]');
-    await page.fill('dialog input[type="date"]', hier);
+    await remplirDate(page, 'date', hier);
     await page.click('dialog button[value="ok"]');
     await page.waitForFunction(() => document.querySelector('#journal [data-date-note]').textContent.includes('Hier'));
     await page.fill('#journal textarea[name="note"]', 'Oubli de la veille');
@@ -1271,7 +1280,7 @@ export async function verifierAppli(base, dossier, { version }) {
     await page.click('a:has-text("Modifier")');
     await page.waitForSelector('#form-plante');
     await page.click('[data-onglet="soins"]');
-    await page.fill('[name="prochain_engrais"]', await jourRelatif(page, 0));
+    await remplirDate(page, 'prochain_engrais', await jourRelatif(page, 0));
     await page.click('#form-ok');
     await page.waitForSelector('#soins');
     verifier((await soin('prochain-engrais')) === "Aujourd'hui", titre, "engrais : « Prochaine dose » affichee sur la fiche",
@@ -1332,7 +1341,8 @@ export async function verifierAppli(base, dossier, { version }) {
       && await nombre('[data-liste="mes-taches"] .tache') === 0 && await nombre('.tabbar__badge:not([hidden])') === 0, titre,
     'taches : une tache pour demain va dans « A venir » (pas dans Mes taches ni la pastille)', 'La tache de demain est mal rangee.');
     await page.click('[data-quand="autre"]');
-    await page.waitForSelector('#tache-date');
+    await page.waitForSelector('#tache-date', { state: 'attached' });
+    await page.waitForSelector('[data-date3] select[data-part="j"]');
     ok('taches : le choix « Autre date » affiche un calendrier');
     await capturer(page, dossier, '19-aujourdhui-a-venir.png');
     await page.click('[data-tache-menu]');
