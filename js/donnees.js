@@ -34,10 +34,18 @@ export function teintePiece(idPiece) {
 }
 
 export const datePhoto = (photo) => photo.date_photo || String(photo.created_at || '').slice(0, 10);
-// Photos d'une plante de la plus ancienne a la plus recente (selon leur date, modifiable)
+const parDate = (a, b) => datePhoto(a).localeCompare(datePhoto(b)) || String(a.created_at).localeCompare(String(b.created_at));
+// Photos d'une plante dans l'ordre de la galerie : l'ordre choisi a la main (position) si on en a
+// donne un, sinon de la plus ancienne a la plus recente. Les photos sans position viennent apres.
 export const photosDe = (idPlante) => etat.photos
   .filter((p) => p.plante_id === idPlante)
-  .sort((a, b) => datePhoto(a).localeCompare(datePhoto(b)) || String(a.created_at).localeCompare(String(b.created_at)));
+  .sort((a, b) => {
+    if (a.position != null && b.position != null && a.position !== b.position) return a.position - b.position;
+    if ((a.position != null) !== (b.position != null)) return a.position != null ? -1 : 1;
+    return parDate(a, b);
+  });
+// Toujours dans l'ordre du temps (frise d'evolution, photo « fantome » de l'appareil)
+export const photosParDate = (idPlante) => etat.photos.filter((p) => p.plante_id === idPlante).sort(parDate);
 // Couverture = la photo choisie, sinon la premiere photo de la plante
 export const photoCouverture = (plante) => (plante
   ? photosDe(plante.id).find((p) => p.id === plante.photo_principale_id) || photosDe(plante.id)[0] || null
@@ -316,6 +324,23 @@ export async function modifierDatePhoto(idPhoto, date) {
   const { data, error } = await supabase.from('photos').update({ date_photo: date }).eq('id', idPhoto).select().single();
   if (error) throw error;
   etat.photos = etat.photos.map((p) => (p.id === idPhoto ? data : p));
+  sauvegarderCache();
+}
+
+// Decale une photo d'un cran dans la galerie (sens = -1 : vers la gauche, +1 : vers la droite)
+export async function deplacerPhoto(idPlante, idPhoto, sens) {
+  const liste = photosDe(idPlante);
+  const i = liste.findIndex((p) => p.id === idPhoto);
+  const j = i + sens;
+  if (i < 0 || j < 0 || j >= liste.length) return;
+  [liste[i], liste[j]] = [liste[j], liste[i]];
+  // On numerote toute la liste : l'ordre est alors fixe, meme si de nouvelles photos arrivent
+  const changees = liste.map((p, rang) => ({ p, rang })).filter(({ p, rang }) => p.position !== rang);
+  const resultats = await Promise.all(changees.map(({ p, rang }) =>
+    supabase.from('photos').update({ position: rang }).eq('id', p.id).select().single()));
+  const erreur = resultats.find((r) => r.error)?.error;
+  if (erreur) throw erreur;
+  for (const { data } of resultats) etat.photos = etat.photos.map((p) => (p.id === data.id ? data : p));
   sauvegarderCache();
 }
 
