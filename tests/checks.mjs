@@ -362,6 +362,13 @@ export async function verifierAppli(base, dossier, { version }) {
       && (await page.textContent('#quarantaine-info')).includes('Quarantaine'), titre,
     'quarantaine : le formulaire annonce la quarantaine pour une plante acquise aujourd\'hui', 'Pas de message de quarantaine.');
     await capturer(page, dossier, '11-formulaire-quarantaine.png');
+    // La case « Mettre en quarantaine » : cochee par defaut, decochee = plus de message
+    verifier(await page.locator('input[name="quarantaine"]').isChecked(), titre,
+      'quarantaine : la case est cochee par defaut', 'La case de quarantaine devrait etre cochee.');
+    await page.uncheck('input[name="quarantaine"]');
+    verifier(await page.locator('#quarantaine-info').isHidden(), titre,
+      'quarantaine : decochee, le message disparait', 'Le message reste affiche malgre la case decochee.');
+    await page.check('input[name="quarantaine"]');
     await page.fill('[name="date_acquisition"]', '2024-03-12');
     await capturer(page, dossier, '11-formulaire.png');
     await verifierDebordement(page, 'Formulaire');

@@ -4,7 +4,7 @@ import {
   photosDe, photosParDate, deplacerPhoto, photoCouverture, ajouterPhoto, supprimerPhoto, definirCouverture,
   arrosagesDe, arroserPlante, definirStatut, annulerArrosage, marquerFait, datePhoto, modifierDatePhoto,
 } from './donnees.js';
-import { etatArrosage, etatEngrais, libelleEcheance, quarantaine, libelleQuarantaine } from './rappels.js';
+import { etatArrosage, etatEngrais, libelleEcheance, quarantaine, quarantaineDe, libelleQuarantaine } from './rappels.js';
 import { chargerUrls, urlEnCache, cheminVignette } from './photos.js';
 import { echapper, icone, formaterDate, normaliser, dateRelative, dateIsoLocale, joursEntre, libelleEcart } from './outils.js';
 import { confirmer, demanderDate, message } from './dialogues.js';
@@ -106,7 +106,7 @@ export function vueListe(conteneur) {
     const enVente = plantes.filter((p) => p.en_vente && !p.vendu_le).length;
     const vendues = plantes.filter((p) => p.vendu_le).length;
     const puces = [{ id: 'toutes', libelle: 'Toutes', nombre: plantes.length - vendues }];
-    const enQuarantaine = plantes.filter((p) => quarantaine(p.date_acquisition)).length;
+    const enQuarantaine = plantes.filter((p) => quarantaineDe(p)).length;
     if (enQuarantaine) puces.push({ id: 'quarantaine', libelle: 'Quarantaine', nombre: enQuarantaine });
     if (enVente) puces.push({ id: 'vente', libelle: 'En vente', nombre: enVente });
     if (vendues) puces.push({ id: 'vendues', libelle: 'Vendues', nombre: vendues });
@@ -128,7 +128,7 @@ export function vueListe(conteneur) {
     const trouvees = plantes.filter((p) => {
       if (filtrePiece === 'vendues') { if (!p.vendu_le) return false; }
       else if (p.vendu_le) return false; // les plantes vendues n'apparaissent que dans « Vendues »
-      if (filtrePiece === 'quarantaine') { if (!quarantaine(p.date_acquisition)) return false; }
+      if (filtrePiece === 'quarantaine') { if (!quarantaineDe(p)) return false; }
       else if (filtrePiece === 'vente') { if (!p.en_vente) return false; }
       else if (filtrePiece === 'vendues') { /* deja filtre */ }
       else if (filtrePiece === 'aucune' && p.piece_id) return false;
@@ -137,7 +137,7 @@ export function vueListe(conteneur) {
       return mots.every((mot) => texte.includes(mot));
     });
     const carte = (p) => {
-      const quar = quarantaine(p.date_acquisition);
+      const quar = quarantaineDe(p);
       return `
           <a class="vignette" href="#/plantes/${p.id}"${p.piece_id ? ` data-teinte="${teintePiece(p.piece_id)}"` : ''}>
             ${photoVignetteHtml(p)}
@@ -149,7 +149,7 @@ export function vueListe(conteneur) {
           </a>`;
     };
     // Les plantes en quarantaine sont mises a part, en haut, tant qu'on ne filtre pas dessus
-    const misesAPart = filtrePiece === 'quarantaine' ? [] : trouvees.filter((p) => quarantaine(p.date_acquisition));
+    const misesAPart = filtrePiece === 'quarantaine' ? [] : trouvees.filter((p) => quarantaineDe(p));
     const autres = trouvees.filter((p) => !misesAPart.includes(p));
     zoneResultats.innerHTML = trouvees.length
       ? `${misesAPart.length ? `
@@ -185,7 +185,7 @@ export function vueFiche(conteneur, id) {
 
   const piece = nomPiece(plante.piece_id);
   const date = formaterDate(plante.date_acquisition);
-  const quar = quarantaine(plante.date_acquisition);
+  const quar = quarantaineDe(plante);
 
   conteneur.innerHTML = `
     <a class="retour" href="#/plantes">${icone('retour')} Mes plantes</a>
@@ -605,6 +605,10 @@ export function vueFormulaire(conteneur, id, idMereProposee = null) {
         </select>
       </label>
       ${champDate("Date d'acquisition", 'date_acquisition', plante?.date_acquisition)}
+      <label class="case-quarantaine">
+        <input type="checkbox" name="quarantaine"${plante?.quarantaine === false ? '' : ' checked'}>
+        <span>Mettre en quarantaine (1 mois)</span>
+      </label>
       <p class="aide-quarantaine" id="quarantaine-info" role="status" hidden></p>
       <label class="champ">
         <span class="champ__label">Notes</span>
@@ -700,7 +704,7 @@ export function vueFormulaire(conteneur, id, idMereProposee = null) {
   // Quarantaine automatique : un mois apres la date d'acquisition
   const infoQuarantaine = conteneur.querySelector('#quarantaine-info');
   function majQuarantaine() {
-    const quar = quarantaine(formulaire.elements.date_acquisition.value);
+    const quar = formulaire.elements.quarantaine.checked ? quarantaine(formulaire.elements.date_acquisition.value) : null;
     infoQuarantaine.hidden = !quar;
     if (quar) infoQuarantaine.textContent = `Quarantaine d'un mois : elle sera mise à part jusqu'au ${formaterDate(quar.fin)}.`;
   }
@@ -751,7 +755,10 @@ export function vueFormulaire(conteneur, id, idMereProposee = null) {
     }
   });
   afficherChoix();
-  const surDate = (e) => { if (e.target.type === 'date') { majCorbeille(e.target.name); majQuarantaine(); } };
+  const surDate = (e) => {
+    if (e.target.type === 'date') { majCorbeille(e.target.name); majQuarantaine(); }
+    if (e.target.name === 'quarantaine') majQuarantaine();
+  };
   formulaire.addEventListener('input', surDate);
   formulaire.addEventListener('change', surDate);
   majQuarantaine();
@@ -762,6 +769,7 @@ export function vueFormulaire(conteneur, id, idMereProposee = null) {
     evenement.preventDefault();
     zoneErreur.hidden = true;
     const champs = Object.fromEntries(new FormData(formulaire));
+    champs.quarantaine = formulaire.elements.quarantaine.checked;
     if (!String(champs.nom || '').trim()) {
       zoneErreur.textContent = 'Donne un nom à ta plante.';
       zoneErreur.hidden = false;

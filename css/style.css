@@ -1399,3 +1399,6 @@ button.tache__libre-texte { flex: 1; min-width: 0; min-height: 44px; padding: 0;
 
 .ordre-photo { display: inline-flex; align-items: center; gap: 4px; font-size: 14px; color: var(--texte-doux); }
 .ordre-photo .btn-icone:disabled { opacity: 0.3; }
+
+.case-quarantaine { display: flex; align-items: center; gap: 12px; min-height: 48px; margin: 4px 0; cursor: pointer; }
+.case-quarantaine input { width: 24px; height: 24px; accent-color: var(--vert); flex: none; }

@@ -4,7 +4,7 @@ import { dateIsoLocale, ajouterJours, ajouterUnMois, joursEntre, formaterDate } 
 
 const plurielJours = (n) => (n > 1 ? 'jours' : 'jour');
 
-// Quarantaine : un mois a partir de la date d'acquisition. Automatique, rien a cocher.
+// Quarantaine : un mois a partir de la date d'acquisition (si elle n'est pas desactivee, voir quarantaineDe).
 // Renvoie { fin, restant } tant qu'elle dure (restant = jours avant la fin), sinon null.
 export function quarantaine(dateAcquisition, aujourdhui = dateIsoLocale()) {
   if (!dateAcquisition || joursEntre(dateAcquisition, aujourdhui) < 0) return null;
@@ -12,6 +12,10 @@ export function quarantaine(dateAcquisition, aujourdhui = dateIsoLocale()) {
   const restant = joursEntre(aujourdhui, fin);
   return restant > 0 ? { fin, restant } : null;
 }
+
+// Quarantaine d'une plante : comme ci-dessus, sauf si on l'a desactivee a la creation (case decochee)
+export const quarantaineDe = (plante, aujourdhui = dateIsoLocale()) =>
+  (plante.quarantaine === false ? null : quarantaine(plante.date_acquisition, aujourdhui));
 
 // "Quarantaine · 12 j"
 export const libelleQuarantaine = ({ restant }) => `Quarantaine · ${restant} j`;

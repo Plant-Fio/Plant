@@ -198,6 +198,7 @@ function nettoyerPlante(champs) {
     espece: texte(champs.espece),
     piece_id: champs.piece_id || null,
     date_acquisition: champs.date_acquisition || null,
+    quarantaine: champs.quarantaine !== false, // case « Mettre en quarantaine » (vrai par defaut)
     notes: texte(champs.notes),
     arrosage_jours: entier(champs.arrosage_jours),
     dernier_engrais: champs.dernier_engrais || null,
