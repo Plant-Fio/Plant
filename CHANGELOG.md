@@ -3,6 +3,10 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [1.23.0] - 2026-11-10
+### Modifié
+- Étapes d'un baby : « Prélevé » est retiré ; on ajoute « En germination », « En vermiculite » et « En pon » (ordre : germination, eau, vermiculite, pon, terre, adopté). Un nouveau baby démarre « Dans l'eau ». Les babies qui étaient « Prélevé » passent à « Dans l'eau ». Nécessite supabase/19-etapes.sql.
+
 ## [1.22.0] - 2026-11-10
 ### Ajouté
 - Photos : une petite description (200 caractères) peut être ajoutée à chaque photo, affichée sous la date et dans la frise d'évolution. Nécessite supabase/18-photo-description.sql.

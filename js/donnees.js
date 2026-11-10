@@ -587,7 +587,7 @@ export async function supprimerProbleme(id) {
   sauvegarderCache();
 }
 
-// Etape d'une bouture : preleve, eau, terre, adopte, donne
+// Etape d'une bouture : germination, eau, vermiculite, pon, terre, adopte, donne
 export async function definirStatut(idPlante, statut) {
   const modifs = { en_vente: statut === 'vente', vendu_le: statut === 'vendu' ? dateIsoLocale() : null };
   const { data, error } = await supabase.from('plantes').update(modifs).eq('id', idPlante).select().single();

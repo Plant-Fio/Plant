@@ -1264,7 +1264,10 @@ a.btn { text-decoration: none; }
 .petit__nom { font-size: 15px; overflow-wrap: anywhere; }
 .petit small { font-size: 12px; color: var(--texte-doux); }
 .etape { display: inline-block; margin-top: 6px; padding: 3px 9px; border-radius: 10px; font-size: 12px; font-weight: 700; background: var(--vert-clair); color: var(--vert-fonce); }
+.etape--germination { background: rgba(200, 150, 60, 0.25); }
 .etape--eau { background: rgba(70, 130, 190, 0.2); }
+.etape--vermiculite { background: rgba(190, 160, 110, 0.28); }
+.etape--pon { background: rgba(140, 140, 150, 0.25); }
 .etape--terre { background: rgba(120, 160, 90, 0.25); }
 .etape--adopte, .etape--donne { background: rgba(200, 150, 60, 0.25); }
 .bandeau-petit {
@@ -1276,7 +1279,8 @@ a.btn { text-decoration: none; }
 .bandeau-petit small { font-size: 13px; color: var(--texte-doux); }
 .bandeau-petit b { font-size: 18px; overflow-wrap: anywhere; }
 .bandeau-petit__lien { color: var(--vert) !important; font-weight: 700; }
-.etapes { display: flex; align-items: flex-start; margin: 6px 0 0; }
+.etapes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px 4px; align-items: start; margin: 6px 0 0; }
+.etapes__trait { display: none; }
 .etapes__pas {
   flex: none; width: 64px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0;
   border: 0; background: none; font: inherit; font-size: 12px; font-weight: 700; color: var(--texte-doux); cursor: pointer;
