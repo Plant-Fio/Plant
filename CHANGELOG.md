@@ -3,9 +3,9 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
-## [1.24.0] - 2026-11-10
+## [1.25.0] - 2026-11-10
 ### Modifié
-- Dates : le calendrier du téléphone est remplacé par trois menus Jour / Mois / Année (fiche plante, fenêtres de date, date d'une tâche). Fini le détour par le mois et l'année avant de pouvoir choisir le jour.
+- Dates : retour au sélecteur de date du téléphone (les trois menus Jour / Mois / Année étaient moins pratiques).
 
 ## [1.23.0] - 2026-11-10
 ### Modifié

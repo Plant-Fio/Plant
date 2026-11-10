@@ -11,7 +11,6 @@ import { confirmer, demanderDate, demanderTexte, message } from './dialogues.js'
 import { recadrer } from './recadrage.js';
 import { ouvrirCamera } from './camera.js';
 import { ouvrirScanner } from './scanner.js';
-import { champDateHtml, synchroniserDate, lierChampsDate } from './champ-date.js';
 import { initialiserJournal } from './journal.js';
 import { initialiserProblemes } from './problemes.js';
 import { initialiserPetits, initialiserCroissance, bandeauPetit, ETAPES } from './petits.js';
@@ -34,9 +33,9 @@ function carteVide(titre, texte, bouton = '') {
 function champDate(libelle, nom, valeur) {
   return `
       <div class="champ">
-        <label class="champ__label" for="champ-${nom}-j">${libelle}</label>
+        <label class="champ__label" for="champ-${nom}">${libelle}</label>
         <div class="champ__date">
-          ${champDateHtml({ nom, id: `champ-${nom}`, valeur: valeur || '', libelle })}
+          <input class="champ__input" id="champ-${nom}" name="${nom}" type="date" value="${echapper(valeur)}">
           <button class="btn-icone" type="button" data-vider="${nom}" aria-label="Supprimer la date : ${libelle}"${valeur ? '' : ' hidden'}>${icone('corbeille')}</button>
         </div>
       </div>`;
@@ -710,7 +709,6 @@ export function vueFormulaire(conteneur, id, idMereProposee = null) {
     const bouton = e.target.closest('[data-vider]');
     if (!bouton) return;
     formulaire.elements[bouton.dataset.vider].value = '';
-    synchroniserDate(formulaire.elements[bouton.dataset.vider]);
     majCorbeille(bouton.dataset.vider);
     majQuarantaine();
   });
@@ -768,9 +766,8 @@ export function vueFormulaire(conteneur, id, idMereProposee = null) {
     }
   });
   afficherChoix();
-  lierChampsDate(formulaire);
   const surDate = (e) => {
-    if (e.target.type === 'date' || e.target.hasAttribute?.('data-date')) { majCorbeille(e.target.name); majQuarantaine(); }
+    if (e.target.type === 'date') { majCorbeille(e.target.name); majQuarantaine(); }
     if (e.target.name === 'quarantaine') majQuarantaine();
   };
   formulaire.addEventListener('input', surDate);
