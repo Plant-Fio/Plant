@@ -1,7 +1,7 @@
 // Ecrans des plantes : liste (recherche + filtre par piece), fiche, formulaire (ajout / modification).
 import {
   lireEtat, trouverPlante, nomPiece, teintePiece, pieceLaPlusUtilisee, creerPlante, modifierPlante, supprimerPlante, expliquerErreur,
-  photosDe, photoCouverture, ajouterPhoto, supprimerPhoto, definirCouverture,
+  photosDe, photosParDate, deplacerPhoto, photoCouverture, ajouterPhoto, supprimerPhoto, definirCouverture,
   arrosagesDe, arroserPlante, definirStatut, annulerArrosage, marquerFait, datePhoto, modifierDatePhoto,
 } from './donnees.js';
 import { etatArrosage, etatEngrais, libelleEcheance, quarantaine, libelleQuarantaine } from './rappels.js';
@@ -371,6 +371,10 @@ function initialiserGalerie(galerie, idPlante) {
             ? '<span class="couverture">Photo de couverture</span>'
             : '<button class="btn-texte" type="button" data-action="couverture">Choisir comme couverture</button>'}
           <button class="btn-texte" type="button" data-action="date">Modifier la date</button>
+          ${photos.length > 1 ? `<span class="ordre-photo">Ordre
+            <button class="btn-icone" type="button" data-action="gauche" aria-label="Déplacer la photo vers la gauche"${photos[0].id === actuelle.id ? ' disabled' : ''}>◀</button>
+            <button class="btn-icone" type="button" data-action="droite" aria-label="Déplacer la photo vers la droite"${photos.at(-1).id === actuelle.id ? ' disabled' : ''}>▶</button>
+          </span>` : ''}
           <button class="btn-texte btn-texte--danger" type="button" data-action="supprimer-photo">Supprimer la photo</button>
         </div>
         <button class="btn btn--douce btn--espace" type="button" data-action="camera">${icone('appareil')} Photo d'évolution</button>
@@ -423,7 +427,7 @@ function initialiserGalerie(galerie, idPlante) {
     if (bouton?.dataset.action === 'camera') {
       if (envoi || recadrageEnCours) return;
       // La derniere photo (la plus recente) sert de « fantome » pour aligner la nouvelle
-      const derniere = photosDe(idPlante).at(-1);
+      const derniere = photosParDate(idPlante).at(-1);
       let urlFantome = null;
       if (derniere) {
         await chargerUrls([derniere.chemin]).catch(() => {});
@@ -441,6 +445,9 @@ function initialiserGalerie(galerie, idPlante) {
         if (!date || date === datePhoto(photo)) return;
         await modifierDatePhoto(selection, date);
         message('Date modifiée');
+        dessiner();
+      } else if (bouton.dataset.action === 'gauche' || bouton.dataset.action === 'droite') {
+        await deplacerPhoto(idPlante, selection, bouton.dataset.action === 'gauche' ? -1 : 1);
         dessiner();
       } else if (bouton.dataset.action === 'couverture') {
         await definirCouverture(idPlante, selection);
@@ -492,7 +499,7 @@ function initialiserGalerie(galerie, idPlante) {
 export function vueEvolution(conteneur, id) {
   const plante = trouvee(id);
   if (!plante) return introuvable(conteneur);
-  const photos = photosDe(plante.id);
+  const photos = photosParDate(plante.id);
 
   conteneur.innerHTML = `
     <a class="retour" href="#/plantes/${plante.id}">${icone('retour')} ${echapper(plante.nom)}</a>

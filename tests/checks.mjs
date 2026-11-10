@@ -477,6 +477,14 @@ export async function verifierAppli(base, dossier, { version }) {
     const ordre = await page.$$eval('.bande__vignette', (b) => b.map((x) => x.getAttribute('aria-pressed')));
     verifier(ordre[0] === 'true', titre, 'photos : la photo la plus ancienne passe en premier dans la bande',
       `Ordre de la bande : ${ordre.join(',')}.`);
+    // Ordre a la main : ▶ deplace la photo choisie vers la droite, ◀ la ramene
+    await page.click('[data-action="droite"]');
+    await page.waitForFunction(() => document.querySelectorAll('.bande__vignette')[1]?.getAttribute('aria-pressed') === 'true');
+    verifier(await page.locator('[data-action="droite"][disabled]').count() === 1, titre,
+      'photos : on peut deplacer une photo (▶), le bouton se bloque au bout', 'Le deplacement vers la droite ne marche pas.');
+    await page.click('[data-action="gauche"]');
+    await page.waitForFunction(() => document.querySelectorAll('.bande__vignette')[0]?.getAttribute('aria-pressed') === 'true');
+    ok('photos : on peut la ramener (◀)');
 
     // Evolution : toutes les photos, de la plus ancienne a la plus recente, avec l'ecart entre elles
     await page.click('a:has-text("Voir l\'évolution")');

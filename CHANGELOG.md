@@ -3,6 +3,10 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [1.18.0] - 2026-11-10
+### Ajouté
+- Photos : on peut choisir l'ordre des photos dans la bande de la fiche avec les flèches ◀ ▶ (sous la photo choisie). Tant qu'on n'y touche pas, l'ordre reste celui des dates. La frise d'évolution reste toujours dans l'ordre du temps. Nécessite supabase/16-photos-position.sql.
+
 ## [1.17.0] - 2026-11-10
 ### Ajouté
 - Journal : un bouton 📅 permet d'écrire une note pour un jour passé (hier, avant-hier…, jamais dans le futur). La date d'une note déjà écrite peut aussi être changée avec le crayon. Les notes restent classées par date.

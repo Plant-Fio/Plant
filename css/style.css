@@ -1396,3 +1396,6 @@ button.tache__libre-texte { flex: 1; min-width: 0; min-height: 44px; padding: 0;
 
 .journal__choix-date { display: inline-flex; align-items: center; gap: 6px; }
 .journal__choix-date .icone { width: 18px; height: 18px; }
+
+.ordre-photo { display: inline-flex; align-items: center; gap: 4px; font-size: 14px; color: var(--texte-doux); }
+.ordre-photo .btn-icone:disabled { opacity: 0.3; }
