@@ -5,8 +5,10 @@ import { echapper, normaliser, formaterDate, dateIsoLocale, joursEntre } from '.
 import { message } from './dialogues.js';
 
 export const ETAPES = [
-  { id: 'preleve', emoji: '✂️', libelle: 'Prélevé' },
+  { id: 'germination', emoji: '🌰', libelle: 'En germination' },
   { id: 'eau', emoji: '💧', libelle: "Dans l'eau" },
+  { id: 'vermiculite', emoji: '🧪', libelle: 'En vermiculite' },
+  { id: 'pon', emoji: '🪨', libelle: 'En pon' },
   { id: 'terre', emoji: '🌱', libelle: 'En terre' },
   { id: 'adopte', emoji: '🪴', libelle: 'Adopté' },
   { id: 'donne', emoji: '🎁', libelle: 'Donné' },
@@ -107,7 +109,7 @@ export function initialiserCroissance(zone, idPlante) {
   function dessiner() {
     const plante = trouverPlante(idPlante);
     if (!plante) return;
-    const etapes = ETAPES.slice(0, 4);
+    const etapes = ETAPES.slice(0, 6); // « Donné » a son propre bouton
     const actuelle = plante.etape_bouture;
     const rang = etapes.findIndex((e) => e.id === actuelle);
     const donne = actuelle === 'donne';

@@ -662,7 +662,7 @@ export function vueFormulaire(conteneur, id, idMereProposee = null) {
         <label class="champ">
           <span class="champ__label">Étape du baby</span>
           <select class="champ__input champ__select" name="etape_bouture">
-            ${ETAPES.map((e) => `<option value="${e.id}"${e.id === (plante?.etape_bouture || (mereProposee ? 'preleve' : 'terre')) ? ' selected' : ''}>${e.emoji} ${echapper(e.libelle)}</option>`).join('')}
+            ${ETAPES.map((e) => `<option value="${e.id}"${e.id === (plante?.etape_bouture || (mereProposee ? 'eau' : 'terre')) ? ' selected' : ''}>${e.emoji} ${echapper(e.libelle)}</option>`).join('')}
           </select>
         </label>
         ${champDate('Date du prélèvement', 'date_bouture', plante?.date_bouture || (mereProposee ? dateIsoLocale() : ''))}
