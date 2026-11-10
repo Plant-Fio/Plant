@@ -52,12 +52,12 @@ export async function demanderTexte({ titre, valeur = '', action = 'Enregistrer'
 }
 
 // Renvoie une date "AAAA-MM-JJ", ou null si annule.
-export async function demanderDate({ titre, valeur = '', action = 'Enregistrer' }) {
+export async function demanderDate({ titre, valeur = '', action = 'Enregistrer', max = '' }) {
   if (!dialogueDisponible()) return window.prompt(`${titre} (AAAA-MM-JJ)`, valeur);
   const resultat = await ouvrirDialogue(`
     <form method="dialog">
       <h2 class="dialogue__titre">${echapper(titre)}</h2>
-      <input class="champ__input dialogue__champ" type="date" required value="${echapper(valeur)}" aria-label="${echapper(titre)}">
+      <input class="champ__input dialogue__champ" type="date" required${max ? ` max="${echapper(max)}"` : ''} value="${echapper(valeur)}" aria-label="${echapper(titre)}">
       <button class="btn btn--primaire" value="ok">${echapper(action)}</button>
       <button class="btn btn--douce" value="annuler" formnovalidate>Annuler</button>
     </form>`);
