@@ -624,11 +624,15 @@ export async function verifierAppli(base, dossier, { version }) {
     verifier(await nombre('.visionneuse') === 0, titre, 'journal : la photo agrandie se ferme au toucher', 'La photo agrandie reste ouverte.');
     await page.click('#journal [data-modifier]');
     await page.waitForSelector('#journal [data-retirer-photo]');
-    annoter('warning', titre, `DIAG retirer : ${JSON.stringify(await page.evaluate(() => {
+    annoter('warning', titre, `DIAG retirer : ${JSON.stringify(await page.evaluate(async () => {
       const b = document.querySelector('#journal [data-retirer-photo]');
-      const r = b.getBoundingClientRect(); const cs = getComputedStyle(b);
-      const p = b.parentElement.getBoundingClientRect();
-      return { r: [r.x, r.y, r.width, r.height].map(Math.round), p: [p.x, p.y, p.width, p.height].map(Math.round), vis: cs.visibility, disp: cs.display, op: cs.opacity, pos: cs.position, vh: innerHeight, sy: scrollY };
+      b.scrollIntoView({ block: 'center' });
+      await new Promise((r) => setTimeout(r, 400));
+      const rect = (e) => { const r = e.getBoundingClientRect(); return [r.x, r.y, r.width, r.height].map(Math.round); };
+      const c = b.getBoundingClientRect();
+      const haut = document.elementFromPoint(c.x + c.width / 2, c.y + c.height / 2);
+      return { b: rect(b), photoBtn: rect(document.querySelector('#journal .journal__photo-btn')), edition: rect(document.querySelector('.journal__photo-edition')),
+        form: rect(document.querySelector('[data-edition]')), img: rect(document.querySelector('#journal .journal__photo')), haut: haut && (haut.className || haut.tagName), vh: innerHeight };
     }))}`);
     await page.click('#journal [data-retirer-photo]', { timeout: 8000 });
     await page.click('#journal [data-edition] button[type="submit"]');
