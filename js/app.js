@@ -11,6 +11,19 @@ import { vueBilan } from './vue-bilan.js';
 import { compterAFaire } from './rappels.js';
 import { appliquerTheme, lireTheme } from './themes.js';
 
+// Animation d'ouverture : elle s'efface toute seule, un toucher la fait passer.
+// (Absente pour les tests automatiques, qui prennent des captures tout de suite.)
+const ouverture = document.getElementById('ouverture');
+if (ouverture) {
+  const retirer = () => ouverture.remove();
+  if (navigator.webdriver) retirer();
+  else {
+    ouverture.addEventListener('animationend', (e) => { if (e.target === ouverture) retirer(); });
+    ouverture.addEventListener('pointerdown', retirer);
+    setTimeout(retirer, 2500);
+  }
+}
+
 const VERSION = globalThis.APP_VERSION || '?';
 
 const racine = document.getElementById('app');

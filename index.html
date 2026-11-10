@@ -17,6 +17,14 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+  <!-- Animation d'ouverture : une pousse grandit puis laisse place a l'appli (voir css/style.css et js/app.js) -->
+  <div id="ouverture" aria-hidden="true">
+    <svg viewBox="0 0 100 100" focusable="false">
+      <path class="ouv-tige" d="M50 96V46"/>
+      <path class="ouv-f ouv-f1" d="M50 50C26 52 12 38 10 18c24-2 38 12 40 32Z"/>
+      <path class="ouv-f ouv-f2" d="M50 56C74 58 88 44 90 24 66 22 52 36 50 56Z"/>
+    </svg>
+  </div>
   <div id="app"><div class="chargement" role="status" aria-label="Chargement"></div></div>
   <noscript><p class="noscript">Cette appli a besoin de JavaScript pour fonctionner.</p></noscript>
   <!-- version.js est un script classique : il sert a la fois a la page et au service worker -->
