@@ -611,6 +611,38 @@ export async function verifierAppli(base, dossier, { version }) {
       'photos : les 2 fichiers de la photo supprimee sont retires du stockage',
       'Les fichiers de la photo supprimee sont restes dans le stockage.');
 
+    // Journal et photos : agrandir, ajouter apres coup, changer, retirer
+    const png = fs.readFileSync('icons/icon-512.png');
+    await page.fill('#journal textarea[name="note"]', 'Note avec photo');
+    await page.setInputFiles('#journal .journal__form input.fichier', { name: 'note.png', mimeType: 'image/png', buffer: png });
+    await page.click('#journal .journal__form button[type="submit"]');
+    await page.waitForSelector('#journal .journal__photo');
+    await page.click('#journal [data-agrandir]');
+    await page.waitForSelector('.visionneuse img');
+    ok('journal : toucher la photo d\'une note l\'agrandit');
+    await page.click('.visionneuse');
+    verifier(await nombre('.visionneuse') === 0, titre, 'journal : la photo agrandie se ferme au toucher', 'La photo agrandie reste ouverte.');
+    await page.click('#journal [data-modifier]');
+    await page.click('#journal [data-retirer-photo]');
+    await page.click('#journal [data-edition] button[type="submit"]');
+    await page.waitForFunction(() => !document.querySelector('#journal .journal__photo'));
+    ok('journal : la photo d\'une note peut etre retiree en modifiant la note');
+    await page.click('#journal [data-modifier]');
+    await page.setInputFiles('#journal [data-edition] input.fichier', { name: 'apres.png', mimeType: 'image/png', buffer: png });
+    await page.click('#journal [data-edition] button[type="submit"]');
+    await page.waitForSelector('#journal .journal__photo');
+    ok('journal : on peut ajouter une photo apres coup, en modifiant la note');
+    // Nettoyage : la note, puis les photos ajoutees a la galerie (on revient a 1 photo)
+    await page.click('#journal [data-supprimer]');
+    await page.click('dialog button[value="ok"]');
+    await page.waitForFunction(() => !document.querySelector('#journal .journal__note'));
+    while ((await nombre('.bande__vignette')) > 1) {
+      await page.locator('.bande__vignette').last().click();
+      await page.click('[data-action="supprimer-photo"]');
+      await page.click('dialog button[value="ok"]');
+      await page.waitForFunction((n) => document.querySelectorAll('.bande__vignette').length === n, (await nombre('.bande__vignette')) - 1);
+    }
+
     // --- Liste, recherche, filtre ---
     // Pothos : arrosage tous les 3 jours, acquis hier -> a arroser dans 2 jours (bientot)
     // Ficus : tous les 5 jours, acquis il y a 5 jours -> a arroser aujourd'hui
