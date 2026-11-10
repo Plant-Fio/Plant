@@ -481,6 +481,13 @@ export async function verifierAppli(base, dossier, { version }) {
     await page.click('dialog button[value="ok"]');
     await page.waitForFunction(() => document.querySelector('[data-photo-date]').textContent.includes('15 janvier 2025'));
     ok('photos : la date de la photo se modifie');
+    // Description de la photo : ajout, affichage sous la date
+    await page.click('[data-action="description"]');
+    await page.fill('dialog input[type="text"]', 'Premiere feuille percee');
+    await page.click('dialog button[value="ok"]');
+    await page.waitForFunction(() => document.querySelector('[data-photo-description]')?.textContent.includes('Premiere feuille percee'));
+    verifier((await page.textContent('[data-action="description"]')).includes('Modifier'), titre,
+      'photos : une description peut etre ajoutee sous la photo', 'Le bouton de description ne change pas apres ajout.');
     const ordre = await page.$$eval('.bande__vignette', (b) => b.map((x) => x.getAttribute('aria-pressed')));
     verifier(ordre[0] === 'true', titre, 'photos : la photo la plus ancienne passe en premier dans la bande',
       `Ordre de la bande : ${ordre.join(',')}.`);
