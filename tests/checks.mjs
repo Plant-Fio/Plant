@@ -623,7 +623,14 @@ export async function verifierAppli(base, dossier, { version }) {
     await page.click('.visionneuse');
     verifier(await nombre('.visionneuse') === 0, titre, 'journal : la photo agrandie se ferme au toucher', 'La photo agrandie reste ouverte.');
     await page.click('#journal [data-modifier]');
-    await page.click('#journal [data-retirer-photo]');
+    await page.waitForSelector('#journal [data-retirer-photo]');
+    annoter('warning', titre, `DIAG retirer : ${JSON.stringify(await page.evaluate(() => {
+      const b = document.querySelector('#journal [data-retirer-photo]');
+      const r = b.getBoundingClientRect(); const cs = getComputedStyle(b);
+      const p = b.parentElement.getBoundingClientRect();
+      return { r: [r.x, r.y, r.width, r.height].map(Math.round), p: [p.x, p.y, p.width, p.height].map(Math.round), vis: cs.visibility, disp: cs.display, op: cs.opacity, pos: cs.position, vh: innerHeight, sy: scrollY };
+    }))}`);
+    await page.click('#journal [data-retirer-photo]', { timeout: 8000 });
     await page.click('#journal [data-edition] button[type="submit"]');
     await page.waitForFunction(() => !document.querySelector('#journal .journal__photo'));
     ok('journal : la photo d\'une note peut etre retiree en modifiant la note');
