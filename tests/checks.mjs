@@ -175,7 +175,7 @@ export async function verifierConnexion(base, dossier, { version }) {
     // mais si une colonne manque, PostgREST repond 400.
     if (urlSupabase && cle) {
       try {
-        const reponse = await fetch(`${urlSupabase}/rest/v1/plantes?select=arrosage_jours,dernier_engrais,dernier_rempotage,en_vente,derniere_feuille,prochain_engrais,mere_id,etape_bouture,date_bouture,type_engrais,vendu_le&limit=1`, {
+        const reponse = await fetch(`${urlSupabase}/rest/v1/plantes?select=arrosage_jours,dernier_engrais,dernier_rempotage,en_vente,bientot_en_vente,derniere_feuille,prochain_engrais,mere_id,etape_bouture,date_bouture,type_engrais,vendu_le&limit=1`, {
           headers: { apikey: cle, Authorization: `Bearer ${cle}` },
         });
         if (reponse.ok) ok('table plantes : colonnes de soins (arrosage, engrais, rempotage, feuille, en vente) presentes');
@@ -734,6 +734,9 @@ export async function verifierAppli(base, dossier, { version }) {
     await page.waitForSelector('.statut__date');
     verifier((await page.textContent('.statut__date')).includes('Vendue le'), titre,
       'vendu : la fiche affiche la date de vente', `Date : "${await page.textContent('.statut__date')}".`);
+    await page.click('[data-statut="bientot"]');
+    await page.waitForSelector('[data-statut="bientot"][aria-pressed="true"]');
+    ok('statut « Bientôt » choisi depuis la fiche');
     await page.click('[data-statut="vente"]');
     await page.waitForFunction(() => !document.querySelector('.statut__date'));
     ok('vendu : repasser a « En vente » efface la date');
@@ -884,14 +887,14 @@ export async function verifierAppli(base, dossier, { version }) {
     verifier(await page.getAttribute('[data-etape="eau"]', 'aria-pressed') === 'true' && await nombre('[data-etape="preleve"]') === 0, titre,
       'petits : un nouveau baby commence a l\'etape « Dans l\'eau » (plus de « Prelevé »)', 'L\'etape de depart n\'est pas « Dans l\'eau ».');
     verifier(await nombre('[data-etape="germination"]') === 1 && await nombre('[data-etape="vermiculite"]') === 1 && await nombre('[data-etape="pon"]') === 1, titre,
-      'petits : les etapes « En germination », « En vermiculite » et « En pon » existent', 'Il manque une des nouvelles etapes.');
+      'petits : les etapes « En germination », « En permiculite » et « En pon » existent', 'Il manque une des nouvelles etapes.');
     await page.click('[data-etape="vermiculite"]');
     await page.waitForFunction(() => document.querySelector('[data-etape="vermiculite"]').getAttribute('aria-pressed') === 'true');
-    ok('petits : on touche une etape pour avancer (En vermiculite)');
+    ok('petits : on touche une etape pour avancer (En permiculite)');
     await capturer(page, dossier, '22-petit-fiche.png');
     await page.click('.bandeau-petit');
     await page.waitForSelector('#petits .petit');
-    verifier((await page.textContent('#petits')).includes('Ses babies · 1') && (await page.textContent('#petits .petit')).includes('en vermiculite'), titre,
+    verifier((await page.textContent('#petits')).includes('Ses babies · 1') && (await page.textContent('#petits .petit')).includes('en permiculite'), titre,
       'petits : la mere liste son petit avec son etape', `Carte petits : "${await page.textContent('#petits')}".`);
     await capturer(page, dossier, '23-petits-mere.png');
     // On supprime le petit pour ne pas fausser la suite

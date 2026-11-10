@@ -7,7 +7,7 @@ import { message } from './dialogues.js';
 export const ETAPES = [
   { id: 'germination', emoji: '🌰', libelle: 'En germination' },
   { id: 'eau', emoji: '💧', libelle: "Dans l'eau" },
-  { id: 'vermiculite', emoji: '🧪', libelle: 'En vermiculite' },
+  { id: 'vermiculite', emoji: '🧪', libelle: 'En permiculite' },
   { id: 'pon', emoji: '🪨', libelle: 'En pon' },
   { id: 'terre', emoji: '🌱', libelle: 'En terre' },
   { id: 'adopte', emoji: '🪴', libelle: 'Adopté' },
@@ -111,15 +111,13 @@ export function initialiserCroissance(zone, idPlante) {
     if (!plante) return;
     const etapes = ETAPES.slice(0, 6); // « Donné » a son propre bouton
     const actuelle = plante.etape_bouture;
-    const rang = etapes.findIndex((e) => e.id === actuelle);
     const donne = actuelle === 'donne';
     const jours = joursEntre(naissance(plante), dateIsoLocale());
     zone.innerHTML = `
-      <h2 class="carte__titre">Sa croissance</h2>
+      <h2 class="carte__titre">Où il en est</h2>
       <div class="etapes" role="group" aria-label="Étape de la bouture">
         ${etapes.map((e, i) => `
-          ${i ? `<span class="etapes__trait${i <= rang ? ' etapes__trait--on' : ''}"></span>` : ''}
-          <button class="etapes__pas${i <= rang ? ' etapes__pas--on' : ''}" type="button" data-etape="${e.id}" aria-pressed="${e.id === actuelle}">
+                    <button class="etapes__pas${e.id === actuelle ? ' etapes__pas--on' : ''}" type="button" data-etape="${e.id}" aria-pressed="${e.id === actuelle}">
             <i>${e.emoji}</i>${echapper(e.libelle)}</button>`).join('')}
       </div>
       <div class="etapes__donne"><button class="btn-texte" type="button" data-etape="donne" aria-pressed="${donne}">🎁 ${donne ? 'Donnée ✓' : "Je l'ai donnée"}</button></div>

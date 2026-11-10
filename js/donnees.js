@@ -209,6 +209,7 @@ function nettoyerPlante(champs) {
     prochain_engrais: champs.prochain_engrais || null,
     // Statut : « aucun », « vente » ou « vendu » (la date de vente n'existe que si vendu)
     en_vente: champs.statut ? champs.statut === 'vente' : (champs.en_vente === true || champs.en_vente === 'on'),
+    bientot_en_vente: champs.statut === 'bientot',
     vendu_le: champs.statut === 'vendu' ? (champs.vendu_le || dateIsoLocale()) : null,
     // Petit (bouture, bulbille) : plante mere + etape + jour du prelevement
     mere_id: champs.mere_id || null,
@@ -589,7 +590,7 @@ export async function supprimerProbleme(id) {
 
 // Etape d'une bouture : germination, eau, vermiculite, pon, terre, adopte, donne
 export async function definirStatut(idPlante, statut) {
-  const modifs = { en_vente: statut === 'vente', vendu_le: statut === 'vendu' ? dateIsoLocale() : null };
+  const modifs = { en_vente: statut === 'vente', bientot_en_vente: statut === 'bientot', vendu_le: statut === 'vendu' ? dateIsoLocale() : null };
   const { data, error } = await supabase.from('plantes').update(modifs).eq('id', idPlante).select().single();
   if (error) throw error;
   etat.plantes = etat.plantes.map((p) => (p.id === idPlante ? data : p));
