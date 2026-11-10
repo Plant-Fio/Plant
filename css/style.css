@@ -1393,3 +1393,6 @@ button.tache__libre-texte { flex: 1; min-width: 0; min-height: 44px; padding: 0;
 .scanner__rang { display: flex; gap: 10px; }
 .scanner__rang > * { flex: 1; min-width: 0; }
 .scanner__note { width: 100%; box-sizing: border-box; padding: 12px; border: 1px solid var(--bordure); border-radius: 14px; background: var(--papier); color: var(--texte); font: inherit; font-size: 16px; resize: none; }
+
+.journal__choix-date { display: inline-flex; align-items: center; gap: 6px; }
+.journal__choix-date .icone { width: 18px; height: 18px; }

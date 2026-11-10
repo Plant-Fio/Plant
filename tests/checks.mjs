@@ -529,9 +529,23 @@ export async function verifierAppli(base, dossier, { version }) {
     await page.waitForFunction(() => document.querySelector('#journal .journal__contenu')?.textContent.includes('Note corrigee'));
     verifier((await page.textContent('#journal .journal__pastille')).trim() === '🌸', titre,
       "journal : on peut modifier le texte et l'emoji d'une note", `Pastille : "${await page.textContent('#journal .journal__pastille')}".`);
-    await page.click('#journal [data-supprimer]');
+    // Note pour un jour passe (hier) : le bouton de date, puis la note arrive apres celle d'aujourd'hui
+    const hier = await page.evaluate(() => { const d = new Date(); d.setDate(d.getDate() - 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; });
+    await page.click('#journal [data-date-note]');
+    await page.fill('dialog input[type="date"]', hier);
     await page.click('dialog button[value="ok"]');
-    await page.waitForFunction(() => !document.querySelector('#journal .journal__note'));
+    await page.waitForFunction(() => document.querySelector('#journal [data-date-note]').textContent.includes('Hier'));
+    await page.fill('#journal textarea[name="note"]', 'Oubli de la veille');
+    await page.click('#journal button[type="submit"]');
+    await page.waitForFunction(() => document.querySelectorAll('#journal .journal__note').length === 2);
+    const datesJournal = await page.$$eval('#journal .journal__date', (els) => els.map((e) => e.textContent.trim()));
+    verifier(datesJournal[0].includes("Aujourd'hui") && datesJournal[1] === 'Hier', titre,
+      "journal : on peut ecrire une note pour hier, rangee apres celle d'aujourd'hui", `Dates : ${JSON.stringify(datesJournal)}.`);
+    for (let i = 0; i < 2; i += 1) {
+      await page.click('#journal [data-supprimer]');
+      await page.click('dialog button[value="ok"]');
+      await page.waitForFunction((n) => document.querySelectorAll('#journal .journal__note').length === n, 1 - i);
+    }
     ok('journal : la note peut etre supprimee');
 
     // Appareil photo d'evolution : seulement la derniere photo en transparence, pas de silhouette ni de ligne

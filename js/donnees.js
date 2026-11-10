@@ -43,7 +43,9 @@ export const photoCouverture = (plante) => (plante
   ? photosDe(plante.id).find((p) => p.id === plante.photo_principale_id) || photosDe(plante.id)[0] || null
   : null);
 export const trouverSouhait = (id) => etat.souhaits.find((s) => s.id === id) || null;
-export const journalDe = (idPlante) => etat.journal.filter((n) => n.plante_id === idPlante);
+// Notes d'une plante, de la plus recente a la plus ancienne (selon leur date, qui peut etre choisie)
+export const journalDe = (idPlante) => etat.journal.filter((n) => n.plante_id === idPlante)
+  .sort((a, b) => String(b.date_note).localeCompare(String(a.date_note)) || String(b.created_at).localeCompare(String(a.created_at)));
 export const problemesDe = (idPlante) => etat.problemes.filter((q) => q.plante_id === idPlante);
 export const arrosagesDe = (idPlante) => etat.arrosages
   .filter((a) => a.plante_id === idPlante)
@@ -492,19 +494,19 @@ export async function supprimerTache(id) {
 // ---------- Journal de la plante ----------
 // Une note = un texte + la date du jour, avec (si on veut) une photo. La photo rejoint la galerie
 // de la plante comme les autres (compressee pareil) ; supprimer la note ne supprime pas la photo.
-export async function ajouterNote(idPlante, texte, fichier = null, icone = null) {
+export async function ajouterNote(idPlante, texte, fichier = null, icone = null, dateNote = null) {
   let idPhoto = null;
   if (fichier) idPhoto = (await ajouterPhoto(idPlante, fichier)).id;
   const { data, error } = await supabase.from('journal')
-    .insert({ plante_id: idPlante, texte, date_note: dateIsoLocale(), photo_id: idPhoto, icone }).select().single();
+    .insert({ plante_id: idPlante, texte, date_note: dateNote || dateIsoLocale(), photo_id: idPhoto, icone }).select().single();
   if (error) throw error;
   etat.journal = [data, ...etat.journal];
   sauvegarderCache();
   return data;
 }
 
-export async function modifierNote(idNote, texte, icone) {
-  const { data, error } = await supabase.from('journal').update({ texte, icone }).eq('id', idNote).select().single();
+export async function modifierNote(idNote, texte, icone, dateNote = null) {
+  const { data, error } = await supabase.from('journal').update({ texte, icone, ...(dateNote ? { date_note: dateNote } : {}) }).eq('id', idNote).select().single();
   if (error) throw error;
   etat.journal = etat.journal.map((n) => (n.id === idNote ? data : n));
   sauvegarderCache();

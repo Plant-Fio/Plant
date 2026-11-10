@@ -2,7 +2,7 @@
 import { journalDe, photosDe, ajouterNote, modifierNote, supprimerNote, expliquerErreur } from './donnees.js';
 import { chargerUrls, urlEnCache, cheminVignette } from './photos.js';
 import { echapper, icone, dateRelative, dateIsoLocale, normaliser } from './outils.js';
-import { confirmer, message } from './dialogues.js';
+import { confirmer, demanderDate, message } from './dialogues.js';
 
 // Icones proposees pour une note (la premiere est celle par defaut)
 export const ICONES_NOTE = ['📝', '🌱', '🌸', '🐛', '🪴', '💧'];
@@ -38,7 +38,13 @@ export function initialiserJournal(zone, idPlante) {
   let photoChoisie = null; // fichier choisi pour la prochaine note
   let envoi = false;
   let iconeManuelle = null; // icone choisie a la main (sinon : devinee d'apres le texte)
-  let enEdition = null;     // { id, icone } de la note qu'on est en train de modifier
+  let enEdition = null;     // { id, icone, date } de la note qu'on est en train de modifier
+  let dateNote = null;      // date choisie pour la prochaine note (null = aujourd'hui)
+
+  // "Aujourd'hui", "Hier"... ou la date complete pour les jours plus lointains
+  const libelleDate = (iso) => dateRelative(iso || dateIsoLocale(), dateIsoLocale());
+  const boutonDate = (iso, attribut) =>
+    `<button class="btn-texte journal__choix-date" type="button" ${attribut}>${icone('calendrier')} ${echapper(libelleDate(iso))}</button>`;
 
   function vignetteDe(note) {
     const photo = note.photo_id ? photosDe(idPlante).find((p) => p.id === note.photo_id) : null;
@@ -58,6 +64,7 @@ export function initialiserJournal(zone, idPlante) {
                 ${ICONES_NOTE.map((e) => `<button class="journal__icone" type="button" data-icone-edition="${e}" aria-pressed="${e === enEdition.icone}">${e}</button>`).join('')}
               </div>
               <div class="journal__actions">
+                ${boutonDate(enEdition.date, 'data-date-edition')}
                 <button class="btn-texte" type="button" data-annuler-edition>Annuler</button>
                 <button class="btn btn--primaire journal__ajout" type="submit">Enregistrer</button>
               </div>
@@ -80,6 +87,7 @@ export function initialiserJournal(zone, idPlante) {
           ${ICONES_NOTE.map((e) => `<button class="journal__icone" type="button" data-icone="${e}" aria-pressed="false">${e}</button>`).join('')}
         </div>
         <div class="journal__actions">
+          ${boutonDate(dateNote, 'data-date-note')}
           <label class="btn-texte journal__photo-bouton">
             ${icone('appareil')} ${photoChoisie ? 'Photo jointe ✓' : 'Photo'}
             <input class="fichier" type="file" accept="image/*" aria-label="Joindre une photo">
@@ -126,7 +134,7 @@ export function initialiserJournal(zone, idPlante) {
       const texte = e.target.elements.edition.value.trim();
       if (!texte) { e.target.elements.edition.focus(); return; }
       try {
-        await modifierNote(e.target.dataset.edition, texte, enEdition.icone);
+        await modifierNote(e.target.dataset.edition, texte, enEdition.icone, enEdition.date);
         message('Note modifiée');
         enEdition = null;
       } catch (erreur) {
@@ -142,8 +150,9 @@ export function initialiserJournal(zone, idPlante) {
     envoi = true;
     dessiner();
     try {
-      const note = await ajouterNote(idPlante, texte, photoChoisie, iconeManuelle || detecterIcone(texte));
+      const note = await ajouterNote(idPlante, texte, photoChoisie, iconeManuelle || detecterIcone(texte), dateNote);
       photoChoisie = null;
+      dateNote = null;
       iconeManuelle = null;
       zone.querySelector('[name="note"]').value = '';
       const photo = photosDe(idPlante).find((p) => p.id === note.photo_id);
@@ -161,11 +170,22 @@ export function initialiserJournal(zone, idPlante) {
     if (puce) { iconeManuelle = puce.dataset.icone; marquerIcones(); return; }
     const puceEdition = e.target.closest('[data-icone-edition]');
     if (puceEdition) { enEdition.icone = puceEdition.dataset.iconeEdition; dessiner(); return; }
+    const choixDate = e.target.closest('[data-date-note], [data-date-edition]');
+    if (choixDate) {
+      const edition = choixDate.hasAttribute('data-date-edition');
+      const aujourdhui = dateIsoLocale();
+      const date = await demanderDate({ titre: 'Date de la note', valeur: (edition ? enEdition.date : dateNote) || aujourdhui, max: aujourdhui });
+      if (!date) return;
+      if (date > aujourdhui) { message('Choisis un jour passé ou aujourd\'hui', 'erreur'); return; }
+      if (edition) enEdition.date = date; else dateNote = date === aujourdhui ? null : date;
+      dessiner();
+      return;
+    }
     if (e.target.closest('[data-annuler-edition]')) { enEdition = null; dessiner(); return; }
     const crayon = e.target.closest('[data-modifier]');
     if (crayon) {
       const note = journalDe(idPlante).find((n) => n.id === crayon.dataset.modifier);
-      if (note) { enEdition = { id: note.id, icone: iconeNote(note) }; dessiner(); zone.querySelector('[name="edition"]')?.focus(); }
+      if (note) { enEdition = { id: note.id, icone: iconeNote(note), date: note.date_note }; dessiner(); zone.querySelector('[name="edition"]')?.focus(); }
       return;
     }
     const bouton = e.target.closest('[data-supprimer]');

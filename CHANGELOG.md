@@ -3,6 +3,10 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [1.17.0] - 2026-11-10
+### Ajouté
+- Journal : un bouton 📅 permet d'écrire une note pour un jour passé (hier, avant-hier…, jamais dans le futur). La date d'une note déjà écrite peut aussi être changée avec le crayon. Les notes restent classées par date.
+
 ## [1.16.0] - 2026-11-07
 ### Modifié
 - Scanner : quand une étiquette est lue, une feuille d'actions s'ouvre au lieu d'aller sur la fiche. On y voit la plante et son état d'arrosage, avec de gros boutons « 💧 Arrosée », « 🌿 Engrais fait » et « 📝 Note », puis « Voir la fiche » ou « Scanner une autre » pour enchaîner les pots sans quitter la caméra.
