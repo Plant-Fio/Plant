@@ -10,7 +10,6 @@ import { planifier, libelleEcheance } from './rappels.js';
 import { photoVignetteHtml, remplirPhotos } from './vues-plantes.js';
 import { echapper, icone, dateDuJour, dateIsoLocale, ajouterJours, joursEntre, formaterDate } from './outils.js';
 import { message } from './dialogues.js';
-import { champDateHtml, lierChampsDate } from './champ-date.js';
 
 // Une tache libre : pastille emoji, texte (on le touche pour ouvrir « Supprimer »), bouton rond
 function ligneTache(t, { faite = false, quand = '', ouvert = false } = {}) {
@@ -130,7 +129,7 @@ export function vueAujourdhui(page) {
           ${[['aujourdhui', "Aujourd'hui"], ['demain', 'Demain'], ['autre', 'Autre date']].map(([id, libelle]) =>
     `<button type="button" class="puce" data-quand="${id}" aria-pressed="${quand === id}">${libelle}</button>`).join('')}
         </div>
-        ${quand === 'autre' ? `${champDateHtml({ nom: 'tache-date', id: 'tache-date', valeur: dateAutre, min: ajouterJours(jour, 1), libelle: 'Date de la tâche' })}` : ''}
+        ${quand === 'autre' ? `<input class="champ__input" id="tache-date" type="date" min="${ajouterJours(jour, 1)}" value="${dateAutre}" aria-label="Date de la tâche">` : ''}
       </form>
       ${tachesAVenir.length ? `
         <h2 class="section__titre">À venir <span class="puce__nombre">${tachesAVenir.length}</span></h2>
@@ -172,7 +171,6 @@ export function vueAujourdhui(page) {
     quand = puce.dataset.quand;
     dessiner();
   });
-  lierChampsDate(conteneur);
   conteneur.addEventListener('change', (evenement) => {
     if (evenement.target.id === 'tache-date' && evenement.target.value) dateAutre = evenement.target.value;
   });

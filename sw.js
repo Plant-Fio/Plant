@@ -32,7 +32,6 @@ const SQUELETTE = [
   './js/notifications.js',
   './js/vues-reglages.js',
   './js/etiquette.js',
-  './js/champ-date.js',
   './js/app.js',
   './vendor/supabase.js',
   './vendor/qr.js',
