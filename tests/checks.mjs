@@ -1018,6 +1018,44 @@ export async function verifierAppli(base, dossier, { version }) {
     await page.click('[data-tab="reglages"]');
     await page.waitForSelector('a[href="#/reglages/pieces"]');
     await capturer(page, dossier, '16-reglages.png');
+    // --- Sauvegarde : zip (aller-retour), export des donnees, import ---
+    const zipOk = await page.evaluate(async () => {
+      const { fabriquerZip, lireZip } = await import('./js/sauvegarde.js');
+      const a = new Uint8Array([1, 2, 3, 250, 0, 7]);
+      const b = new TextEncoder().encode('Bonjour é');
+      const zip = fabriquerZip([{ nom: 'a.bin', octets: a }, { nom: 'photos/x/y.jpg', octets: b }]);
+      const entrees = await lireZip(zip);
+      const ra = await entrees.get('a.bin')();
+      const rb = await entrees.get('photos/x/y.jpg')();
+      return entrees.size === 2 && ra.join() === a.join() && new TextDecoder().decode(rb) === 'Bonjour é';
+    });
+    verifier(zipOk, titre, 'sauvegarde : le zip se relit (noms, contenus)', 'Le zip fabrique ne se relit pas correctement.');
+    verifier(await nombre('#sauv-donnees') === 1 && await nombre('#sauv-photos') === 1 && await nombre('#sauv-importer') === 1,
+      titre, 'sauvegarde : les trois boutons sont dans les reglages', 'Il manque un bouton de sauvegarde.');
+    await page.click('#sauv-photos');
+    await page.waitForSelector('#sauv-pret:not([hidden])');
+    const [telechargement] = await Promise.all([page.waitForEvent('download'), page.click('#sauv-pret')]);
+    verifier(/^plantes-sauvegarde-\d{4}-\d{2}-\d{2}\.zip$/.test(telechargement.suggestedFilename()), titre,
+      'sauvegarde : le fichier zip est propose au telechargement', `Nom : ${telechargement.suggestedFilename()}`);
+    const cheminZip = path.join(dossier, 'sauvegarde-test.zip');
+    await telechargement.saveAs(cheminZip);
+    const contenu = await page.evaluate(async (octets) => {
+      const { lireZip } = await import('./js/sauvegarde.js');
+      const entrees = await lireZip(new Blob([new Uint8Array(octets)]));
+      const donnees = JSON.parse(new TextDecoder().decode(await entrees.get('donnees.json')()));
+      return { plantes: donnees.tables.plantes.length, format: donnees.format };
+    }, [...fs.readFileSync(cheminZip)]);
+    verifier(contenu.format === 'plantes-sauvegarde' && contenu.plantes === 2, titre,
+      'sauvegarde : le zip contient les donnees des plantes', `Contenu : ${JSON.stringify(contenu)}`);
+    await page.setInputFiles('#sauv-fichier', cheminZip);
+    await page.waitForSelector('dialog[open]');
+    verifier((await page.textContent('dialog')).includes('2 plantes'), titre,
+      "sauvegarde : l'import annonce ce qu'il va restaurer", 'Le resume de l\'import est incorrect.');
+    await page.click('dialog button[value="ok"]');
+    await page.waitForFunction(() => document.body.textContent.includes('Import terminé'));
+    await page.waitForLoadState('load');
+    await page.waitForSelector('a[href="#/reglages/pieces"]');
+    ok('sauvegarde : import termine, les donnees sont toujours la');
     // Bilan du mois
     await page.click('a[href="#/reglages/bilan"]');
     await page.waitForSelector('.bilan__tuiles, [data-mois]');

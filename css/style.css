@@ -1446,3 +1446,7 @@ button.tache__libre-texte { flex: 1; min-width: 0; min-height: 44px; padding: 0;
 .statut__choix--bientot input:checked + span, .statut__bouton--bientot[aria-pressed="true"] { background: var(--vente-fond); border-color: var(--vente-texte); color: var(--vente-texte); }
 .pastille-vente--bientot { background: var(--vert-clair); color: var(--vert-fonce); }
 .statut__choix span, .statut__bouton { font-size: 14px; }
+
+/* Sauvegarde */
+#sauvegarde .btn { margin-top: 8px; }
+.sauv__aide { margin-top: 0; }

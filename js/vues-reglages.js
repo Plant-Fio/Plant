@@ -3,6 +3,9 @@ import {
   lireEtat, nombrePlantesDans, creerPiece, renommerPiece, supprimerPiece, expliquerErreur,
 } from './donnees.js';
 import { echapper, icone } from './outils.js';
+import {
+  preparerExportDonnees, preparerExportComplet, remettreFichier, ouvrirSauvegarde, resumeSauvegarde, importerSauvegarde,
+} from './sauvegarde.js';
 import { confirmer, demanderTexte, message } from './dialogues.js';
 import { THEMES, lireTheme, choisirTheme } from './themes.js';
 import {
@@ -96,6 +99,76 @@ function initialiserNotifications(conteneur) {
   });
 }
 
+// Carte « Sauvegarde » : exporter (donnees, ou donnees + photos) et importer
+function initialiserSauvegarde(conteneur) {
+  const el = (id) => conteneur.querySelector(`#${id}`);
+  const jauge = el('sauv-jauge');
+  const etatTexte = el('sauv-etat');
+  const pret = el('sauv-pret');
+  const boutons = ['sauv-donnees', 'sauv-photos', 'sauv-importer'].map(el);
+  let fichierPret = null;
+  const progres = (part, texte) => {
+    jauge.hidden = false;
+    jauge.value = Math.round(part * 100);
+    if (texte) etatTexte.textContent = texte;
+  };
+  const occupe = (oui) => boutons.forEach((b) => { b.disabled = oui; });
+  const montrerPret = (fichier, texte) => {
+    fichierPret = fichier;
+    jauge.hidden = true;
+    etatTexte.textContent = texte;
+    pret.hidden = false;
+    pret.textContent = `Enregistrer « ${fichier.nom} »`;
+  };
+  async function exporter(preparer) {
+    occupe(true);
+    pret.hidden = true;
+    try {
+      const fichier = await preparer(progres);
+      const manquantes = fichier.manquantes ? ` (${fichier.manquantes} fichier${fichier.manquantes > 1 ? 's' : ''} introuvable${fichier.manquantes > 1 ? 's' : ''})` : '';
+      montrerPret(fichier, `Sauvegarde prête${manquantes}. Touche le bouton ci-dessous pour l'enregistrer.`);
+    } catch (erreur) {
+      jauge.hidden = true;
+      etatTexte.textContent = '';
+      message(expliquerErreur(erreur), 'erreur');
+    }
+    occupe(false);
+  }
+  el('sauv-donnees').addEventListener('click', () => exporter(preparerExportDonnees));
+  el('sauv-photos').addEventListener('click', () => exporter(preparerExportComplet));
+  pret.addEventListener('click', () => { if (fichierPret) remettreFichier(fichierPret); });
+
+  el('sauv-fichier').addEventListener('change', async (evenement) => {
+    const fichier = evenement.target.files[0];
+    evenement.target.value = '';
+    if (!fichier) return;
+    occupe(true);
+    try {
+      const sauvegarde = await ouvrirSauvegarde(fichier);
+      const r = resumeSauvegarde(sauvegarde);
+      const ok = await confirmer({
+        titre: 'Importer cette sauvegarde ?',
+        texte: `${r.plantes} plante${r.plantes > 1 ? 's' : ''}, ${r.photos} photo${r.photos > 1 ? 's' : ''}${r.date ? `, faite le ${r.date}` : ''}`
+          + `${sauvegarde.photos ? '' : ' (sans les fichiers photos)'}. Ce qui existe déjà est mis à jour, rien n'est supprimé.`,
+        action: 'Importer',
+      });
+      if (ok) {
+        progres(0, 'Import en cours… ne ferme pas l\'appli');
+        const { echecs } = await importerSauvegarde(sauvegarde, progres);
+        message(echecs ? `Import terminé (${echecs} photo${echecs > 1 ? 's' : ''} non restaurée${echecs > 1 ? 's' : ''})` : 'Import terminé ✓');
+        setTimeout(() => window.location.reload(), 1200);
+        return;
+      }
+    } catch (erreur) {
+      message(erreur?.message || expliquerErreur(erreur), 'erreur');
+    }
+    jauge.hidden = true;
+    etatTexte.textContent = '';
+    occupe(false);
+  });
+  el('sauv-importer').addEventListener('click', () => el('sauv-fichier').click());
+}
+
 export function vueReglages(conteneur, { email, version, deconnecter, chercherMiseAJour }) {
   const { pieces, photos } = lireEtat();
   // Estimation : une photo + sa vignette pesent environ 250 Ko apres compression ; l'offre gratuite de Supabase offre 1 Go
@@ -158,6 +231,18 @@ export function vueReglages(conteneur, { email, version, deconnecter, chercherMi
       <progress class="stockage__jauge" max="100" value="${pourcent}" aria-label="Place utilisée : ${pourcent} %"></progress>
       <p class="stockage__aide">Estimation (environ 250 Ko par photo). L'offre gratuite de Supabase offre 1 Go.</p>
     </section>
+    <section class="carte" id="sauvegarde">
+      <h2 class="carte__titre">Sauvegarde</h2>
+      <p class="stockage__aide sauv__aide">Garde une copie de tes plantes sur ton téléphone ou dans Fichiers. Avec les photos, le fichier est plus lourd.</p>
+      <button class="btn btn--douce" id="sauv-donnees" type="button">Exporter les données</button>
+      <button class="btn btn--douce" id="sauv-photos" type="button">Exporter avec les photos (.zip)</button>
+      <button class="btn btn--douce" id="sauv-importer" type="button">Importer une sauvegarde</button>
+      <input id="sauv-fichier" type="file" accept=".json,.zip,application/json,application/zip" hidden>
+      <progress class="stockage__jauge" id="sauv-jauge" max="100" value="0" hidden aria-label="Avancement"></progress>
+      <p class="notifs__etat" id="sauv-etat" role="status"></p>
+      <button class="btn btn--primaire" id="sauv-pret" type="button" hidden></button>
+      <p class="stockage__aide">Ce n'est pas une sauvegarde automatique : pense à la refaire de temps en temps. Les sauvegardes automatiques de Supabase demandent l'offre payante.</p>
+    </section>
     <section class="carte">
       <h2 class="carte__titre">Compte</h2>
       <div class="ligne">
@@ -176,6 +261,7 @@ export function vueReglages(conteneur, { email, version, deconnecter, chercherMi
     </section>`;
 
   initialiserNotifications(conteneur);
+  initialiserSauvegarde(conteneur);
 
   // Choix du theme : il s'applique tout de suite
   conteneur.querySelectorAll('.theme').forEach((vignette) => {
