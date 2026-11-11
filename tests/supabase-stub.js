@@ -51,6 +51,9 @@ const stockage = {
       }),
       error: null,
     }),
+    download: async (chemin) => (fichiers.has(chemin)
+      ? { data: fichiers.get(chemin), error: null }
+      : { data: null, error: { message: 'introuvable' } }),
     remove: async (chemins) => {
       chemins.forEach((chemin) => { fichiers.delete(chemin); adressesObjet.delete(chemin); });
       return { data: [], error: null };
@@ -67,6 +70,7 @@ class Requete {
   order(colonne, options) { this.tris.push([colonne, options?.ascending === false]); return this; }
   gte(colonne, valeur) { this.minimums.push([colonne, valeur]); return this; }
   limit(nombre) { this.maximum = nombre; return this; }
+  range(debut, fin) { this.debut = debut; this.maximum = fin - debut + 1; return this; }
   eq(colonne, valeur) { this.filtres.push([colonne, valeur]); return this; }
   insert(lignes) { this.op = 'insert'; this.charge = lignes; return this; }
   upsert(lignes, options) { this.op = 'upsert'; this.charge = lignes; this.conflit = options?.onConflict || 'id'; return this; }
@@ -135,6 +139,7 @@ class Requete {
         ? a[colonne] - b[colonne]
         : String(a[colonne]).localeCompare(String(b[colonne]), 'fr')));
     }
+    if (this.debut) resultat = resultat.slice(this.debut);
     if (this.maximum != null) resultat = resultat.slice(0, this.maximum);
 
     if (!this.retourne && this.op !== 'select') return { data: null, error: null };

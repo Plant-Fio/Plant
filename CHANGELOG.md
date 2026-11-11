@@ -3,6 +3,10 @@
 Toutes les evolutions notables de l'appli. Le numero de version visible dans l'appli
 (Reglages) vient de `js/version.js` et doit toujours correspondre a la derniere entree ci-dessous.
 
+## [1.27.0] - 2026-11-11
+### Ajouté
+- Réglages > Sauvegarde : « Exporter les données » (un fichier .json), « Exporter avec les photos » (un .zip avec les images et une barre de progression) et « Importer une sauvegarde » (remet tout dans le compte, met à jour ce qui existe, ne supprime rien).
+
 ## [1.26.0] - 2026-11-10
 ### Ajouté
 - Nouveau statut « ⏳ Bientôt » (prochainement en vente), avec sa pastille et son filtre dans la liste. Nécessite supabase/20-bientot-en-vente.sql.
