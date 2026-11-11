@@ -1,6 +1,6 @@
 // Ecrans des reglages : compte et version, puis gestion des pieces.
 import {
-  lireEtat, nombrePlantesDans, creerPiece, renommerPiece, supprimerPiece, expliquerErreur,
+  lireEtat, charger, nombrePlantesDans, creerPiece, renommerPiece, supprimerPiece, expliquerErreur,
 } from './donnees.js';
 import { echapper, icone } from './outils.js';
 import {
@@ -156,7 +156,9 @@ function initialiserSauvegarde(conteneur) {
         progres(0, 'Import en cours… ne ferme pas l\'appli');
         const { echecs } = await importerSauvegarde(sauvegarde, progres);
         message(echecs ? `Import terminé (${echecs} photo${echecs > 1 ? 's' : ''} non restaurée${echecs > 1 ? 's' : ''})` : 'Import terminé ✓');
-        setTimeout(() => window.location.reload(), 1200);
+        // On relit tout depuis la base puis on redessine l'ecran
+        await charger({ user: { id: lireEtat().userId, user_metadata: { pieces_initialisees: true } } });
+        window.dispatchEvent(new HashChangeEvent('hashchange'));
         return;
       }
     } catch (erreur) {

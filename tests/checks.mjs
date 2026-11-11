@@ -1053,7 +1053,6 @@ export async function verifierAppli(base, dossier, { version }) {
       "sauvegarde : l'import annonce ce qu'il va restaurer", 'Le resume de l\'import est incorrect.');
     await page.click('dialog button[value="ok"]');
     await page.waitForFunction(() => document.body.textContent.includes('Import terminé'));
-    await page.waitForLoadState('load');
     await page.waitForSelector('a[href="#/reglages/pieces"]');
     ok('sauvegarde : import termine, les donnees sont toujours la');
     // Bilan du mois
